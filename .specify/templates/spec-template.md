@@ -1,8 +1,8 @@
 # Feature Specification: [FEATURE NAME]
 
-**Feature Branch**: `[###-feature-name]`  
-**Created**: [DATE]  
-**Status**: Draft  
+**Feature Branch**: `[###-feature-name]`
+**Created**: [DATE]
+**Status**: Draft
 **Input**: User description: "$ARGUMENTS"
 
 ## User Scenarios & Testing *(mandatory)*
@@ -11,7 +11,8 @@
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
   Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
   you should still have a viable MVP (Minimum Viable Product) that delivers value.
-  
+  Automated tests are REQUIRED for every story and should be inferable from the acceptance scenarios.
+
   Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
   Think of each story as a standalone slice of functionality that can be:
   - Developed independently
@@ -85,10 +86,10 @@
 ### Functional Requirements
 
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
+- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+- **FR-005**: System MUST [behavior, e.g., "surface explicit diagnostics and log entries for actionable failures"]
 
 *Example of marking unclear requirements:*
 
@@ -99,6 +100,31 @@
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
+
+## Operational Constraints *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Capture constitutional constraints that shape the feature.
+-->
+
+- Supported host/version: [e.g., VS Code 1.110+ only]
+- Source of truth inputs: [e.g., settings keys, manifest files, workspace state]
+- Workspace assumptions: [e.g., single-root workspace only]
+- Compatibility exclusions: [e.g., older VS Code versions are out of scope]
+
+## Failure Modes & Diagnostics *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Describe how the feature fails visibly and what persistent
+  signals are produced.
+-->
+
+- **Trigger**: [invalid input, missing file, unavailable provider, task failure]
+  - **User-visible response**: [notification, disabled action, status row]
+  - **Persistent signal**: [diagnostic, output-channel log entry, both]
+- **Trigger**: [second failure mode]
+  - **User-visible response**: [expected behavior]
+  - **Persistent signal**: [expected behavior]
 
 ## Success Criteria *(mandatory)*
 
