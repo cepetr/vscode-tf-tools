@@ -1,0 +1,340 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+
+    {
+      "name": "F4 - Firmware",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/kernel.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32f4x.cfg"
+      ],
+      "svdFile": ".vscode/STM32F427.svd",
+      "postAttachCommands": [
+        "monitor adapter speed 8000",
+        "add-symbol-file core/build-xtask/artifacts/latest/firmware.elf",
+      ],
+      "presentation": {
+        "group": "STM32F4",
+      },
+      "swoConfig": {
+        "enabled": true,
+        "cpuFrequency": 180000000,
+        "swoFrequency": 2000000,
+        "source": "probe",
+                "decoders": [
+                    {
+                        "type": "console",
+                        "label": "ITM",
+                        "port": 0,
+                        "encoding": "ascii"
+                    }
+                ]
+      }
+    },
+
+    {
+      "name": "F4 - Bootloader",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/bootloader.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32f4x.cfg"
+      ],
+      "svdFile": ".vscode/STM32F427.svd",
+      "presentation": {
+        "group": "STM32F4",
+      }
+    },
+    {
+      "name": "F4 - Boardloader",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/boardloader.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32f4x.cfg"
+      ],
+      "presentation": {
+        "group": "STM32F4",
+      }
+    },
+    {
+      "name": "F4 - ProdTest",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/prodtest.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32f4x.cfg"
+      ],
+      "svdFile": ".vscode/STM32F427.svd",
+      "presentation": {
+        "group": "STM32F4",
+      }
+    },
+    {
+      "name": "U5 - Firmware",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/firmware.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32u5x.cfg"
+      ],
+      "svdFile": ".vscode/STM32U5Gx.svd",
+      "postAttachCommands": [
+        "monitor adapter speed 8000",
+        "add-symbol-file core/build-xtask/artifacts/latest/kernel.elf",
+      ],
+      "presentation": {
+        "group": "STM32U5",
+      },
+      "swoConfig": {
+        "enabled": true,
+        "cpuFrequency": 160000000,
+        "swoFrequency": 2000000,
+        "source": "probe",
+                "decoders": [
+                    {
+                        "type": "console",
+                        "label": "ITM",
+                        "port": 0,
+                        "encoding": "ascii"
+                    }
+                ]
+      }
+    },
+    {
+      "name": "U5 - Firmware (Secmon)",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/secmon.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32u5x.cfg"
+      ],
+      "svdFile": ".vscode/STM32U5Gx.svd",
+      "postAttachCommands": [
+        "monitor adapter speed 2000",
+        "add-symbol-file core/build-xtask/artifacts/latest/kernel.elf",
+        "add-symbol-file core/build-xtask/artifacts/latest/firmware.elf",
+      ],
+      "presentation": {
+        "group": "STM32U5",
+      },
+      "swoConfig": {
+        "enabled": true,
+        "cpuFrequency": 160000000,
+        "swoFrequency": 2000000,
+        "source": "probe",
+                "decoders": [
+                    {
+                        "type": "console",
+                        "label": "ITM",
+                        "port": 0,
+                        "encoding": "ascii"
+                    }
+                ]
+      }
+    },
+    {
+      "name": "U5 - Bootloader",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/bootloader.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32u5x.cfg"
+      ],
+      "svdFile": ".vscode/STM32U5Gx.svd",
+      "postAttachCommands": [
+        "monitor adapter speed 8000"
+      ],
+      "presentation": {
+        "group": "STM32U5",
+      },
+      "swoConfig": {
+        "enabled": true,
+        "cpuFrequency": 160000000,
+        "swoFrequency": 2000000,
+        "source": "probe",
+                "decoders": [
+                    {
+                        "type": "console",
+                        "label": "ITM",
+                        "port": 0,
+                        "encoding": "ascii"
+                    }
+                ]
+      }
+    },
+    {
+      "name": "U5 - Boardloader",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/boardloader.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32u5x.cfg"
+      ],
+      "svdFile": ".vscode/STM32U5Gx.svd",
+      "postAttachCommands": [
+        "monitor adapter speed 8000"
+      ],
+      "presentation": {
+        "group": "STM32U5",
+      }
+    },
+    {
+      "name": "U5 - Prodtest",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/prodtest.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32u5x.cfg"
+      ],
+      "svdFile": ".vscode/STM32U5Gx.svd",
+      "postAttachCommands": [
+        "monitor adapter speed 8000"
+      ],
+      "presentation": {
+        "group": "STM32U5",
+      },
+      "swoConfig": {
+        "enabled": true,
+        "cpuFrequency": 160000000,
+        "swoFrequency": 2000000,
+        "source": "probe",
+                "decoders": [
+                    {
+                        "type": "console",
+                        "label": "ITM",
+                        "port": 0,
+                        "encoding": "ascii"
+                    }
+                ]
+      }
+    },
+    {
+      "name": "U5 - ExtApp",
+      "cwd": "${workspaceFolder}",
+      "executable": "core/build-xtask/artifacts/latest/kernel.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32u5x.cfg"
+      ],
+      "svdFile": ".vscode/STM32U5Gx.svd",
+      "postAttachCommands": [
+        "monitor adapter speed 2000",
+        //"add-symbol-file core/build-xtask/artifacts/latest/secmon.elf",
+        "add-symbol-file core/build-xtask/artifacts/latest/firmware.elf",
+        "add-symbol-file ${workspaceFolder}/sdk/apps/funnycoin-rust/target/thumbv7em-none-eabihf/debug/funnycoin_rust 0x20220080"
+      ],
+      "presentation": {
+        "group": "STM32U5-ExtApp",
+      },
+      "swoConfig": {
+        "enabled": true,
+        "cpuFrequency": 160000000,
+        "swoFrequency": 2000000,
+        "source": "probe",
+                "decoders": [
+                    {
+                        "type": "console",
+                        "label": "ITM",
+                        "port": 0,
+                        "encoding": "ascii",
+                        "logfile": "/home/pcernin/itm.log"
+                    }
+                ]
+      }
+    },
+    {
+      "name": "EMU - Firmware",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/core/build-xtask/artifacts/latest/firmware-emu",
+      "args": ["-m", "main"],
+      "cwd": "${workspaceFolder}/core/src",
+      "linux": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "gdb"
+      },
+      "MIMode": "lldb",
+      "stopAtEntry": true,
+      "presentation": {
+        "group": "Emulator",
+      },
+    },
+
+    {
+      "name": "EMU - Prodtest",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/core/build-xtask/artifacts/latest/prodtest.elf",
+      "cwd": "${workspaceFolder}/core/build/unix",
+      "linux": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "gdb"
+      },
+      "MIMode": "lldb",
+      "stopAtEntry": true,
+      "presentation": {
+        "group": "Emulator",
+      },
+    },
+    {
+      "name": "EMU - Bootloader",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/core/build-xtask/artifacts/latest/bootloader.elf",
+      "args": [
+        "-s"
+      ],
+      "linux": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "gdb"
+      },
+      "presentation": {
+        "group": "Emulator",
+      }
+    },
+  ]
+}
