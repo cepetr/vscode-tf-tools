@@ -13,10 +13,10 @@
 
 **Purpose**: Initialize the extension project and test harness described by the implementation plan.
 
-- [ ] T001 Create the extension package manifest, contribution skeleton, and npm scripts in `package.json`
-- [ ] T002 Configure TypeScript compilation for the extension and tests in `tsconfig.json`
-- [ ] T003 [P] Configure linting and packaging ignore rules in `eslint.config.mjs` and `.vscodeignore`
-- [ ] T004 [P] Configure the VS Code integration test runner in `src/test/integration/runTest.ts` and `package.json`
+- [X] T001 Create the extension package manifest, contribution skeleton, and npm scripts in `package.json`
+- [X] T002 Configure TypeScript compilation for the extension and tests in `tsconfig.json`
+- [X] T003 [P] Configure linting and packaging ignore rules in `eslint.config.mjs` and `.vscodeignore`
+- [X] T004 [P] Configure the VS Code integration test runner in `src/test/integration/runTest.ts` and `package.json`
 
 ---
 
@@ -26,13 +26,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Define manifest and active-configuration types in `src/manifest/manifest-types.ts` and `src/configuration/active-config.ts`
-- [ ] T006 [P] Implement workspace setting and workspace-guard helpers in `src/workspace/settings.ts` and `src/workspace/workspace-guard.ts`
-- [ ] T007 [P] Implement diagnostics and output-channel services in `src/observability/diagnostics.ts` and `src/observability/log-channel.ts`
-- [ ] T008 [P] Create reusable manifest and workspace fixtures in `test-fixtures/manifests/valid-basic/tf-tools.yaml`, `test-fixtures/manifests/invalid-structure/tf-tools.yaml`, and `test-fixtures/workspaces/missing-manifest/.gitkeep`
-- [ ] T009 Implement manifest parsing, structural validation, and file watching in `src/manifest/validate-manifest.ts` and `src/manifest/manifest-service.ts`
-- [ ] T010 Wire extension activation, shared commands, and provider registration in `src/extension.ts`
-- [ ] T011 Align stale feature validation artifacts with the narrowed scope in `specs/001-configuration-experience/quickstart.md` and `specs/001-configuration-experience/contracts/vscode-contribution-contract.md`
+- [X] T005 Define manifest and active-configuration types in `src/manifest/manifest-types.ts` and `src/configuration/active-config.ts`
+- [X] T006 [P] Implement workspace setting and workspace-guard helpers in `src/workspace/settings.ts` and `src/workspace/workspace-guard.ts`
+- [X] T007 [P] Implement diagnostics and output-channel services in `src/observability/diagnostics.ts` and `src/observability/log-channel.ts`
+- [X] T008 [P] Create reusable manifest and workspace fixtures in `test-fixtures/manifests/valid-basic/tf-tools.yaml`, `test-fixtures/manifests/invalid-structure/tf-tools.yaml`, and `test-fixtures/workspaces/missing-manifest/.gitkeep`
+- [X] T009 Implement manifest parsing, structural validation, and file watching in `src/manifest/validate-manifest.ts` and `src/manifest/manifest-service.ts`
+- [X] T010 Wire extension activation, shared commands, and provider registration in `src/extension.ts`
+- [X] T011 Align stale feature validation artifacts with the narrowed scope in `specs/001-configuration-experience/quickstart.md` and `specs/001-configuration-experience/contracts/vscode-contribution-contract.md`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin.
 
