@@ -72,7 +72,7 @@
 ### Tests for User Story 2 ⚠️
 
 - [X] T021 [P] [US2] Add unit tests for active-configuration normalization in `src/test/unit/configuration/normalize-config.test.ts`
-- [ ] T022 [P] [US2] Add integration tests for build-context selector behavior in `src/test/integration/build-context-selection.integration.test.ts`
+- [X] T022 [P] [US2] Add integration tests for build-context selector behavior in `src/test/integration/build-context-selection.integration.test.ts`
 
 ### Implementation for User Story 2
 
