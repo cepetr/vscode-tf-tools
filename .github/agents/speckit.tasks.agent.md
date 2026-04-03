@@ -67,6 +67,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Load plan.md and extract tech stack, libraries, project structure
    - Load spec.md and extract user stories with their priorities (P1, P2, P3, etc.)
   - Load the selected informal-spec slice from spec.md/plan.md and validate it against `feature-split.md`
+  - Extract the critical informal-spec details from spec.md/plan.md and generate explicit implementation, validation, or regression-test tasks for them
    - If data-model.md exists: Extract entities and map to user stories
    - If contracts/ exists: Map interface contracts to user stories
    - If research.md exists: Extract decisions for setup tasks

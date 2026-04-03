@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-Version change: 1.1.0 -> 1.2.0
+Version change: 1.2.0 -> 1.3.0
 Modified principles:
 - None (core principle titles unchanged; Delivery Workflow materially expanded)
 Added sections:
@@ -8,9 +8,11 @@ Added sections:
 Removed sections:
 - None
 Templates requiring updates:
+- ✅ .specify/templates/constitution-template.md
 - ✅ .specify/templates/spec-template.md
 - ✅ .specify/templates/plan-template.md
 - ✅ .specify/templates/tasks-template.md
+- ✅ .github/agents/speckit.constitution.agent.md
 - ✅ .github/agents/speckit.specify.agent.md
 - ✅ .github/agents/speckit.plan.agent.md
 - ✅ .github/agents/speckit.tasks.agent.md
@@ -84,23 +86,42 @@ concise code and justified complexity keep it maintainable.
 	`/speckit.implement` proceeds, the agent MUST read the relevant documents in
 	`informal_spec/`, including `user-spec.md`, `tech-spec.md`, and
 	`feature-split.md`, when those files exist.
+- Those workflow steps MUST extract the concrete user-visible and
+	implementation-sensitive details from the selected informal-spec slice,
+	including UI interaction rules, ordering constraints, persistence behavior,
+	and VS Code surface expectations that are easy to omit when only a summary is
+	carried forward.
 - Each feature spec MUST describe user-visible behavior, edge cases, operational
 	constraints, and failure or diagnostic behavior.
+- If the selected informal spec contains a concrete required behavior that is
+	not yet represented in `spec.md`, `plan.md`, `tasks.md`, or the intended
+	implementation approach, the agent MUST amend the missing artifact before
+	continuing instead of silently proceeding with a partial interpretation.
 - Each generated spec, implementation plan, and task list MUST explicitly name
 	the informal-spec slice it implements and MUST stay aligned with that slice.
 	If requested work spans multiple slices from `feature-split.md`, the workflow
 	MUST stop and require the work to be split or the informal spec to be amended
 	before continuing.
+- Each implementation plan MUST record the critical informal-spec details that
+	are most likely to be missed during coding, especially for tree-view
+	behavior, event ordering, persistence semantics, command visibility, and
+	other editor-integration details.
 - Each implementation plan MUST pass a Constitution Check covering host
 	compatibility, manifest-driven design, test coverage, failure visibility, and
 	simplicity.
 - Each task list MUST schedule tests before implementation tasks for every user
 	story and MUST include observability work whenever a feature adds new failure
 	modes or validation paths.
+- Each task list and implementation run MUST include explicit coverage for
+	critical informal-spec details through dedicated test tasks, validation tasks,
+	or both.
 - When an automated agent executes `tasks.md`, it MUST complete exactly one task
 	at a time, mark that task complete in `tasks.md`, and create one descriptive
 	git commit before starting the next task. Grouping multiple tasks into a
 	single commit is prohibited unless this constitution is amended.
+- Before a task is marked complete, self-review MUST compare the changed code
+	against the selected informal-spec slice and confirm that the critical
+	details were implemented as specified, not merely approximated.
 - Code review and self-review MUST verify constitutional compliance before merge.
 - Documentation and generated scaffolding MUST stay consistent with this
 	constitution whenever the rules change.
@@ -116,4 +137,4 @@ requirements, and PATCH for clarifications that do not change project obligation
 Compliance review is required for every plan, task list, and pull request that
 changes behavior, tooling, or development workflow.
 
-**Version**: 1.2.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-03
+**Version**: 1.3.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-03

@@ -83,6 +83,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **REQUIRED**: Read tasks.md for the complete task list and execution plan
    - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
   - **REQUIRED when present**: Read `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, and `informal_spec/feature-split.md`
+  - Extract the critical informal-spec details from spec.md, plan.md, and `informal_spec/` before making code changes
    - **IF EXISTS**: Read data-model.md for entities and relationships
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints
@@ -151,6 +152,7 @@ You **MUST** consider the user input before proceeding (if not empty).
      `tasks.md` to mark it as `[X]`, validate the change, and create one
      descriptive git commit before proceeding
    - **Validation checkpoints**: Verify each phase completion before proceeding
+  - **Critical detail checkpoints**: Verify the implementation still matches the concrete informal-spec details called out in spec.md and plan.md before marking a task complete
 
 7. Implementation execution rules:
    - **Setup first**: Initialize project structure, dependencies, configuration

@@ -60,8 +60,10 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
   - Fill Informal Spec Alignment from the selected slice in spec.md and `feature-split.md`
+  - Carry forward the `Critical Informal Details` from spec.md and reconcile them against `informal_spec/`
    - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
    - Fill Constitution Check section from constitution
+  - Fill Critical Detail Reconciliation with the concrete files, tests, and validation points that will enforce those details
   - ERROR if the plan introduces work from a different informal-spec slice
    - Evaluate gates (ERROR if violations unjustified)
    - Phase 0: Generate research.md (resolve all NEEDS CLARIFICATION)

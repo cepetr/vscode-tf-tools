@@ -10,11 +10,13 @@ description: "Task list template for feature implementation"
 **Informal Spec Slice**: [Name the slice from spec.md and plan.md]
 **Scope Guard**: [Tasks in this file stay within the selected slice; reject cross-slice scope creep]
 
-**Tests**: Generate automated test tasks for every user story. Include regression coverage for bug fixes and integration coverage whenever the change crosses VS Code APIs, manifest parsing, task execution, or persisted state.
+**Tests**: Generate automated test tasks for every user story. Include regression coverage for bug fixes and integration coverage whenever the change crosses VS Code APIs, manifest parsing, task execution, diagnostics, persisted state, or implementation-sensitive UI/event-ordering behavior from the informal spec.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
 **Slice Rule**: Include only tasks and stories that belong to the selected informal-spec slice.
+
+**Critical Detail Rule**: Include explicit tasks for the critical informal-spec details named in spec.md and plan.md. Do not assume those details are covered implicitly by broader implementation tasks.
 
 ## Format: `[ID] [P?] [Story] Description`
 

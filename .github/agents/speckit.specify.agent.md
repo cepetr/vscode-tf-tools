@@ -61,6 +61,7 @@ Given that feature description, do this:
 0. **Load informal-spec context first**:
    - Read `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, and `informal_spec/feature-split.md` before generating any artifact.
    - Identify the single feature slice in `feature-split.md` that matches the request.
+   - Extract the concrete user-visible and implementation-sensitive details from that slice, especially UI interaction rules, ordering constraints, persistence behavior, and VS Code surface expectations.
    - If the request spans multiple slices, ERROR and instruct the user to split the request or amend the informal spec first.
 
 1. **Generate a concise short name** (2-4 words) for the branch:
@@ -125,6 +126,7 @@ Given that feature description, do this:
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
    - Fill the `Informal Spec Alignment` section with the selected slice and explicit exclusions.
+   - Fill `Critical Informal Details` with the concrete behaviors that later planning and implementation MUST preserve.
    - Reject scope creep: do not include requirements that belong to other slices from `feature-split.md`.
 
 6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:

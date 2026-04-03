@@ -10,6 +10,7 @@
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
 - **Selected Slice**: [Name the feature slice from feature-split.md]
 - **Scope Guard**: [State what this spec includes and which adjacent slices are explicitly excluded]
+- **Critical Informal Details**: [List the concrete user-visible and implementation-sensitive behaviors from the selected slice that MUST survive into planning and implementation]
 
 ## User Scenarios & Testing *(mandatory)*
 

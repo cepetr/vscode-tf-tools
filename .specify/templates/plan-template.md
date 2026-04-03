@@ -14,6 +14,7 @@
 **Selected Slice**: [Name the feature slice carried from spec.md]
 **Source Anchor**: [Quote or cite the relevant section from informal_spec/feature-split.md]
 **Scope Guard**: [Describe which nearby capabilities remain out of scope for this plan]
+**Critical Informal Details**: [Carry forward the concrete interaction and integration details from spec.md and informal_spec that are easy to omit during implementation]
 
 ## Technical Context
 
@@ -39,10 +40,15 @@
 
 - [ ] Host compatibility: scoped to a TypeScript VS Code extension targeting VS Code 1.110+.
 - [ ] Informal-spec alignment: the selected slice is stated, the design stays within it, and cross-slice work is deferred or split.
+- [ ] Informal-spec detail capture: critical user-visible and implementation-sensitive behaviors from the selected slice are explicitly carried into this plan.
 - [ ] Manifest authority: build/debug/configuration choices derive from settings and manifest data, not hardcoded matrices.
 - [ ] Test discipline: tests are defined before implementation and cover each changed behavior plus regressions.
 - [ ] Failure visibility: diagnostics, notifications, and log-channel behavior are specified for new failure modes.
 - [ ] Simplicity: abstractions are minimal and any identifier or design complexity exception is justified.
+
+## Critical Detail Reconciliation
+
+- [List the concrete informal-spec details most likely to be missed during implementation and the files, tests, or validation steps that will enforce them]
 
 ## Project Structure
 
