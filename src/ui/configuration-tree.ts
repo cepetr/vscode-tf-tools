@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
-import { ManifestState } from "../manifest/manifest-types";
+import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
+import { ActiveConfig } from "../configuration/active-config";
 
 // ---------------------------------------------------------------------------
 // Tree item types
@@ -8,21 +9,21 @@ import { ManifestState } from "../manifest/manifest-types";
 export type SectionId = "build-context" | "build-options" | "build-artifacts";
 
 export class SectionItem extends vscode.TreeItem {
-  constructor(public readonly sectionId: SectionId, label: string, state?: ManifestState) {
+  constructor(public readonly sectionId: SectionId, label: string) {
     super(label, vscode.TreeItemCollapsibleState.Expanded);
     this.contextValue = sectionId;
-    this._applyState(state);
-  }
-
-  private _applyState(state?: ManifestState): void {
-    if (this.sectionId !== "build-context") {
-      this.description = "Not available in this feature slice";
-      this.collapsibleState = vscode.TreeItemCollapsibleState.None;
-    } else if (!state || state.status === "missing") {
-      this.description = "Manifest missing";
-    } else if (state.status === "invalid") {
-      this.description = "Manifest invalid";
+    if (sectionId !== "build-context") {
+      // Non-interactive placeholder sections collapse by default
+      this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     }
+  }
+}
+
+export class WarningItem extends vscode.TreeItem {
+  constructor(message: string) {
+    super(message, vscode.TreeItemCollapsibleState.None);
+    this.contextValue = "warning";
+    this.iconPath = new vscode.ThemeIcon("warning");
   }
 }
 
@@ -30,6 +31,39 @@ export class PlaceholderItem extends vscode.TreeItem {
   constructor(label: string) {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.contextValue = "placeholder";
+    this.iconPath = new vscode.ThemeIcon("info");
+  }
+}
+
+export type SelectorKind = "model" | "target" | "component";
+
+export class SelectorHeaderItem extends vscode.TreeItem {
+  constructor(
+    public readonly selectorKind: SelectorKind,
+    label: string,
+    activeValue: string | undefined
+  ) {
+    super(label, vscode.TreeItemCollapsibleState.Collapsed);
+    this.contextValue = `selector-${selectorKind}`;
+    this.description = activeValue ?? "—";
+    this.iconPath = new vscode.ThemeIcon("symbol-field");
+  }
+}
+
+export class SelectorChoiceItem extends vscode.TreeItem {
+  constructor(
+    public readonly selectorKind: SelectorKind,
+    public readonly entryId: string,
+    label: string,
+    isActive: boolean
+  ) {
+    super(label, vscode.TreeItemCollapsibleState.None);
+    this.contextValue = `choice-${selectorKind}`;
+    this.description = isActive ? "active" : undefined;
+    this.iconPath = isActive
+      ? new vscode.ThemeIcon("check")
+      : new vscode.ThemeIcon("circle-large-outline");
+    // Selection command is wired in T025
   }
 }
 
@@ -41,6 +75,8 @@ export class ConfigurationTreeProvider
   implements vscode.TreeDataProvider<vscode.TreeItem>
 {
   private _state: ManifestState | undefined;
+  private _activeConfig: ActiveConfig | undefined;
+
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
     vscode.TreeItem | undefined
   >();
@@ -48,8 +84,9 @@ export class ConfigurationTreeProvider
     this._onDidChangeTreeData.event;
 
   /** Updates the displayed manifest state and refreshes the view. */
-  update(state: ManifestState): void {
+  update(state: ManifestState, activeConfig?: ActiveConfig): void {
     this._state = state;
+    this._activeConfig = activeConfig;
     this._onDidChangeTreeData.fire(undefined);
   }
 
@@ -59,37 +96,98 @@ export class ConfigurationTreeProvider
 
   getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
     if (!element) {
-      // Top-level sections
       return [
-        new SectionItem("build-context", "Build Context", this._state),
+        new SectionItem("build-context", "Build Context"),
         new SectionItem("build-options", "Build Options"),
         new SectionItem("build-artifacts", "Build Artifacts"),
       ];
     }
 
     if (element instanceof SectionItem) {
-      if (element.sectionId === "build-context") {
-        return this._buildContextChildren();
+      switch (element.sectionId) {
+        case "build-context":
+          return this._buildContextChildren();
+        case "build-options":
+        case "build-artifacts":
+          return [new PlaceholderItem("Available in a future release")];
       }
-      // Build Options and Build Artifacts are placeholders in this slice
-      return [new PlaceholderItem("Available in a future release")];
+    }
+
+    if (element instanceof SelectorHeaderItem) {
+      return this._selectorChoices(element.selectorKind);
     }
 
     return [];
   }
 
+  // -------------------------------------------------------------------------
+  // Build Context section children
+  // -------------------------------------------------------------------------
+
   private _buildContextChildren(): vscode.TreeItem[] {
-    if (!this._state) {
+    const state = this._state;
+
+    if (!state) {
       return [new PlaceholderItem("Loading…")];
     }
-    if (this._state.status === "missing") {
-      return [new PlaceholderItem("⚠ Manifest file not found")];
+
+    if (state.status === "missing") {
+      return [
+        new WarningItem("Manifest file not found"),
+        new PlaceholderItem(
+          `Expected: ${state.manifestUri.fsPath}`
+        ),
+      ];
     }
-    if (this._state.status === "invalid") {
-      return [new PlaceholderItem("⚠ Manifest has validation errors — check Problems view")];
+
+    if (state.status === "invalid") {
+      const issues = state.validationIssues;
+      const items: vscode.TreeItem[] = [
+        new WarningItem(
+          issues.length === 1
+            ? "Manifest has 1 validation error"
+            : `Manifest has ${issues.length} validation error(s)`
+        ),
+        new PlaceholderItem("Check the Problems view for details"),
+      ];
+      return items;
     }
-    // Loaded state — children are added in T017 (US1) and T025 (US2)
-    return [new PlaceholderItem("Configuration loaded")];
+
+    // Loaded state: show model, target, component selector headers
+    return [
+      new SelectorHeaderItem("model", "Model", this._activeConfig?.modelId),
+      new SelectorHeaderItem("target", "Target", this._activeConfig?.targetId),
+      new SelectorHeaderItem("component", "Component", this._activeConfig?.componentId),
+    ];
+  }
+
+  // -------------------------------------------------------------------------
+  // Selector choice rows (expanded under SelectorHeaderItem)
+  // -------------------------------------------------------------------------
+
+  private _selectorChoices(kind: SelectorKind): vscode.TreeItem[] {
+    if (!this._state || this._state.status !== "loaded") {
+      return [];
+    }
+    const loaded = this._state as ManifestStateLoaded;
+    const activeId = this._activeConfig
+      ? kind === "model"
+        ? this._activeConfig.modelId
+        : kind === "target"
+        ? this._activeConfig.targetId
+        : this._activeConfig.componentId
+      : undefined;
+
+    const entries =
+      kind === "model"
+        ? loaded.models
+        : kind === "target"
+        ? loaded.targets
+        : loaded.components;
+
+    return entries.map(
+      (e) => new SelectorChoiceItem(kind, e.id, e.name, e.id === activeId)
+    );
   }
 
   dispose(): void {
