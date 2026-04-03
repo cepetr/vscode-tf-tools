@@ -70,6 +70,7 @@ export function resolveWorkflowContext(
     modelId: activeConfig.modelId,
     targetId: activeConfig.targetId,
     targetDisplay: target.shortName ?? target.name,
+    targetFlag: target.flag ?? null,
     componentId: activeConfig.componentId,
     componentName: component.name,
   };
@@ -110,9 +111,11 @@ export function createWorkflowTask(
       ? cleanShellArgs(ctx)
       : buildShellArgs(kind as Exclude<WorkflowKind, "Clean">, ctx, resolved);
 
-  // Entrypoint: python3 -m trezorlib.build <kind> <args...>
-  // Adjust when the actual build system script is known.
-  const command = `python3 make.py ${kind.toLowerCase()} ${args.join(" ")}`;
+  // cargo xtask <subcommand> [args...]
+  const subcommand = kind.toLowerCase();
+  const command = args.length > 0
+    ? `cargo xtask ${subcommand} ${args.join(" ")}`
+    : `cargo xtask ${subcommand}`;
 
   const shellExec = new vscode.ShellExecution(command, { cwd: cargoPath });
 

@@ -17,6 +17,8 @@ export interface ManifestTarget {
   readonly id: string;
   readonly name: string;
   readonly shortName?: string;
+  /** Command-line flag appended to build commands when set to a non-null string. */
+  readonly flag?: string | null;
 }
 
 export interface ManifestComponent {

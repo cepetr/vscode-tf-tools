@@ -107,9 +107,9 @@ As a firmware developer, I want build actions to derive their arguments from the
 - **FR-016**: The `Check` task label MUST follow the format `Check {model-id}-{target-display}-{component-name}`.
 - **FR-017**: The `Clean` task label MUST be `Clean`.
 - **FR-018**: The `target-display` portion of workflow task labels MUST use the target short display name when one exists and otherwise MUST use the full target name.
-- **FR-019**: The system MUST derive the effective `Build`, `Clippy`, and `Check` workflow arguments from the active model, target, component, and currently applicable build-option selections.
+- **FR-019**: The system MUST derive the effective `Build`, `Clippy`, and `Check` workflow arguments from the active model, target, component, and currently applicable build-option selections. Arguments MUST follow the format `<component-id> -m <model-id> [target-flag] [option-flags]`, where `target-flag` is the manifest-defined target `flag` value (omitted when absent or null).
 - **FR-020**: The system MUST use the same effective configuration for `Build`, `Clippy`, and `Check`, differing only by the workflow action being run.
-- **FR-021**: The `Clean` workflow MUST run without active build-option arguments when it is allowed to start.
+- **FR-021**: The `Clean` workflow MUST execute as `cargo xtask clean` with no configuration-derived arguments when it is allowed to start.
 - **FR-022**: The Configuration view header MUST expose `Build`, `Clippy`, `Check`, and `Clean` actions only after their behavior is implemented in this slice.
 - **FR-022A**: The Configuration view header MUST keep `Build`, `Clippy`, `Check`, and `Clean` visible when they are blocked, and blocked actions MUST be disabled rather than hidden.
 - **FR-023**: If the manifest is missing, invalid, or contains any invalid build-option `when` logic, the system MUST prevent `Build`, `Clippy`, `Check`, and `Clean` from starting and MUST show visible failure feedback.

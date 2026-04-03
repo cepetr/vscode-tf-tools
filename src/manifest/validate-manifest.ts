@@ -186,7 +186,14 @@ function validateTargets(
       shortNameNode instanceof Scalar && typeof shortNameNode.value === "string"
         ? shortNameNode.value
         : undefined;
-    targets.push({ kind: "target", id, name, shortName });
+    const flagNode = item.get("flag", true);
+    const flag: string | null | undefined =
+      flagNode instanceof Scalar && typeof flagNode.value === "string" && flagNode.value.length > 0
+        ? flagNode.value
+        : flagNode instanceof Scalar && flagNode.value === null
+          ? null
+          : undefined;
+    targets.push({ kind: "target", id, name, shortName, flag });
   }
   return targets;
 }

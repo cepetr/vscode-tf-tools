@@ -58,11 +58,21 @@ function multistateOpt(
 suite("deriveWorkflowArguments – effective Build/Clippy/Check args", () => {
   const baseContext = { modelId: "T2T1", targetId: "hw", componentId: "core" };
 
-  test("returns base model/target/component args when no options selected", () => {
+  test("returns <component> -m <model> format with no options and no target flag", () => {
     const args = deriveWorkflowArguments("Build", baseContext, []);
-    assert.ok(args.includes("T2T1"), "expected modelId in args");
-    assert.ok(args.includes("hw"), "expected targetId in args");
-    assert.ok(args.includes("core"), "expected componentId in args");
+    assert.deepStrictEqual(args, ["core", "-m", "T2T1"]);
+  });
+
+  test("appends target flag when present", () => {
+    const ctx = { ...baseContext, targetFlag: "--hw" };
+    const args = deriveWorkflowArguments("Build", ctx, []);
+    assert.deepStrictEqual(args, ["core", "-m", "T2T1", "--hw"]);
+  });
+
+  test("omits target flag when null", () => {
+    const ctx = { ...baseContext, targetFlag: null };
+    const args = deriveWorkflowArguments("Build", ctx, []);
+    assert.deepStrictEqual(args, ["core", "-m", "T2T1"]);
   });
 
   test("Build, Clippy, Check produce the same effective configuration", () => {
@@ -136,20 +146,19 @@ suite("deriveWorkflowArguments – effective Build/Clippy/Check args", () => {
 // Suite: deriveCleanArguments
 // ---------------------------------------------------------------------------
 
-suite("deriveCleanArguments – Clean does not use build-option flags", () => {
+suite("deriveCleanArguments – Clean has no arguments", () => {
   const baseContext = { modelId: "T2T1", targetId: "hw", componentId: "core" };
 
-  test("args include model/target/component", () => {
+  test("returns empty args (cargo xtask clean has no configuration-derived arguments)", () => {
     const args = deriveCleanArguments(baseContext);
-    assert.ok(args.includes("T2T1"));
-    assert.ok(args.includes("hw"));
-    assert.ok(args.includes("core"));
+    assert.deepStrictEqual(args, [], "Clean must produce no arguments");
   });
 
-  test("args do not include build-option flags even with active options", () => {
-    // deriveCleanArguments takes no resolved options — it cannot accept them
+  test("args do not include model, target, component, or build-option flags", () => {
     const args = deriveCleanArguments(baseContext);
-    // No --debug, --fast, etc. should appear
+    assert.ok(!args.includes("T2T1"), "Clean must not include modelId");
+    assert.ok(!args.includes("hw"), "Clean must not include targetId");
+    assert.ok(!args.includes("core"), "Clean must not include componentId");
     assert.ok(!args.some((a) => a.startsWith("--")), "Clean args must not include option flags");
   });
 });

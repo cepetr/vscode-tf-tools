@@ -31,6 +31,8 @@ export interface WorkflowContext {
   readonly targetDisplay: string;
   readonly componentId: string;
   readonly componentName: string;
+  /** Target-specific CLI flag from the manifest (appended when not null/undefined). */
+  readonly targetFlag?: string | null;
 }
 
 /** Inputs to the precondition check. */
@@ -71,29 +73,31 @@ export function formatTaskLabel(kind: WorkflowKind, ctx: WorkflowContext): strin
 /**
  * Derives the ordered command-line arguments for Build, Clippy, or Check.
  *
- * Arguments include the active model, target, component, and any currently
- * applicable build-option flags (FR-019).
+ * Argument format: `<component-id> -m <model-id> [target-flag] [option-flags]`
+ * (FR-019). The target flag comes from the manifest target `flag` field and is
+ * omitted when absent or null.
  */
 export function deriveWorkflowArguments(
   kind: Exclude<WorkflowKind, "Clean">,
-  ctx: { modelId: string; targetId: string; componentId: string },
+  ctx: { modelId: string; targetId: string; componentId: string; targetFlag?: string | null },
   resolved: ReadonlyArray<ResolvedOption>
 ): string[] {
-  const positional = [ctx.modelId, ctx.targetId, ctx.componentId];
+  const base = [ctx.componentId, "-m", ctx.modelId];
+  const targetArgs = ctx.targetFlag ? [ctx.targetFlag] : [];
   const flags = deriveOptionFlags(resolved);
-  return [...positional, ...flags];
+  return [...base, ...targetArgs, ...flags];
 }
 
 /**
  * Derives the command-line arguments for Clean.
- * Clean runs without build-option arguments (FR-021).
+ * Clean runs with no arguments: `cargo xtask clean` (FR-021).
  */
-export function deriveCleanArguments(ctx: {
+export function deriveCleanArguments(_ctx: {
   modelId: string;
   targetId: string;
   componentId: string;
 }): string[] {
-  return [ctx.modelId, ctx.targetId, ctx.componentId];
+  return [];
 }
 
 // ---------------------------------------------------------------------------
