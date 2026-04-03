@@ -50,6 +50,16 @@ export class SelectorHeaderItem extends vscode.TreeItem {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Command identifiers for build-context selection (registered in T026)
+// ---------------------------------------------------------------------------
+
+export const SELECT_COMMANDS: Readonly<Record<SelectorKind, string>> = {
+  model: "tfTools.selectModel",
+  target: "tfTools.selectTarget",
+  component: "tfTools.selectComponent",
+};
+
 export class SelectorChoiceItem extends vscode.TreeItem {
   constructor(
     public readonly selectorKind: SelectorKind,
@@ -63,7 +73,11 @@ export class SelectorChoiceItem extends vscode.TreeItem {
     this.iconPath = isActive
       ? new vscode.ThemeIcon("check")
       : new vscode.ThemeIcon("circle-large-outline");
-    // Selection command is wired in T025
+    this.command = {
+      title: `Select ${label}`,
+      command: SELECT_COMMANDS[selectorKind],
+      arguments: [entryId],
+    };
   }
 }
 
