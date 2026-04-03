@@ -69,7 +69,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
     "test": "node ./out/test/integration/runTest.js",
-    "test:unit": "mocha --require out/test/unit/setup.js 'out/test/unit/**/*.test.js'",
+    "test:unit": "mocha --ui tdd --require out/test/unit/setup.js 'out/test/unit/**/*.test.js'",
     "lint": "eslint src --ext ts",
     "package": "vsce package"
   },
