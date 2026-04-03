@@ -5,6 +5,7 @@
  * - All four workflow commands (Build/Clippy/Check/Clean) are registered
  * - Commands can be invoked programmatically against a valid manifest state
  * - Blocked states produce visible failure feedback
+ * - Manifest with invalid when expressions correctly blocks workflow
  *
  * These tests run inside the VS Code extension host.
  */
@@ -15,6 +16,7 @@ import * as fs from "fs";
 import { parseManifest } from "../../manifest/validate-manifest";
 import {
   evaluateWorkflowPreconditions,
+  blockReasonMessage,
   WorkflowBlockReason,
 } from "../../commands/build-workflow";
 import { isWorkflowWorkspaceSupported } from "../../workspace/workspace-guard";
@@ -133,5 +135,63 @@ suite("Build Workflow – command registration", () => {
       all.includes("tfTools.selectBuildOptionState"),
       "expected tfTools.selectBuildOptionState to be registered"
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: T030 – blocked manifest and missing fixture
+// ---------------------------------------------------------------------------
+
+suite("Build Workflow – blocked manifest (T030)", () => {
+  test("invalid-when manifest marks hasWorkflowBlockingIssues", () => {
+    const fixturePath = path.resolve(
+      __dirname,
+      "../../../test-fixtures/manifests/invalid-when/tf-tools.yaml"
+    );
+    const src = fs.readFileSync(fixturePath, "utf-8");
+    const parsed = parseManifest(src);
+    assert.strictEqual(parsed.hasWorkflowBlockingIssues, true);
+  });
+
+  test("evaluateWorkflowPreconditions returns manifest-invalid for blocking issues", () => {
+    const result = evaluateWorkflowPreconditions({
+      manifestStatus: "loaded",
+      hasWorkflowBlockingIssues: true,
+      workspaceSupported: true,
+    });
+    assert.strictEqual(result, "manifest-invalid");
+  });
+
+  test("blockReasonMessage for manifest-invalid is non-empty", () => {
+    const msg = blockReasonMessage("manifest-invalid");
+    assert.ok(msg.length > 0);
+  });
+
+  test("blockReasonMessage for manifest-missing is non-empty", () => {
+    const msg = blockReasonMessage("manifest-missing");
+    assert.ok(msg.length > 0);
+  });
+
+  test("blockReasonMessage for workspace-unsupported mentions folder", () => {
+    const msg = blockReasonMessage("workspace-unsupported");
+    assert.ok(msg.toLowerCase().includes("folder"));
+  });
+
+  test("package.json exposes Build/Clippy/Check/Clean in view/title menus", () => {
+    const ext = vscode.extensions.getExtension("trezor.tf-tools");
+    if (!ext) {
+      return; // Skip gracefully when not installed
+    }
+    const menus: Record<string, unknown[]> =
+      ext.packageJSON?.contributes?.menus ?? {};
+    const viewTitleMenus: unknown[] = (menus["view/title"] as unknown[]) ?? [];
+    const commands = viewTitleMenus
+      .map((e) => (e as { command?: string }).command)
+      .filter(Boolean);
+
+    assert.ok(commands.includes("tfTools.build"), "expected tfTools.build in view/title");
+    assert.ok(commands.includes("tfTools.clippy"), "expected tfTools.clippy in view/title");
+    assert.ok(commands.includes("tfTools.check"), "expected tfTools.check in view/title");
+    assert.ok(commands.includes("tfTools.clean"), "expected tfTools.clean in view/title");
   });
 });
