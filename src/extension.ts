@@ -5,9 +5,19 @@ import { ManifestService } from "./manifest/manifest-service";
 import { ConfigurationTreeProvider } from "./ui/configuration-tree";
 import { disposeLogChannel, revealLogs, logManifestState } from "./observability/log-channel";
 import { disposeDiagnostics, handleManifestStateDiagnostics } from "./observability/diagnostics";
+import {
+  readActiveConfig,
+  writeActiveConfig,
+  selectModel,
+  selectTarget,
+  selectComponent,
+} from "./configuration/active-config";
+import { normalizeActiveConfig } from "./configuration/normalize-config";
+import { ManifestState } from "./manifest/manifest-types";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
+let _manifestState: ManifestState | undefined;
 
 // ---------------------------------------------------------------------------
 // Scope guard (FR-016, FR-017)
@@ -79,9 +89,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(_manifestService);
 
   // Connect manifest state changes to the tree provider, diagnostics and logs (T020)
+  // On each state change, normalize the active config against the new manifest (T026)
   context.subscriptions.push(
-    _manifestService.onDidChangeState((state) => {
-      _treeProvider?.update(state);
+    _manifestService.onDidChangeState(async (state) => {
+      _manifestState = state;
+      let activeConfig = readActiveConfig(context);
+      if (state.status === "loaded") {
+        const normalized = normalizeActiveConfig(state, activeConfig);
+        // Write to storage only when normalization changed one or more ids
+        if (
+          !activeConfig ||
+          activeConfig.modelId !== normalized.modelId ||
+          activeConfig.targetId !== normalized.targetId ||
+          activeConfig.componentId !== normalized.componentId
+        ) {
+          activeConfig = await writeActiveConfig(context, normalized);
+        }
+        _treeProvider?.update(state, activeConfig);
+      } else {
+        _treeProvider?.update(state);
+      }
       handleManifestStateDiagnostics(state);
       logManifestState(state);
     })
@@ -100,6 +127,34 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  // --- Build-context selector commands (T026) ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.selectModel", async (modelId: string) => {
+      const state = _manifestState;
+      if (!state || state.status !== "loaded") { return; }
+      const config = await selectModel(context, modelId, state);
+      _treeProvider?.update(state, config);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.selectTarget", async (targetId: string) => {
+      const state = _manifestState;
+      if (!state || state.status !== "loaded") { return; }
+      const config = await selectTarget(context, targetId, state);
+      _treeProvider?.update(state, config);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.selectComponent", async (componentId: string) => {
+      const state = _manifestState;
+      if (!state || state.status !== "loaded") { return; }
+      const config = await selectComponent(context, componentId, state);
+      _treeProvider?.update(state, config);
+    })
+  );
+
   // --- Start manifest service (loads and begins watching) ---
   await _manifestService.start();
 }
@@ -109,6 +164,7 @@ export function deactivate(): void {
   _manifestService = undefined;
   _treeProvider?.dispose();
   _treeProvider = undefined;
+  _manifestState = undefined;
   disposeDiagnostics();
   disposeLogChannel();
 }
