@@ -1,12 +1,14 @@
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
-import { ManifestState } from "./manifest-types";
+import { ManifestState, ManifestStatus } from "./manifest-types";
 import { validateManifest } from "./validate-manifest";
 
 const DEBOUNCE_MS = 300;
 
 export class ManifestService implements vscode.Disposable {
   private _state: ManifestState | undefined;
+  /** Status for which a failure notification was last shown. */
+  private _lastNotifiedFailureStatus: ManifestStatus | undefined;
   private readonly _onDidChangeState =
     new vscode.EventEmitter<ManifestState>();
   private _watcher: vscode.FileSystemWatcher | undefined;
@@ -93,8 +95,53 @@ export class ManifestService implements vscode.Disposable {
   }
 
   private _setState(state: ManifestState): void {
+    const previousStatus = this._state?.status;
     this._state = state;
+    this._showFailureNotificationIfNeeded(state, previousStatus);
     this._onDidChangeState.fire(state);
+  }
+
+  /**
+   * Shows a VS Code notification when the manifest transitions to a failure
+   * state. Suppresses repeated notifications for the same failure status to
+   * avoid spamming the user during rapid file-watcher events.
+   */
+  private _showFailureNotificationIfNeeded(
+    state: ManifestState,
+    previousStatus: ManifestStatus | undefined
+  ): void {
+    if (state.status === "loaded") {
+      // Clear notification tracking when a failure resolves
+      this._lastNotifiedFailureStatus = undefined;
+      return;
+    }
+
+    if (this._lastNotifiedFailureStatus === state.status) {
+      // Same failure already notified — suppress duplicate
+      return;
+    }
+
+    if (
+      previousStatus === state.status &&
+      this._lastNotifiedFailureStatus === state.status
+    ) {
+      return;
+    }
+
+    this._lastNotifiedFailureStatus = state.status;
+
+    if (state.status === "missing") {
+      vscode.window.showWarningMessage(
+        `Trezor Firmware Tools: manifest file not found at "${state.manifestUri.fsPath}". ` +
+          "Check the tfTools.manifestPath setting."
+      );
+    } else if (state.status === "invalid") {
+      const count = state.validationIssues.length;
+      vscode.window.showErrorMessage(
+        `Trezor Firmware Tools: manifest has ${count} validation error(s). ` +
+          "Check the Problems view for details."
+      );
+    }
   }
 
   private _startWatcher(): void {
