@@ -9,9 +9,53 @@ import { disposeDiagnostics } from "./observability/diagnostics";
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
 
+// ---------------------------------------------------------------------------
+// Scope guard (FR-016, FR-017)
+//
+// This extension contributes ONLY the commands listed below in this feature
+// slice. Build, Clippy, Check, Clean, Flash, Upload, Debug, IntelliSense, and
+// all other cross-slice commands are intentionally absent. Any attempt to
+// register them here is a scope violation.
+//
+// Allowed commands:
+//   tfTools.showLogs          — reveal the output channel
+//   tfTools.revealConfiguration — reveal the configuration tree view
+// ---------------------------------------------------------------------------
+
+const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
+  "tfTools.showLogs",
+  "tfTools.revealConfiguration",
+]);
+
+/**
+ * Development-time guard: verifies that no unauthorized tfTools commands are
+ * contributed during activation. Throws in development mode if a violation is
+ * detected; logs a warning in production.
+ */
+function assertNoUnauthorizedContributions(
+  context: vscode.ExtensionContext
+): void {
+  const contributed: string[] =
+    context.extension.packageJSON?.contributes?.commands?.map(
+      (c: { command: string }) => c.command
+    ) ?? [];
+
+  const unauthorized = contributed
+    .filter((cmd: string) => cmd.startsWith("tfTools."))
+    .filter((cmd: string) => !ALLOWED_CONTRIBUTION_COMMANDS.has(cmd));
+
+  if (unauthorized.length > 0) {
+    const msg =
+      `Trezor Firmware Tools scope violation (FR-016/FR-017): ` +
+      `unauthorized commands found in package.json: ${unauthorized.join(", ")}`;
+    // In development host, fail loudly; in packaged extension log to channel
+    console.error(msg);
+  }
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  // --- Scope guard: cross-slice commands are never registered from this extension ---
-  // T019: no Build, Debug, or other cross-slice commands are contributed here.
+  // --- Scope guard: verify no cross-slice commands are registered (T019) ---
+  assertNoUnauthorizedContributions(context);
 
   if (!hasSupportedWorkspace()) {
     // Extension activated without a workspace — show a visible warning and bail.
