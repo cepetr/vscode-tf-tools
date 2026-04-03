@@ -17,6 +17,7 @@
 ### Session 2026-04-03
 
 - Q: Where should the manual `Refresh IntelliSense` action be exposed? → A: Expose `Refresh IntelliSense` in both the Configuration view title/overflow and the Command Palette.
+- Q: What should happen to IntelliSense when the active compile-commands artifact is missing? → A: Clear the previously applied compile-commands configuration so the editor does not keep using a stale artifact.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -31,7 +32,7 @@ As a firmware developer, I want C/C++ editor assistance to track my currently se
 **Acceptance Scenarios**:
 
 1. **Given** a valid active configuration whose expected compile-commands artifact exists, **When** the extension activates or the active model, target, or component changes, **Then** IntelliSense updates using the compile database for that exact active configuration.
-2. **Given** the expected compile-commands artifact for the active configuration is missing, **When** IntelliSense refresh runs, **Then** the extension does not apply a compile database from a different model, component, or stale location.
+2. **Given** the expected compile-commands artifact for the active configuration is missing, **When** IntelliSense refresh runs, **Then** the extension clears any previously applied compile-commands configuration for another context and does not apply a compile database from a different model, component, or stale location.
 3. **Given** the active configuration changes twice in sequence, **When** refresh completes, **Then** the final IntelliSense state matches the most recently selected active configuration.
 
 ---
@@ -88,6 +89,7 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 
 - **FR-001**: The system MUST resolve the expected compile-commands artifact for the active configuration from `tfTools.artifactsPath`, the selected model's required `artifact-folder` interpreted relative to that setting, and an artifact basename constructed as `<artifact-name><artifact-suffix>`, where `artifact-name` comes from the selected component's required manifest field and `artifact-suffix` comes from the selected target's optional manifest field and defaults to an empty string when omitted.
 - **FR-002**: The system MUST treat the resolved compile-commands artifact for the active configuration as the only valid IntelliSense source for that configuration and MUST NOT fall back to a different artifact path, model, target-derived suffix, component, or previously applied IntelliSense state.
+- **FR-002A**: When the expected compile-commands artifact for the active configuration is missing, the system MUST clear any previously applied compile-commands configuration instead of leaving stale IntelliSense data active.
 - **FR-003**: The system MUST register and maintain IntelliSense integration through the Microsoft C/C++ custom configuration provider model.
 - **FR-004**: The system MUST update IntelliSense state when refresh is triggered by extension activation, active configuration changes, successful build completion, explicit refresh, workspace-folder changes, provider-availability changes, manifest-path changes, manifest-content changes, and `tfTools.artifactsPath` changes.
 - **FR-005**: The system MUST expose a user-invokable `Refresh IntelliSense` action once this slice is implemented.
@@ -123,7 +125,7 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 ## Failure Modes & Diagnostics *(mandatory)*
 
 - **Trigger**: The expected compile-commands artifact for the active configuration is missing.
-  - **User-visible response**: The `Compile Commands` row shows `missing`, its tooltip shows the expected path and that the artifact was not found, and IntelliSense does not switch to another artifact.
+  - **User-visible response**: The `Compile Commands` row shows `missing`, its tooltip shows the expected path and that the artifact was not found, and IntelliSense clears any previously applied compile-commands configuration instead of switching to another artifact.
   - **Persistent signal**: Dedicated log entry.
 - **Trigger**: No supported C/C++ provider is installed.
   - **User-visible response**: The user sees a warning that IntelliSense integration is unavailable.
@@ -149,4 +151,5 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 - The Configuration Experience slice already provides the Configuration view, Build Artifacts section container, active build-context persistence, and the output channel used for persistent logging.
 - The Build Workflow slice already provides successful-build completion events that later slices can react to.
 - The active compile-commands artifact uses the path pattern `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`, where `artifact-folder` comes from the selected model, `artifact-name` comes from the selected component, and `artifact-suffix` is empty when the selected target omits it.
+- When the active compile-commands artifact is missing, clearing the previously applied compile-commands configuration is acceptable and preferred over retaining stale IntelliSense data.
 - Only Microsoft C/C++ (`ms-vscode.cpptools`) is supported for IntelliSense integration in this product.
