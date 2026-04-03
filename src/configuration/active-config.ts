@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
+import { normalizeActiveConfig } from "./normalize-config";
 
 // Active configuration storage key in workspace state
 export const ACTIVE_CONFIG_KEY = "tfTools.activeConfig";
@@ -46,4 +47,47 @@ export function isConfigValid(
     manifest.targets.some((t) => t.id === candidate.targetId) &&
     manifest.components.some((c) => c.id === candidate.componentId)
   );
+}
+
+// ---------------------------------------------------------------------------
+// Selector mutation helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Selects a new model, preserving existing target and component when valid.
+ * Normalizes the complete configuration before writing.
+ */
+export async function selectModel(
+  context: vscode.ExtensionContext,
+  modelId: string,
+  manifest: ManifestStateLoaded
+): Promise<ActiveConfig> {
+  const base = normalizeActiveConfig(manifest, readActiveConfig(context));
+  return writeActiveConfig(context, { ...base, modelId });
+}
+
+/**
+ * Selects a new target, preserving existing model and component when valid.
+ * Normalizes the complete configuration before writing.
+ */
+export async function selectTarget(
+  context: vscode.ExtensionContext,
+  targetId: string,
+  manifest: ManifestStateLoaded
+): Promise<ActiveConfig> {
+  const base = normalizeActiveConfig(manifest, readActiveConfig(context));
+  return writeActiveConfig(context, { ...base, targetId });
+}
+
+/**
+ * Selects a new component, preserving existing model and target when valid.
+ * Normalizes the complete configuration before writing.
+ */
+export async function selectComponent(
+  context: vscode.ExtensionContext,
+  componentId: string,
+  manifest: ManifestStateLoaded
+): Promise<ActiveConfig> {
+  const base = normalizeActiveConfig(manifest, readActiveConfig(context));
+  return writeActiveConfig(context, { ...base, componentId });
 }
