@@ -18,6 +18,8 @@
 
 - Q: How should invalid build-option `when` expressions affect workflow execution? → A: Any invalid build-option `when` expression makes the manifest invalid for Build Workflow, so `Build`, `Clippy`, and `Check` are blocked until fixed.
 - Q: How should blocked workflow actions appear in the Configuration view header? → A: `Build`, `Clippy`, `Check`, and `Clean` remain visible in the Configuration view header and are disabled when prerequisites are not met.
+- Q: What counts as an unsupported workspace for Build Workflow? → A: Any workspace with no open folder or with more than one open workspace folder is unsupported for Build Workflow.
+- Q: How should `Clean` behave when the workspace is supported but the manifest is missing or invalid? → A: `Clean` still ignores active build-option arguments, but it is blocked when the manifest is missing or invalid so the workflow surface stays disabled for broken manifest state.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -50,8 +52,9 @@ As a firmware developer, I want to run Build, Clippy, Check, and Clean directly 
 
 1. **Given** a valid active configuration, **When** the user starts `Build`, **Then** VS Code launches a build task whose label identifies the active model, target display name, and component.
 2. **Given** the same active configuration, **When** the user starts `Clippy` or `Check`, **Then** each action launches its own task with the same effective configuration as `Build` and with a label that identifies the same active context.
-3. **Given** any supported workspace, **When** the user starts `Clean`, **Then** VS Code launches the `Clean` task without depending on build-option selections.
-4. **Given** the Configuration view is visible, **When** the user looks at the view header actions, **Then** `Build`, `Clippy`, `Check`, and `Clean` are available from that surface, match the currently active build context when runnable, and remain visible but disabled when prerequisites are not met.
+3. **Given** a supported workspace with a valid manifest, **When** the user starts `Clean`, **Then** VS Code launches the `Clean` task without depending on build-option selections.
+4. **Given** a supported workspace whose manifest is missing or invalid, **When** the user starts `Clean`, **Then** the action does not start and the user receives visible failure feedback because Build Workflow is blocked by broken manifest state.
+5. **Given** the Configuration view is visible, **When** the user looks at the view header actions, **Then** `Build`, `Clippy`, `Check`, and `Clean` are available from that surface, match the currently active build context when runnable, and remain visible but disabled when prerequisites are not met.
 
 ---
 
@@ -67,8 +70,9 @@ As a firmware developer, I want build actions to derive their arguments from the
 
 1. **Given** a valid active configuration with enabled options, **When** the user starts `Build`, `Clippy`, or `Check`, **Then** the launched action derives its effective arguments from the selected model, target, component, and currently applicable build options.
 2. **Given** the manifest is missing, invalid, or contains any invalid build-option availability rule, **When** the user attempts `Build`, `Clippy`, or `Check`, **Then** the action does not start and the user receives a visible error plus a persistent failure record.
-3. **Given** the workspace shape is unsupported, **When** the user attempts any build action, **Then** the action does not start and the failure explains that the workspace is unsupported.
-4. **Given** a build action starts and later fails, **When** the task finishes unsuccessfully, **Then** the user receives a visible failure message and no out-of-scope post-build refresh behavior is triggered by this feature.
+3. **Given** a workspace with no open folder or with more than one open workspace folder, **When** the user attempts any build action, **Then** the action does not start and the failure explains that the workspace is unsupported.
+4. **Given** a supported workspace whose manifest is missing or invalid, **When** the user attempts `Clean`, **Then** the action does not start and the user receives visible failure feedback because Build Workflow is blocked by broken manifest state.
+5. **Given** a build action starts and later fails, **When** the task finishes unsuccessfully, **Then** the user receives a visible failure message and no out-of-scope post-build refresh behavior is triggered by this feature.
 
 ### Edge Cases
 
@@ -77,7 +81,8 @@ As a firmware developer, I want build actions to derive their arguments from the
 - Multiple build-option groups are interleaved in the manifest and must still preserve first-seen group order.
 - The active target has no short display name, so task labels must fall back to the full target name.
 - The user triggers a build action immediately after the manifest changes and before the effective configuration is stable.
-- `Clean` is available in a supported workspace even when the manifest cannot supply a valid build context.
+- `Clean` is blocked when the manifest is missing or invalid even though it does not use active build-option arguments.
+- The user opens no workspace folder or a multi-root workspace, making Build Workflow unsupported.
 
 ## Requirements *(mandatory)*
 
@@ -103,11 +108,11 @@ As a firmware developer, I want build actions to derive their arguments from the
 - **FR-018**: The `target-display` portion of workflow task labels MUST use the target short display name when one exists and otherwise MUST use the full target name.
 - **FR-019**: The system MUST derive the effective `Build`, `Clippy`, and `Check` workflow arguments from the active model, target, component, and currently applicable build-option selections.
 - **FR-020**: The system MUST use the same effective configuration for `Build`, `Clippy`, and `Check`, differing only by the workflow action being run.
-- **FR-021**: The `Clean` workflow MUST run without active build-option arguments.
+- **FR-021**: The `Clean` workflow MUST run without active build-option arguments when it is allowed to start.
 - **FR-022**: The Configuration view header MUST expose `Build`, `Clippy`, `Check`, and `Clean` actions only after their behavior is implemented in this slice.
 - **FR-022A**: The Configuration view header MUST keep `Build`, `Clippy`, `Check`, and `Clean` visible when they are blocked, and blocked actions MUST be disabled rather than hidden.
-- **FR-023**: If the manifest is missing, invalid, or contains any invalid build-option `when` logic, the system MUST prevent `Build`, `Clippy`, and `Check` from starting and MUST show visible failure feedback.
-- **FR-024**: If the workspace is unsupported, the system MUST prevent all four workflow actions from starting and MUST show visible failure feedback.
+- **FR-023**: If the manifest is missing, invalid, or contains any invalid build-option `when` logic, the system MUST prevent `Build`, `Clippy`, `Check`, and `Clean` from starting and MUST show visible failure feedback.
+- **FR-024**: If the workspace has no open folder or has more than one open workspace folder, the system MUST treat it as unsupported, MUST prevent all four workflow actions from starting, and MUST show visible failure feedback.
 - **FR-025**: If a workflow task fails after starting, the system MUST show a visible failure notification and MUST write a persistent log entry for the failure.
 - **FR-026**: This feature MUST NOT implement Build Artifacts section behavior, build-artifact status refresh, Flash/Upload actions, Debug launch, IntelliSense refresh, compile-commands refresh, or excluded-file visibility behavior.
 
@@ -122,16 +127,16 @@ As a firmware developer, I want build actions to derive their arguments from the
 
 - Supported host/version: VS Code 1.110+.
 - Source of truth inputs: Workspace settings, the manifest file, the active build-context selection restored by the previous slice, and workspace-scoped persisted build-option values.
-- Workspace assumptions: Single-root workspace only.
+- Workspace assumptions: Single-root workspace only; a workspace with no open folder or with more than one open workspace folder is unsupported for this slice.
 - Compatibility exclusions: Multi-root workspaces, alternate manifest sources, Build Artifact behaviors, Flash/Upload actions, Debug launch, IntelliSense integration, and excluded-file visibility are out of scope.
 
 ## Failure Modes & Diagnostics *(mandatory)*
 
 - **Trigger**: The manifest is missing, invalid, or contains any invalid build-option `when` logic.
-  - **User-visible response**: `Build`, `Clippy`, and `Check` remain visible but disabled in the Configuration view header, do not start, and the user sees a specific error explaining that the manifest is invalid for Build Workflow.
+  - **User-visible response**: `Build`, `Clippy`, `Check`, and `Clean` remain visible but disabled in the Configuration view header, do not start, and the user sees a specific error explaining that the manifest is invalid for Build Workflow.
   - **Persistent signal**: Manifest diagnostics for actionable manifest problems and a dedicated log entry.
 - **Trigger**: The workspace is unsupported for workflow execution.
-  - **User-visible response**: `Build`, `Clippy`, `Check`, and `Clean` remain visible but disabled in the Configuration view header, do not start, and the user sees a specific unsupported-workspace error.
+  - **User-visible response**: `Build`, `Clippy`, `Check`, and `Clean` remain visible but disabled in the Configuration view header, do not start, and the user sees a specific unsupported-workspace error explaining that Build Workflow requires exactly one open workspace folder.
   - **Persistent signal**: Dedicated log entry.
 - **Trigger**: A workflow task starts and then fails.
   - **User-visible response**: The user sees a failure notification tied to the workflow action that ran.
@@ -153,5 +158,5 @@ As a firmware developer, I want build actions to derive their arguments from the
 
 - The Configuration Experience slice already provides stable active model, target, and component selection, workspace persistence, and the Configuration tree surface.
 - Manifest-authored build-option flags and states are the only supported source for Build Option behavior in this slice.
-- Users expect `Build`, `Clippy`, and `Check` to honor the same effective configuration, while `Clean` remains context-independent except for workspace support.
+- Users expect `Build`, `Clippy`, and `Check` to honor the same effective configuration, while `Clean` remains context-independent with respect to build-option arguments but still participates in Build Workflow blocking rules.
 - Successful workflow execution in this slice does not automatically refresh Build Artifacts, IntelliSense state, or other later-slice surfaces.

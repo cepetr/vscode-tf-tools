@@ -237,7 +237,7 @@ Task command mapping:
 
 `Clean` does not use active-configuration-derived arguments.
 
-Command handlers for Build, Clippy, and Check validate manifest status and workspace constraints before delegating to the task provider. Clean validates workspace constraints only.
+Command handlers for Build, Clippy, Check, and Clean validate manifest status and workspace constraints before delegating to the task provider. `Clean` still does not use active-configuration-derived arguments, but it is blocked when manifest state is invalid for Build Workflow.
 
 Additional command behavior:
 
