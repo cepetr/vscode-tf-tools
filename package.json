@@ -55,6 +55,12 @@
           "description": "Path to the tf-tools manifest file, relative to the workspace root.",
           "scope": "resource"
         },
+        "tfTools.cargoWorkspacePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the cargo workspace directory used for build tasks, relative to the workspace root. Defaults to the workspace root when empty.",
+          "scope": "resource"
+        },
         "tfTools.showConfigurationInStatusBar": {
           "type": "boolean",
           "default": true,

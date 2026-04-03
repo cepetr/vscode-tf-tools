@@ -22,3 +22,15 @@ export function hasSupportedWorkspace(): boolean {
   const folders = vscode.workspace.workspaceFolders;
   return folders !== undefined && folders.length > 0;
 }
+
+/**
+ * Returns true when the workspace is supported for Build Workflow.
+ * Build Workflow requires exactly one open workspace folder (FR-024).
+ * - No folders: unsupported
+ * - More than one folder: unsupported (multi-root)
+ * - Exactly one folder: supported
+ */
+export function isWorkflowWorkspaceSupported(): boolean {
+  const folders = vscode.workspace.workspaceFolders;
+  return folders !== undefined && folders.length === 1;
+}
