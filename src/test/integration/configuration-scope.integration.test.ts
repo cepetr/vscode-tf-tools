@@ -38,7 +38,7 @@ suite("Scope guard — no cross-slice commands (FR-016/FR-017)", () => {
     const tfCommands = allCommands.filter((cmd) => cmd.startsWith("tfTools."));
 
     // Allowed commands in this feature slice
-    const ALLOWED = new Set(["tfTools.showLogs", "tfTools.revealConfiguration"]);
+    const ALLOWED = new Set(["tfTools.showLogs"]);
 
     const unexpected = tfCommands.filter((cmd) => !ALLOWED.has(cmd));
     assert.deepStrictEqual(

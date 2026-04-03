@@ -6,7 +6,7 @@ This contract captures the user-visible VS Code surfaces introduced by the Confi
 
 ## Views
 
-- **Activity Bar Container**: `Trezor Firmware Tools`
+- **Activity Bar Container**: `Trezor`
 - **Primary View**: `Configuration`
 - **View Model**:
   - top-level sections are `Build Context`, `Build Options`, and `Build Artifacts`

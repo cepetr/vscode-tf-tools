@@ -24,7 +24,7 @@
       "activitybar": [
         {
           "id": "tf-tools",
-          "title": "Trezor Firmware Tools",
+          "title": "Trezor",
           "icon": "images/tf-tools.svg"
         }
       ]
@@ -43,11 +43,6 @@
       {
         "command": "tfTools.showLogs",
         "title": "Show Logs",
-        "category": "Trezor"
-      },
-      {
-        "command": "tfTools.revealConfiguration",
-        "title": "Reveal Configuration View",
         "category": "Trezor"
       }
     ],

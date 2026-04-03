@@ -29,12 +29,10 @@ let _manifestState: ManifestState | undefined;
 //
 // Allowed commands:
 //   tfTools.showLogs          — reveal the output channel
-//   tfTools.revealConfiguration — reveal the configuration tree view
 // ---------------------------------------------------------------------------
 
 const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
   "tfTools.showLogs",
-  "tfTools.revealConfiguration",
 ]);
 
 /**
@@ -113,12 +111,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.showLogs", () => {
       revealLogs();
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("tfTools.revealConfiguration", () => {
-      vscode.commands.executeCommand("tfTools.configuration.focus");
     })
   );
 

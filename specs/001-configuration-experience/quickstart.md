@@ -16,7 +16,7 @@ Verify the first feature slice end-to-end in a VS Code Extension Development Hos
 ## Scenario 1: Valid manifest renders configuration UI
 
 1. Launch the extension in an Extension Development Host against a fixture workspace with a valid manifest.
-2. Open the `Trezor Firmware Tools` activity-bar container.
+2. Open the `Trezor` activity-bar container.
 3. Confirm the `Configuration` view shows the top-level sections `Build Context`, `Build Options`, and `Build Artifacts`.
 4. Confirm `Build Context` shows interactive `Model`, `Target`, and `Component` rows.
 5. Confirm `Build Options` and `Build Artifacts` show placeholder or status content only.

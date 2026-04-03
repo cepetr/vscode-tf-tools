@@ -108,7 +108,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 ### UI-01 Activity Bar Surface
 
-- The extension shall contribute an activity-bar container named `Trezor Firmware Tools`.
+- The extension shall contribute an activity-bar container named `Trezor`.
 - The extension shall use `images/tf-tools-logo.png` as the extension icon shown in the VS Code extensions view.
 - The activity-bar container shall use `images/tf-tools.svg` as its icon.
 - The container shall expose a single view named `Configuration`.

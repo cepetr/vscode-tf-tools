@@ -38,7 +38,7 @@ export class StatusBarPresenter implements vscode.Disposable {
       vscode.StatusBarAlignment.Left,
       100
     );
-    this._item.command = "tfTools.revealConfiguration";
+    this._item.command = "tfTools.configuration.focus";
   }
 
   /**
