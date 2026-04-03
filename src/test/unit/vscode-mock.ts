@@ -120,6 +120,7 @@ class RelativePattern {
 class TreeItem {
   public contextValue: string | undefined;
   public description: string | undefined;
+  public iconPath: unknown;
   public collapsibleState: number;
   constructor(
     public label: string,
@@ -127,6 +128,10 @@ class TreeItem {
   ) {
     this.collapsibleState = collapsibleState;
   }
+}
+
+class ThemeIcon {
+  constructor(public readonly id: string) {}
 }
 
 const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 };
@@ -145,6 +150,7 @@ module.exports = {
   EventEmitter,
   RelativePattern,
   TreeItem,
+  ThemeIcon,
   TreeItemCollapsibleState,
   StatusBarAlignment,
 };
