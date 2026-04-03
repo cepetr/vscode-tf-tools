@@ -1,0 +1,15 @@
+out/**
+test-fixtures/**
+src/test/**
+node_modules/**
+.vscode-test/**
+*.vsix
+.gitignore
+.eslintignore
+eslint.config.mjs
+tsconfig.json
+.github/**
+specs/**
+informal_spec/**
+launch.json
+images/**
