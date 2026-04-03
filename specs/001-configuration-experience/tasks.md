@@ -71,12 +71,12 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T021 [P] [US2] Add unit tests for active-configuration normalization in `src/test/unit/configuration/normalize-config.test.ts`
+- [X] T021 [P] [US2] Add unit tests for active-configuration normalization in `src/test/unit/configuration/normalize-config.test.ts`
 - [ ] T022 [P] [US2] Add integration tests for build-context selector behavior in `src/test/integration/build-context-selection.integration.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T023 [P] [US2] Implement model, target, and component normalization helpers in `src/configuration/normalize-config.ts`
+- [X] T023 [P] [US2] Implement model, target, and component normalization helpers in `src/configuration/normalize-config.ts`
 - [ ] T024 [P] [US2] Implement workspace-scoped active-configuration storage and mutation helpers in `src/configuration/active-config.ts`
 - [ ] T025 [US2] Implement interactive build-context selector rows and selection commands in `src/ui/configuration-tree.ts`
 - [ ] T026 [US2] Integrate selector updates, manifest normalization, and tree refresh in `src/extension.ts`
