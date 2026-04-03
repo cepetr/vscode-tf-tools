@@ -74,7 +74,7 @@
 - **Purpose**: Represents the visible status-bar item for the active configuration.
 - **Fields**:
   - `visible`: boolean derived from workspace settings and manifest availability
-  - `text`: formatted as `{model-id} | {target-display} | {component-name}`
+  - `text`: formatted as `{model-name} | {target-display} | {component-name}`
   - `command`: reveal configuration view
 - **Validation rules**:
   - `target-display` uses `shortName` when present, otherwise target `name`

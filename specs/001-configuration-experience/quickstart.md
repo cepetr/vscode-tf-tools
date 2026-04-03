@@ -21,7 +21,7 @@ Verify the first feature slice end-to-end in a VS Code Extension Development Hos
 4. Confirm `Build Context` shows interactive `Model`, `Target`, and `Component` rows.
 5. Confirm `Build Options` and `Build Artifacts` show placeholder or status content only.
 6. Change each selector and confirm the active values update immediately.
-7. Confirm the status bar shows `{model-id} | {target-display} | {component-name}`.
+7. Confirm the status bar shows `{model-name} | {target-display} | {component-name}`.
 
 ## Scenario 2: Reload restores normalized selection
 

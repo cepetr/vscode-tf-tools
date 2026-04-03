@@ -185,7 +185,7 @@ suite("StatusBarPresenter rendering", () => {
     const manifest = makeLoadedState();
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() };
     const text = formatStatusBarText(manifest, config);
-    assert.strictEqual(text, "T2T1 | HW | Core");
+    assert.strictEqual(text, "Trezor Model T | HW | Core");
   });
 
   test("formatStatusBarText uses shortName for target when present", () => {

@@ -56,9 +56,9 @@ suite("formatStatusBarText – text formatting", () => {
     assert.ok(text?.includes("Emulator"), `expected 'Emulator' in ${String(text)}`);
   });
 
-  test("formats text as {model-id} | {target-display} | {component-name}", () => {
+  test("formats text as {model-name} | {target-display} | {component-name}", () => {
     const text = formatStatusBarText(makeLoadedState(), config("T2T1", "hw", "core"));
-    assert.strictEqual(text, "T2T1 | HW | Core");
+    assert.strictEqual(text, "Trezor Model T | HW | Core");
   });
 
   test("uses component name (not id) in the formatted string", () => {
@@ -66,15 +66,15 @@ suite("formatStatusBarText – text formatting", () => {
     assert.ok(text?.endsWith("Prodtest"), `expected component name 'Prodtest' at end: ${String(text)}`);
   });
 
-  test("uses model id (not name) in the formatted string", () => {
+  test("uses model name (not id) in the formatted string", () => {
     const text = formatStatusBarText(makeLoadedState(), config("T3W1", "emu", "core"));
-    assert.ok(text?.startsWith("T3W1"), `expected model id 'T3W1' at start: ${String(text)}`);
-    assert.ok(!text?.includes("Trezor Model T3"), "expected model name not to appear");
+    assert.ok(text?.startsWith("Trezor Model T3"), `expected model name 'Trezor Model T3' at start: ${String(text)}`);
+    assert.ok(!text?.includes("T3W1"), "expected model id not to appear");
   });
 
   test("second entry values produce a correctly formatted string", () => {
     const text = formatStatusBarText(makeLoadedState(), config("T3W1", "emu", "prodtest"));
-    assert.strictEqual(text, "T3W1 | Emulator | Prodtest");
+    assert.strictEqual(text, "Trezor Model T3 | Emulator | Prodtest");
   });
 });
 

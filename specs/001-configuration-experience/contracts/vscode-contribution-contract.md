@@ -27,7 +27,7 @@ This contract captures the user-visible VS Code surfaces introduced by the Confi
 ## Status Bar
 
 - **Visibility Setting**: `tfTools.showConfigurationInStatusBar`
-- **Display Format**: `{model-id} | {target-display} | {component-name}`
+- **Display Format**: `{model-name} | {target-display} | {component-name}`
 - **Activation Behavior**: selecting the item reveals the `Configuration` view
 
 ## Commands

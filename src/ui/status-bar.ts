@@ -5,7 +5,7 @@ import { ActiveConfig } from "../configuration/active-config";
 /**
  * Formats the status-bar text for the active build configuration.
  *
- * Format: `{model-id} | {target-display} | {component-name}`
+ * Format: `{model-name} | {target-display} | {component-name}`
  * - `target-display` is `shortName` when set, otherwise `name`
  * - Returns `undefined` when any id does not resolve to a manifest entry
  */
@@ -22,7 +22,7 @@ export function formatStatusBarText(
   }
 
   const targetDisplay = target.shortName ?? target.name;
-  return `${model.id} | ${targetDisplay} | ${component.name}`;
+  return `${model.name} | ${targetDisplay} | ${component.name}`;
 }
 
 /**

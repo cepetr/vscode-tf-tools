@@ -64,7 +64,7 @@ The user shall be able to select the active model, target, and component from in
 
 ### HR-03 Active Configuration Status Bar
 
-The user shall be able to see the active build configuration in the VS Code status bar. The status-bar text shall use the format `{model-id} | {target-display} | {component-name}`, for example `T2T1 | Hardware | Prodtest`. Selecting the status-bar item shall reveal the extension's configuration view so the user can change the active model, target, or component.
+The user shall be able to see the active build configuration in the VS Code status bar. The status-bar text shall use the format `{model-name} | {target-display} | {component-name}`, for example `Trezor Model T | Hardware | Prodtest`. Selecting the status-bar item shall reveal the extension's configuration view so the user can change the active model, target, or component.
 
 ### HR-04 Manifest-Driven Build Options
 

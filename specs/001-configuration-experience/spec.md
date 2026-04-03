@@ -15,7 +15,7 @@
 
 ### Session 2026-04-03
 
-- Q: What exact format should the status-bar item use for the active configuration? → A: `{model-id} | {target-display} | {component-name}`.
+- Q: What exact format should the status-bar item use for the active configuration? → A: `{model-name} | {target-display} | {component-name}`.
 - Q: Should this feature expose `Build` or `Debug` actions in the view title bar? → A: No. This feature does not expose `Build` or `Debug` view-title actions.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -63,7 +63,7 @@ As a firmware developer, I want the chosen configuration to remain visible after
 **Acceptance Scenarios**:
 
 1. **Given** a valid active selection, **When** the user reloads the workspace, **Then** the extension restores the same selection if it is still valid.
-2. **Given** status-bar visibility is enabled, **When** the active selection changes, **Then** the status bar updates without requiring a reload and shows the text `{model-id} | {target-display} | {component-name}` for the current selection.
+2. **Given** status-bar visibility is enabled, **When** the active selection changes, **Then** the status bar updates without requiring a reload and shows the text `{model-name} | {target-display} | {component-name}` for the current selection.
 3. **Given** status-bar visibility is enabled, **When** the user activates the status-bar item, **Then** the extension reveals the configuration view so the user can adjust the selection.
 
 ### Edge Cases
@@ -88,7 +88,7 @@ As a firmware developer, I want the chosen configuration to remain visible after
 - **FR-008**: When restored values are absent from the current manifest, the system MUST replace them with valid manifest-defined defaults and discard invalid persisted values.
 - **FR-009**: The system MUST keep the configuration view synchronized with manifest changes so stale choices are not shown after the manifest is updated.
 - **FR-010**: The system MUST provide a status-bar surface for the active configuration when that surface is enabled in workspace settings.
-- **FR-011**: The status-bar surface MUST display the active configuration in the format `{model-id} | {target-display} | {component-name}` and update whenever the active selection changes.
+- **FR-011**: The status-bar surface MUST display the active configuration in the format `{model-name} | {target-display} | {component-name}` and update whenever the active selection changes.
 - **FR-012**: Activating the status-bar surface MUST reveal the configuration view.
 - **FR-013**: The system MUST produce persistent diagnostics for actionable manifest validation problems so users can inspect them after transient notifications disappear.
 - **FR-014**: The system MUST record configuration-related runtime warnings and errors in a dedicated persistent log surface.
