@@ -10,7 +10,7 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 - **Build Options section**:
   - renders manifest-defined options instead of placeholder-only content
   - preserves grouped and ungrouped manifest declaration order
-  - shows checkbox options as direct toggle rows
+  - shows checkbox options as native checkbox rows (VS Code `checkboxState`); toggled via `onDidChangeCheckboxState`
   - shows multistate options as selector-style parent rows with inline active state
   - only one multistate choice list is open at a time; expanding one collapses the previous
   - omits options whose `when` expression evaluates to `false`

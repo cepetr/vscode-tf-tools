@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
 import { resolveManifestUri, isStatusBarEnabled } from "./workspace/settings";
 import { ManifestService } from "./manifest/manifest-service";
-import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem } from "./ui/configuration-tree";
+import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
 import { disposeLogChannel, revealLogs, logManifestState } from "./observability/log-channel";
 import { disposeDiagnostics, handleManifestStateDiagnostics } from "./observability/diagnostics";
@@ -153,6 +153,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         if (_treeProvider?.getExpandedMultistateKey() === element.optionKey) {
           _treeProvider.setExpandedMultistateKey(undefined);
         }
+      }
+    }),
+    _configurationTreeView.onDidChangeCheckboxState(async ({ items }) => {
+      for (const [element, state] of items) {
+        if (!(element instanceof BuildOptionCheckboxItem)) {
+          continue;
+        }
+        const newValue = state === vscode.TreeItemCheckboxState.Checked;
+        await writeBuildOption(context, element.optionKey, newValue);
+      }
+      const manifestState = _manifestState;
+      if (manifestState) {
+        _resolvedOptions = computeResolvedOptions(manifestState, _activeConfig, context);
+        _treeProvider?.update(manifestState, _activeConfig, _resolvedOptions);
       }
     })
   );

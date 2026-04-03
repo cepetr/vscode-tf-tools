@@ -113,13 +113,9 @@ export class BuildOptionCheckboxItem extends vscode.TreeItem {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.id = `build-option:${optionKey}`;
     this.contextValue = "build-option-checkbox";
-    this.description = checked ? "on" : "off";
-    this.iconPath = new vscode.ThemeIcon(checked ? "check" : "circle-outline");
-    this.command = {
-      title: `Toggle ${label}`,
-      command: TOGGLE_BUILD_OPTION_COMMAND,
-      arguments: [optionKey],
-    };
+    this.checkboxState = checked
+      ? vscode.TreeItemCheckboxState.Checked
+      : vscode.TreeItemCheckboxState.Unchecked;
   }
 }
 
