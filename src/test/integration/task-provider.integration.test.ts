@@ -12,8 +12,10 @@
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { formatTaskLabel, CLEAN_TASK_LABEL } from "../../commands/build-workflow";
-import { buildTaskLabel } from "../../tasks/build-task-provider";
+import { CLEAN_TASK_LABEL, blockReasonMessage } from "../../commands/build-workflow";
+import { buildTaskLabel, createWorkflowTask, resolveWorkflowContext } from "../../tasks/build-task-provider";
+import { logWorkflowFailure } from "../../observability/log-channel";
+import { ManifestStateLoaded } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
 // Suite: task label formatting integration
@@ -80,42 +82,38 @@ suite("Build Task Provider – VS Code registration", () => {
 suite("Build Task Provider – task failure visibility (T031)", () => {
   test("logWorkflowFailure writes a persistent log entry", () => {
     // Test that the log function runs without throwing
-    const { logWorkflowFailure } = require("../../observability/log-channel");
     assert.doesNotThrow(() => {
       logWorkflowFailure("Build", "Test failure for integration test");
     });
   });
 
   test("blocked workflow action reports correct message via blockReasonMessage", () => {
-    const { blockReasonMessage } = require("../../commands/build-workflow");
     const msg = blockReasonMessage("manifest-invalid");
     assert.ok(typeof msg === "string" && msg.length > 0);
   });
 
   test("workspace-unsupported reason produces non-empty message", () => {
-    const { blockReasonMessage } = require("../../commands/build-workflow");
     const msg = blockReasonMessage("workspace-unsupported");
     assert.ok(typeof msg === "string" && msg.length > 0);
   });
 
   test("build task defines a shell execution", () => {
-    const {
-      createWorkflowTask,
-      resolveWorkflowContext,
-    } = require("../../tasks/build-task-provider");
     const activeConfig = {
       modelId: "T2T1",
       targetId: "hw",
       componentId: "core",
       persistedAt: "2026-01-01T00:00:00Z",
     };
-    const state = {
+    const state: ManifestStateLoaded = {
       status: "loaded",
-      models: [{ id: "T2T1", name: "Model T" }],
-      targets: [{ id: "hw", name: "Hardware", shortName: "HW" }],
-      components: [{ id: "core", name: "Core" }],
+      manifestUri: vscode.Uri.file("/fake/tf-tools.yaml"),
+      models: [{ kind: "model" as const, id: "T2T1", name: "Model T" }],
+      targets: [{ kind: "target" as const, id: "hw", name: "Hardware", shortName: "HW" }],
+      components: [{ kind: "component" as const, id: "core", name: "Core" }],
       buildOptions: [],
       hasWorkflowBlockingIssues: false,
+      validationIssues: [],
+      loadedAt: new Date("2026-01-01T00:00:00Z"),
     };
     const wfCtx = resolveWorkflowContext(state, activeConfig);
     assert.ok(wfCtx, "expected valid workflow context");

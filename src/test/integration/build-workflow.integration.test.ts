@@ -17,9 +17,7 @@ import { parseManifest } from "../../manifest/validate-manifest";
 import {
   evaluateWorkflowPreconditions,
   blockReasonMessage,
-  WorkflowBlockReason,
 } from "../../commands/build-workflow";
-import { isWorkflowWorkspaceSupported } from "../../workspace/workspace-guard";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -41,7 +39,6 @@ function fixtureManifestSource(fixtureName: string): string {
 
 suite("Build Workflow – evaluateWorkflowPreconditions", () => {
   test("returns 'no-block' for a valid loaded manifest", () => {
-    const parsed = parseManifest(fixtureManifestSource("valid-basic"));
     const result = evaluateWorkflowPreconditions({
       manifestStatus: "loaded",
       hasWorkflowBlockingIssues: false,
@@ -144,12 +141,7 @@ suite("Build Workflow – command registration", () => {
 
 suite("Build Workflow – blocked manifest (T030)", () => {
   test("invalid-when manifest marks hasWorkflowBlockingIssues", () => {
-    const fixturePath = path.resolve(
-      __dirname,
-      "../../../test-fixtures/manifests/invalid-when/tf-tools.yaml"
-    );
-    const src = fs.readFileSync(fixturePath, "utf-8");
-    const parsed = parseManifest(src);
+    const parsed = parseManifest(fixtureManifestSource("invalid-when"));
     assert.strictEqual(parsed.hasWorkflowBlockingIssues, true);
   });
 

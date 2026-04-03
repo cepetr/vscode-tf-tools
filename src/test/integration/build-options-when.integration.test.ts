@@ -5,7 +5,6 @@
  * Runs inside the VS Code extension host via @vscode/test-electron.
  */
 import * as assert from "assert";
-import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { parseManifest } from "../../manifest/validate-manifest";

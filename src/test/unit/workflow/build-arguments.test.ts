@@ -10,7 +10,6 @@ import * as assert from "assert";
 import {
   deriveWorkflowArguments,
   deriveCleanArguments,
-  WorkflowKind,
 } from "../../../commands/build-workflow";
 import { ResolvedOption } from "../../../configuration/build-options";
 import { BuildOption } from "../../../manifest/manifest-types";

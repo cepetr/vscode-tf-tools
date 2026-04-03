@@ -14,7 +14,6 @@ import * as vscode from "vscode";
 import {
   WorkflowKind,
   WorkflowContext,
-  CLEAN_TASK_LABEL,
   deriveWorkflowArguments,
   deriveCleanArguments,
   formatTaskLabel,
