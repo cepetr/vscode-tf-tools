@@ -86,3 +86,14 @@ export function logManifestState(state: ManifestState): void {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Workflow failure logging (FR-025)
+// ---------------------------------------------------------------------------
+
+/**
+ * Logs a persistent failure record for a blocked or failed workflow action.
+ */
+export function logWorkflowFailure(kind: string, message: string): void {
+  log(`[ERROR] Workflow ${kind} blocked/failed: ${message}`);
+}

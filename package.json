@@ -44,8 +44,60 @@
         "command": "tfTools.showLogs",
         "title": "Show Logs",
         "category": "Trezor"
+      },
+      {
+        "command": "tfTools.build",
+        "title": "Build",
+        "category": "Trezor",
+        "icon": "$(play)"
+      },
+      {
+        "command": "tfTools.clippy",
+        "title": "Clippy",
+        "category": "Trezor",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "tfTools.check",
+        "title": "Check",
+        "category": "Trezor",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "tfTools.clean",
+        "title": "Clean",
+        "category": "Trezor",
+        "icon": "$(trash)"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "tfTools.build",
+          "when": "view == tfTools.configuration",
+          "group": "navigation@1",
+          "enablement": "!tfTools.workflowBlocked"
+        },
+        {
+          "command": "tfTools.clippy",
+          "when": "view == tfTools.configuration",
+          "group": "navigation@2",
+          "enablement": "!tfTools.workflowBlocked"
+        },
+        {
+          "command": "tfTools.check",
+          "when": "view == tfTools.configuration",
+          "group": "navigation@3",
+          "enablement": "!tfTools.workflowBlocked"
+        },
+        {
+          "command": "tfTools.clean",
+          "when": "view == tfTools.configuration",
+          "group": "navigation@4",
+          "enablement": "!tfTools.workflowBlocked"
+        }
+      ]
+    },
     "configuration": {
       "title": "Trezor Firmware Tools",
       "properties": {
