@@ -46,18 +46,18 @@
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T012 [P] [US1] Add unit tests for manifest parsing and validation issue generation in `src/test/unit/manifest/validate-manifest.test.ts`
-- [ ] T013 [P] [US1] Add integration tests for valid, missing, and invalid manifest health states in `src/test/integration/configuration-health.integration.test.ts`
-- [ ] T014 [P] [US1] Add integration tests that assert no `Build` or `Debug` title-bar actions and no cross-slice commands are exposed in `src/test/integration/configuration-scope.integration.test.ts`
+- [X] T012 [P] [US1] Add unit tests for manifest parsing and validation issue generation in `src/test/unit/manifest/validate-manifest.test.ts`
+- [X] T013 [P] [US1] Add integration tests for valid, missing, and invalid manifest health states in `src/test/integration/configuration-health.integration.test.ts`
+- [X] T014 [P] [US1] Add integration tests that assert no `Build` or `Debug` title-bar actions and no cross-slice commands are exposed in `src/test/integration/configuration-scope.integration.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T015 [P] [US1] Implement manifest issue to diagnostic translation in `src/observability/diagnostics.ts`
-- [ ] T016 [P] [US1] Implement the `Trezor: Show Logs` command and output-channel reveal flow in `src/observability/log-channel.ts` and `src/extension.ts`
-- [ ] T017 [US1] Implement configuration-view health states for loaded, missing, and invalid manifests in `src/ui/configuration-tree.ts`
-- [ ] T018 [US1] Implement manifest failure notifications and refresh debouncing in `src/manifest/manifest-service.ts`
-- [ ] T019 [US1] Add explicit activation guards that prevent `Build`, `Debug`, and other cross-slice commands from being contributed in `src/extension.ts`
-- [ ] T020 [US1] Connect manifest status changes to the tree view, diagnostics, and logs in `src/extension.ts`
+- [X] T015 [P] [US1] Implement manifest issue to diagnostic translation in `src/observability/diagnostics.ts`
+- [X] T016 [P] [US1] Implement the `Trezor: Show Logs` command and output-channel reveal flow in `src/observability/log-channel.ts` and `src/extension.ts`
+- [X] T017 [US1] Implement configuration-view health states for loaded, missing, and invalid manifests in `src/ui/configuration-tree.ts`
+- [X] T018 [US1] Implement manifest failure notifications and refresh debouncing in `src/manifest/manifest-service.ts`
+- [X] T019 [US1] Add explicit activation guards that prevent `Build`, `Debug`, and other cross-slice commands from being contributed in `src/extension.ts`
+- [X] T020 [US1] Connect manifest status changes to the tree view, diagnostics, and logs in `src/extension.ts`
 
 **Checkpoint**: User Story 1 should now be functional and independently testable.
 
