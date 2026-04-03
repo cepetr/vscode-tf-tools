@@ -3,7 +3,7 @@
   "displayName": "Trezor Firmware Tools",
   "description": "Build context configuration and tooling for the trezor-firmware repository.",
   "version": "0.1.0",
-  "publisher": "trezor",
+  "publisher": "cepetr",
   "repository": {
     "type": "git",
     "url": "https://github.com/cepetr/tf-tools.git"
