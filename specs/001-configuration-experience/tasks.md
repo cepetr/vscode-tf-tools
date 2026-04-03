@@ -111,7 +111,7 @@
 
 **Purpose**: Final consistency, documentation, and end-to-end validation for the completed feature.
 
-- [ ] T033 Validate end-to-end diagnostics, logging, and reload scenarios from `specs/001-configuration-experience/quickstart.md`
+- [X] T033 Validate end-to-end diagnostics, logging, and reload scenarios from `specs/001-configuration-experience/quickstart.md`
 
 ---
 
