@@ -21,18 +21,30 @@ suite("SectionItem icons", () => {
 
 suite("SelectorHeaderItem icons", () => {
   test("uses a distinct icon for model", () => {
-    const item = new SelectorHeaderItem("model", "Model", "T2T1");
+    const item = new SelectorHeaderItem("model", "Model", "T2T1", false);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "circuit-board");
   });
 
   test("uses a distinct icon for target", () => {
-    const item = new SelectorHeaderItem("target", "Target", "hw");
+    const item = new SelectorHeaderItem("target", "Target", "hw", false);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "target");
   });
 
   test("uses a distinct icon for component", () => {
-    const item = new SelectorHeaderItem("component", "Component", "core");
+    const item = new SelectorHeaderItem("component", "Component", "core", false);
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "extensions");
+  });
+
+  test("uses expanded collapsible state when the selector is open", () => {
+    const item = new SelectorHeaderItem("model", "Model", "T2T1", true);
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+    assert.strictEqual(item.id, "selector:model:expanded");
+  });
+
+  test("uses collapsed collapsible state when the selector is closed", () => {
+    const item = new SelectorHeaderItem("model", "Model", "T2T1", false);
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+    assert.strictEqual(item.id, "selector:model:collapsed");
   });
 });
 

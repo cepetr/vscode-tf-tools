@@ -98,6 +98,7 @@ As a firmware developer, I want the chosen configuration to remain visible after
 - **FR-018**: The configuration tree MUST render `Build Context`, `Build Options`, and `Build Artifacts` as plain-text top-level group headers without dedicated icons, and it MUST use the following VS Code theme icons for selector rows in this slice: `circuit-board` for the `Model` selector, `target` for the `Target` selector, and `extensions` for the `Component` selector.
 - **FR-019**: Expanded selector choice rows in this slice MUST rely on selection state rather than dedicated semantic inactive icons; the active choice may use a `check` icon, and inactive choices MUST render with an empty spacer icon so choice labels remain aligned.
 - **FR-020**: Build-context selector headers MUST display user-facing selected values inline: model `name`, target `shortName` when present otherwise target `name`, and component `name`.
+- **FR-021**: The `Build Context` selectors MUST behave like an accordion: at most one of `Model`, `Target`, or `Component` may be expanded at a time, and expanding one selector MUST collapse any other selector that is currently open.
 
 ### Key Entities *(include if feature involves data)*
 

@@ -79,6 +79,11 @@ const window = {
   showWarningMessage: () => Promise.resolve(undefined),
   showErrorMessage: () => Promise.resolve(undefined),
   registerTreeDataProvider: () => ({ dispose: () => {} }),
+  createTreeView: () => ({
+    onDidExpandElement: () => ({ dispose: () => {} }),
+    onDidCollapseElement: () => ({ dispose: () => {} }),
+    dispose: () => {},
+  }),
 };
 
 const workspace = {

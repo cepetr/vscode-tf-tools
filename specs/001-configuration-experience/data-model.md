@@ -69,6 +69,7 @@
   - only `Build Context` may contain interactive rows in this feature slice
   - placeholder sections may not expose build, artifact, or debug actions
   - selector headers display model `name`, target `shortName` when present otherwise target `name`, and component `name`
+  - `expandedSelector` is either unset or equal to exactly one of `model`, `target`, or `component`
 
 ## Status Bar Presentation
 

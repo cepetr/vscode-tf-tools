@@ -146,6 +146,7 @@ suite("ConfigurationTreeProvider – choice item rendering", () => {
 
   test("model SelectorHeader expands to show all model choice items", () => {
     provider.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
+    provider.setExpandedSelector("model");
     const [modelHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
     const choices = provider.getChildren(modelHeader) as SelectorChoiceItem[];
     assert.strictEqual(choices.length, 2);
@@ -155,6 +156,7 @@ suite("ConfigurationTreeProvider – choice item rendering", () => {
 
   test("active model choice item is marked active, others are inactive", () => {
     provider.update(makeLoadedState(), activeConfig("T3W1", "hw", "core"));
+    provider.setExpandedSelector("model");
     const [modelHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
     const choices = provider.getChildren(modelHeader) as SelectorChoiceItem[];
     const t2t1 = choices.find((c) => c.entryId === "T2T1")!;
@@ -165,6 +167,7 @@ suite("ConfigurationTreeProvider – choice item rendering", () => {
 
   test("target SelectorHeader expands to show all target choice items", () => {
     provider.update(makeLoadedState(), activeConfig("T2T1", "emu", "core"));
+    provider.setExpandedSelector("target");
     const [, targetHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
     const choices = provider.getChildren(targetHeader) as SelectorChoiceItem[];
     assert.strictEqual(choices.length, 2);
@@ -176,9 +179,32 @@ suite("ConfigurationTreeProvider – choice item rendering", () => {
 
   test("component SelectorHeader expands to show all component choice items", () => {
     provider.update(makeLoadedState(), activeConfig("T2T1", "hw", "prodtest"));
+    provider.setExpandedSelector("component");
     const [, , componentHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
     const choices = provider.getChildren(componentHeader) as SelectorChoiceItem[];
     assert.strictEqual(choices.length, 2);
+      test("only one selector header is expanded at a time", () => {
+        provider.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
+
+        provider.setExpandedSelector("model");
+        let [modelHeader, targetHeader, componentHeader] = getBuildContextChildren(
+          provider
+        ) as SelectorHeaderItem[];
+        assert.strictEqual(modelHeader.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+        assert.strictEqual(targetHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+        assert.strictEqual(componentHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+
+        provider.setExpandedSelector("target");
+        [modelHeader, targetHeader, componentHeader] = getBuildContextChildren(
+          provider
+        ) as SelectorHeaderItem[];
+        assert.strictEqual(modelHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+        assert.strictEqual(targetHeader.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+        assert.strictEqual(componentHeader.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+        assert.strictEqual(provider.getChildren(modelHeader).length, 0);
+        assert.strictEqual(provider.getChildren(targetHeader).length, 2);
+      });
+
     const prodtest = choices.find((c) => c.entryId === "prodtest")!;
     assert.strictEqual(prodtest.description, "active");
   });
@@ -209,7 +235,8 @@ suite("ConfigurationTreeProvider – normalization integration", () => {
 
     const [modelHeader] = getBuildContextChildren(provider) as SelectorHeaderItem[];
     // Normalized to first model
-    assert.strictEqual(modelHeader.description, "T2T1");
+    assert.strictEqual(modelHeader.description, "Trezor Model T");
+    provider.setExpandedSelector("model");
     const choices = provider.getChildren(modelHeader) as SelectorChoiceItem[];
     const active = choices.find((c) => c.description === "active");
     assert.ok(active, "expected one choice to be active after normalization");
@@ -225,8 +252,8 @@ suite("ConfigurationTreeProvider – normalization integration", () => {
     const [modelHeader, targetHeader, componentHeader] = getBuildContextChildren(
       provider
     ) as SelectorHeaderItem[];
-    assert.strictEqual(modelHeader.description, "T2T1");
-    assert.strictEqual(targetHeader.description, "hw");
-    assert.strictEqual(componentHeader.description, "core");
+    assert.strictEqual(modelHeader.description, "Trezor Model T");
+    assert.strictEqual(targetHeader.description, "HW");
+    assert.strictEqual(componentHeader.description, "Core");
   });
 });

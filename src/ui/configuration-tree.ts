@@ -12,6 +12,7 @@ export type SectionId = "build-context" | "build-options" | "build-artifacts";
 export class SectionItem extends vscode.TreeItem {
   constructor(public readonly sectionId: SectionId, label: string) {
     super(label, vscode.TreeItemCollapsibleState.Expanded);
+    this.id = `section:${sectionId}`;
     this.contextValue = sectionId;
     if (sectionId !== "build-context") {
       // Non-interactive placeholder sections collapse by default
@@ -52,9 +53,16 @@ export class SelectorHeaderItem extends vscode.TreeItem {
   constructor(
     public readonly selectorKind: SelectorKind,
     label: string,
-    activeValue: string | undefined
+    activeValue: string | undefined,
+    expanded: boolean
   ) {
-    super(label, vscode.TreeItemCollapsibleState.Collapsed);
+    super(
+      label,
+      expanded
+        ? vscode.TreeItemCollapsibleState.Expanded
+        : vscode.TreeItemCollapsibleState.Collapsed
+    );
+    this.id = `selector:${selectorKind}:${expanded ? "expanded" : "collapsed"}`;
     this.contextValue = `selector-${selectorKind}`;
     this.description = activeValue ?? "—";
     this.iconPath = new vscode.ThemeIcon(SELECTOR_ICONS[selectorKind]);
@@ -99,6 +107,7 @@ export class ConfigurationTreeProvider
 {
   private _state: ManifestState | undefined;
   private _activeConfig: ActiveConfig | undefined;
+  private _expandedSelector: SelectorKind | undefined;
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
     vscode.TreeItem | undefined
@@ -110,7 +119,23 @@ export class ConfigurationTreeProvider
   update(state: ManifestState, activeConfig?: ActiveConfig): void {
     this._state = state;
     this._activeConfig = activeConfig;
+    if (state.status !== "loaded") {
+      this._expandedSelector = undefined;
+    }
     this._onDidChangeTreeData.fire(undefined);
+  }
+
+  setExpandedSelector(selectorKind: SelectorKind | undefined): void {
+    if (this._expandedSelector === selectorKind) {
+      return;
+    }
+
+    this._expandedSelector = selectorKind;
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  getExpandedSelector(): SelectorKind | undefined {
+    return this._expandedSelector;
   }
 
   getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
@@ -137,6 +162,9 @@ export class ConfigurationTreeProvider
     }
 
     if (element instanceof SelectorHeaderItem) {
+      if (this._expandedSelector !== element.selectorKind) {
+        return [];
+      }
       return this._selectorChoices(element.selectorKind);
     }
 
@@ -180,9 +208,24 @@ export class ConfigurationTreeProvider
 
     // Loaded state: show model, target, component selector headers
     return [
-      new SelectorHeaderItem("model", "Model", this._selectedDisplayValue(loaded, "model")),
-      new SelectorHeaderItem("target", "Target", this._selectedDisplayValue(loaded, "target")),
-      new SelectorHeaderItem("component", "Component", this._selectedDisplayValue(loaded, "component")),
+      new SelectorHeaderItem(
+        "model",
+        "Model",
+        this._selectedDisplayValue(loaded, "model"),
+        this._expandedSelector === "model"
+      ),
+      new SelectorHeaderItem(
+        "target",
+        "Target",
+        this._selectedDisplayValue(loaded, "target"),
+        this._expandedSelector === "target"
+      ),
+      new SelectorHeaderItem(
+        "component",
+        "Component",
+        this._selectedDisplayValue(loaded, "component"),
+        this._expandedSelector === "component"
+      ),
     ];
   }
 

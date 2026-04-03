@@ -20,6 +20,9 @@ This contract captures the user-visible VS Code surfaces introduced by the Confi
   - `Component` uses the VS Code `extensions` theme icon
   - active selector choice rows may use the VS Code `check` theme icon
   - inactive selector choice rows use an empty spacer icon so labels stay aligned without a semantic icon
+- **Selector Expansion Model**:
+  - `Model`, `Target`, and `Component` behave like an accordion
+  - expanding one selector collapses any other open selector
 
 ## View Title Actions
 

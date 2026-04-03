@@ -196,6 +196,8 @@ Important structural elements:
 
 The tree view keeps one shared active configuration object and emits change notifications to listeners. Group open state is tracked so selector and multistate rows behave like an accordion.
 
+Implementation note: accordion-style tree rows must be backed by a real `TreeView` instance and expand/collapse event handling, not only by provider-side child filtering. When one row opens and another closes as part of the same interaction, collapse events may arrive after the new expand event. The implementation therefore keeps one authoritative expanded-group value, ignores stale collapse events for rows that are no longer the active group, and gives open/closed variants distinct tree item identities so the chevron state cannot drift from the rendered children.
+
 Checkbox handling is manual so selection state stays synchronized with the active configuration.
 
 The Build Options section preserves YAML order while consolidating repeated group labels under a single heading.

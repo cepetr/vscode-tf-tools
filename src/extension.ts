@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder } from "./workspace/workspace-guard";
 import { resolveManifestUri, isStatusBarEnabled } from "./workspace/settings";
 import { ManifestService } from "./manifest/manifest-service";
-import { ConfigurationTreeProvider } from "./ui/configuration-tree";
+import { ConfigurationTreeProvider, SelectorHeaderItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
 import { disposeLogChannel, revealLogs, logManifestState } from "./observability/log-channel";
 import { disposeDiagnostics, handleManifestStateDiagnostics } from "./observability/diagnostics";
@@ -16,6 +16,7 @@ import { ManifestState } from "./manifest/manifest-types";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
+let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _statusBar: StatusBarPresenter | undefined;
 let _manifestState: ManifestState | undefined;
 
@@ -68,8 +69,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Always register the tree provider so VS Code never shows
   // "no data provider registered" when the activity bar is clicked.
   _treeProvider = new ConfigurationTreeProvider();
+  _configurationTreeView = vscode.window.createTreeView("tfTools.configuration", {
+    treeDataProvider: _treeProvider,
+    showCollapseAll: false,
+  });
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("tfTools.configuration", _treeProvider)
+    _configurationTreeView,
+    _configurationTreeView.onDidExpandElement(({ element }) => {
+      if (element instanceof SelectorHeaderItem) {
+        _treeProvider?.setExpandedSelector(element.selectorKind);
+      }
+    }),
+    _configurationTreeView.onDidCollapseElement(({ element }) => {
+      if (element instanceof SelectorHeaderItem) {
+        if (_treeProvider?.getExpandedSelector() === element.selectorKind) {
+          _treeProvider.setExpandedSelector(undefined);
+        }
+      }
+    })
   );
 
   if (!hasSupportedWorkspace()) {
@@ -154,6 +171,8 @@ export function deactivate(): void {
   _manifestService = undefined;
   _treeProvider?.dispose();
   _treeProvider = undefined;
+  _configurationTreeView?.dispose();
+  _configurationTreeView = undefined;
   _statusBar?.dispose();
   _statusBar = undefined;
   _manifestState = undefined;

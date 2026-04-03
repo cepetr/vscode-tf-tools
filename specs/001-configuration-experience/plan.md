@@ -7,7 +7,7 @@
 
 ## Summary
 
-Deliver the first usable VS Code extension slice for Trezor Firmware Tools: load and validate `tf-tools.yaml` for the configuration context, render the build-context configuration UI, persist and normalize model/target/component selection in workspace state, surface the active configuration in the status bar, and make failures inspectable through diagnostics, notifications, and a dedicated output channel. The implementation will initialize a minimal single-package TypeScript extension scaffold at the repository root, use a manifest service backed by range-aware YAML parsing plus handwritten validation for the configuration slice, and add unit plus integration tests before feature code lands.
+Deliver the first usable VS Code extension slice for Trezor Firmware Tools: load and validate `tf-tools.yaml` for the configuration context, render the build-context configuration UI, persist and normalize model/target/component selection in workspace state, surface the active configuration in the status bar, and make failures inspectable through diagnostics, notifications, and a dedicated output channel. The build-context tree uses accordion-style selector behavior so only one of `Model`, `Target`, or `Component` is open at a time. The implementation will initialize a minimal single-package TypeScript extension scaffold at the repository root, use a manifest service backed by range-aware YAML parsing plus handwritten validation for the configuration slice, and add unit plus integration tests before feature code lands.
 
 ## Informal Spec Alignment
 
@@ -20,12 +20,18 @@ Deliver the first usable VS Code extension slice for Trezor Firmware Tools: load
 **Language/Version**: TypeScript 5.x targeting VS Code 1.110+ desktop extension host
 **Primary Dependencies**: VS Code Extension API, `yaml` for range-aware manifest parsing, Node.js filesystem APIs, Mocha test runner, `@vscode/test-electron` for integration tests
 **Storage**: VS Code workspace settings for manifest path and status-bar visibility, workspace state for active configuration, repository manifest file for build-context source data
-**Testing**: Mocha unit tests for parsing, configuration-context validation, normalization, and status-bar formatting; `@vscode/test-electron` integration tests for build-context rendering, file watching, status-bar updates, diagnostics, and workspace-state restoration; package smoke validation that confirms the bundled extension loads without runtime npm dependencies and that the VSIX contains the expected bundle and icon assets
+**Testing**: Mocha unit tests for parsing, configuration-context validation, normalization, status-bar formatting, and selector accordion state; `@vscode/test-electron` integration tests for build-context rendering, file watching, status-bar updates, diagnostics, workspace-state restoration, and one-open-at-a-time selector behavior; package smoke validation that confirms the bundled extension loads without runtime npm dependencies and that the VSIX contains the expected bundle and icon assets
 **Target Platform**: VS Code 1.110+ desktop extension host on single-root workspaces
 **Project Type**: Single-package VS Code extension initialized at repository root
 **Performance Goals**: Initial manifest load and selection-driven tree/status refresh should feel instantaneous for local manifests with tens of entries; filesystem-triggered refreshes should be debounced to avoid duplicate work and should complete without perceptible UI lag
 **Constraints**: Single-root workspace only, manifest and settings remain authoritative, no silent fallbacks to hardcoded configuration, visible failures through diagnostics or logs, no support below VS Code 1.110, keep identifiers and abstractions minimal while the codebase is being bootstrapped
 **Scale/Scope**: One extension package, one manifest file per opened firmware workspace, one persisted active build-context selection per workspace
+
+## Technical Design Notes
+
+- The `Configuration` tree keeps a single derived `expandedSelector` value for the `Build Context` section.
+- `Model`, `Target`, and `Component` are rendered as accordion selectors: expanding one selector collapses the others.
+- Selector header text is derived from manifest-backed display values while expansion state remains separate from the persisted active configuration.
 
 ## Constitution Check
 
