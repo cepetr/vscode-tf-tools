@@ -99,7 +99,7 @@
 ### Implementation for User Story 3
 
 - [X] T029 [P] [US3] Implement the status-bar presenter and reveal command handling in `src/ui/status-bar.ts`
-- [ ] T030 [P] [US3] Extend persisted active-configuration restore logic in `src/configuration/active-config.ts`
+- [X] T030 [P] [US3] Extend persisted active-configuration restore logic in `src/configuration/active-config.ts`
 - [ ] T031 [US3] Wire status-bar updates and restore-on-activation behavior in `src/extension.ts`
 - [ ] T032 [US3] Handle manifest-change re-normalization for restored selections in `src/manifest/manifest-service.ts` and `src/extension.ts`
 
