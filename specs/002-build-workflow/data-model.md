@@ -4,17 +4,17 @@
 
 - **Purpose**: Represents one manifest-authored build option that can affect UI availability and workflow argument derivation.
 - **Fields**:
-  - `key`: deterministic internal persistence key
-  - `label`: user-visible option name
-  - `flag`: manifest-authored command-line flag
-  - `kind`: `checkbox` or `multistate`
+  - `key`: deterministic internal persistence key (derived from `flag`)
+  - `label`: user-visible option name (from `name:` in manifest)
+  - `flag`: command-line flag emitted when the option is active (explicit `flag:` field or derived as `--{id}` from the `id:` field)
+  - `kind`: `checkbox` or `multistate` (from `type:` or `kind:` in manifest)
   - `group`: optional group heading label
   - `description`: optional tooltip text
   - `when`: optional parsed availability rule
   - `states`: ordered list of multistate values when `kind = multistate`
   - `defaultState`: default multistate value when no explicit selection exists
 - **Validation rules**:
-  - `flag` must be unique across all options
+  - `flag` must be unique across all options (derived flags must therefore also be unique)
   - `kind` must be one of the supported option kinds
   - multistate values must be unique within the option
   - `when`, when present, must parse successfully and reference only known manifest ids

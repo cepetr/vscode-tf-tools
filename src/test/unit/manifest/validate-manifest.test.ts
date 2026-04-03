@@ -556,3 +556,118 @@ buildOptions:
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// parseManifest – canonical "options" schema
+// ---------------------------------------------------------------------------
+
+suite("parseManifest – canonical options schema", () => {
+  function baseManifest(optionsBlock: string): string {
+    return `
+models:
+  - id: t2t1
+    name: T2T1
+targets:
+  - id: hardware
+    name: Hardware
+  - id: emulator
+    name: Emulator
+components:
+  - id: firmware
+    name: Firmware
+${optionsBlock}
+`.trim();
+  }
+
+  test("parses checkbox option using 'options:', 'name:', 'type:', and id-derived flag", () => {
+    const source = baseManifest(`
+options:
+  - id: perf-overlay
+    name: Performance Overlay
+    type: checkbox
+    group: Debugging
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    assert.strictEqual(result.buildOptions.length, 1);
+    const opt = result.buildOptions[0];
+    assert.strictEqual(opt.label, "Performance Overlay");
+    assert.strictEqual(opt.flag, "--perf-overlay");
+    assert.strictEqual(opt.key, "perf_overlay");
+    assert.strictEqual(opt.kind, "checkbox");
+    assert.strictEqual(opt.group, "Debugging");
+  });
+
+  test("parses multistate option with value-based states", () => {
+    const source = baseManifest(`
+options:
+  - id: debug
+    name: Debug Optimization
+    type: multistate
+    states:
+      - value: null
+        name: Default
+        default: true
+      - value: "true"
+        name: Enabled
+      - value: "false"
+        name: Disabled
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const opt = result.buildOptions[0];
+    assert.strictEqual(opt.flag, "--debug");
+    assert.strictEqual(opt.kind, "multistate");
+    assert.strictEqual(opt.states?.length, 3);
+
+    const nullState = opt.states?.find((s) => s.id === "null");
+    assert.ok(nullState, "expected state with id 'null'");
+    assert.strictEqual(nullState!.flag, "");
+
+    const trueState = opt.states?.find((s) => s.id === "true");
+    assert.ok(trueState, "expected state with id 'true'");
+    assert.strictEqual(trueState!.flag, "--debug=true");
+    assert.strictEqual(trueState!.label, "Enabled");
+
+    assert.strictEqual(opt.defaultState, "null");
+  });
+
+  test("derives multistate flag as --{id}={value} for string values", () => {
+    const source = baseManifest(`
+options:
+  - id: dbg-console
+    name: Debug Console
+    type: multistate
+    states:
+      - value: null
+        name: Default
+        default: true
+      - value: vcp
+        name: VCP
+      - value: swo
+        name: SWO
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const opt = result.buildOptions[0];
+    const vcpState = opt.states?.find((s) => s.id === "vcp");
+    assert.ok(vcpState);
+    assert.strictEqual(vcpState!.flag, "--dbg-console=vcp");
+    const swoState = opt.states?.find((s) => s.id === "swo");
+    assert.ok(swoState);
+    assert.strictEqual(swoState!.flag, "--dbg-console=swo");
+  });
+
+  test("parses when expression in canonical schema option", () => {
+    const source = baseManifest(`
+options:
+  - id: production
+    name: Production
+    type: checkbox
+    when: "target(hardware)"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.code === "invalid-when").length, 0);
+    assert.deepStrictEqual(result.buildOptions[0].when, { type: "target", id: "hardware" });
+  });
+});

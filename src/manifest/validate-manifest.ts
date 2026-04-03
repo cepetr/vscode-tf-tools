@@ -265,9 +265,10 @@ function validateBuildOptions(
   const options: BuildOption[] = [];
   let hasWorkflowBlockingIssues = false;
 
-  const seqNode = doc.get("buildOptions", true);
+  // Accept "options" (canonical per user spec) or "buildOptions" (legacy fixtures)
+  const seqNode = doc.get("options", true) ?? doc.get("buildOptions", true);
   if (seqNode === undefined || seqNode === null) {
-    // buildOptions is optional; absence is not an error
+    // options is optional; absence is not an error
     return { options, hasWorkflowBlockingIssues };
   }
 
@@ -277,7 +278,7 @@ function validateBuildOptions(
       issue(
         "error",
         "invalid-type",
-        "buildOptions must be a YAML sequence",
+        "options must be a YAML sequence",
         toVsRange(lineCounter, seqRange.range)
       )
     );
@@ -291,16 +292,36 @@ function validateBuildOptions(
       continue;
     }
 
-    // Required: label
-    const label = validateStringField(item, "label", lineCounter, issues, "buildOptions entry");
+    // Required: label — accept "name" (canonical) or "label" (legacy)
+    let label: string | undefined;
+    const nameNode = item.get("name", true);
+    if (nameNode instanceof Scalar && typeof nameNode.value === "string" && nameNode.value.trim()) {
+      label = nameNode.value;
+    } else {
+      label = validateStringField(item, "label", lineCounter, issues, "options entry");
+    }
     if (!label) {
       continue;
     }
 
-    // Required: flag
-    const flag = validateStringField(item, "flag", lineCounter, issues, `buildOptions entry "${label}"`);
-    if (flag === undefined) {
-      continue;
+    // Required: flag — use explicit "flag" when present; otherwise derive from "id" as --{id}
+    let flag: string | undefined;
+    const explicitFlagNode = item.get("flag", true);
+    if (
+      explicitFlagNode instanceof Scalar &&
+      typeof explicitFlagNode.value === "string" &&
+      explicitFlagNode.value.trim()
+    ) {
+      flag = explicitFlagNode.value;
+    } else {
+      const idNode = item.get("id", true);
+      if (idNode instanceof Scalar && typeof idNode.value === "string" && idNode.value.trim()) {
+        flag = `--${idNode.value}`;
+      } else {
+        // Neither flag nor id — report as missing
+        validateStringField(item, "flag", lineCounter, issues, `options entry "${label}"`);
+        continue;
+      }
     }
 
     // Duplicate flag check
@@ -310,7 +331,7 @@ function validateBuildOptions(
         issue(
           "error",
           "duplicate-flag",
-          `buildOptions: duplicate flag "${flag}" for option "${label}"`,
+          `options: duplicate flag "${flag}" for option "${label}"`,
           toVsRange(lineCounter, flagNode?.range)
         )
       );
@@ -318,21 +339,28 @@ function validateBuildOptions(
     }
     seenFlags.add(flag);
 
-    // Required: kind
-    const kindNode = item.get("kind", true);
-    if (!(kindNode instanceof Scalar) || (kindNode.value !== "checkbox" && kindNode.value !== "multistate")) {
-      const nodeRange = kindNode as unknown as { range?: [number, number, number] };
-      issues.push(
-        issue(
-          "error",
-          "invalid-type",
-          `buildOptions entry "${label}": field "kind" must be "checkbox" or "multistate"`,
-          toVsRange(lineCounter, nodeRange?.range)
-        )
-      );
-      continue;
+    // Required: kind — accept "type" (canonical) or "kind" (legacy)
+    let kind: "checkbox" | "multistate" | undefined;
+    const typeNode = item.get("type", true);
+    if (typeNode instanceof Scalar && (typeNode.value === "checkbox" || typeNode.value === "multistate")) {
+      kind = typeNode.value;
+    } else {
+      const kindNode = item.get("kind", true);
+      if (kindNode instanceof Scalar && (kindNode.value === "checkbox" || kindNode.value === "multistate")) {
+        kind = kindNode.value;
+      } else {
+        const nodeRange = (typeNode ?? kindNode) as unknown as { range?: [number, number, number] };
+        issues.push(
+          issue(
+            "error",
+            "invalid-type",
+            `options entry "${label}": field "type" must be "checkbox" or "multistate"`,
+            toVsRange(lineCounter, nodeRange?.range)
+          )
+        );
+        continue;
+      }
     }
-    const kind = kindNode.value as "checkbox" | "multistate";
 
     // Optional: group
     const groupNode = item.get("group", true);
@@ -358,7 +386,7 @@ function validateBuildOptions(
           issue(
             "error",
             "invalid-when",
-            `buildOptions entry "${label}": "when" must be a string expression`,
+            `options entry "${label}": "when" must be a string expression`,
             toVsRange(lineCounter, nodeRange?.range)
           )
         );
@@ -371,7 +399,7 @@ function validateBuildOptions(
             issue(
               "error",
               "invalid-when",
-              `buildOptions entry "${label}": invalid "when" expression — ${parseResult.error}`,
+              `options entry "${label}": invalid "when" expression — ${parseResult.error}`,
               toVsRange(lineCounter, nodeRange?.range)
             )
           );
@@ -385,7 +413,7 @@ function validateBuildOptions(
               issue(
                 "error",
                 "invalid-when",
-                `buildOptions entry "${label}": "when" expression references unknown ids: ${unknownIds.join(", ")}`,
+                `options entry "${label}": "when" expression references unknown ids: ${unknownIds.join(", ")}`,
                 toVsRange(lineCounter, nodeRange?.range)
               )
             );
@@ -401,7 +429,7 @@ function validateBuildOptions(
     let states: BuildOptionState[] | undefined;
     let defaultState: string | undefined;
     if (kind === "multistate") {
-      const statesResult = validateBuildOptionStates(item, lineCounter, issues, label);
+      const statesResult = validateBuildOptionStates(item, lineCounter, issues, label, flag);
       states = statesResult.states;
       defaultState = statesResult.defaultState;
       if (states.length === 0) {
@@ -414,7 +442,7 @@ function validateBuildOptions(
       key,
       label,
       flag,
-      kind,
+      kind: kind!,
       group,
       description,
       when: whenExpr,
@@ -430,7 +458,8 @@ function validateBuildOptionStates(
   item: YAMLMap,
   lineCounter: LineCounter,
   issues: ValidationIssue[],
-  optionLabel: string
+  optionLabel: string,
+  optionFlag: string
 ): { states: BuildOptionState[]; defaultState: string | undefined } {
   const statesNode = item.get("states", true);
   let defaultState: string | undefined;
@@ -443,7 +472,7 @@ function validateBuildOptionStates(
       issue(
         "error",
         "empty-collection",
-        `buildOptions entry "${optionLabel}": multistate option must define at least one state`,
+        `options entry "${optionLabel}": multistate option must define at least one state`,
         toVsRange(lineCounter, nodeRange)
       )
     );
@@ -457,29 +486,79 @@ function validateBuildOptionStates(
     if (!(stateItem instanceof YAMLMap)) {
       continue;
     }
-    const id = validateStringField(stateItem, "id", lineCounter, issues, `buildOptions "${optionLabel}" state`);
-    const label = validateStringField(stateItem, "label", lineCounter, issues, `buildOptions "${optionLabel}" state`);
-    if (!id || !label) {
-      continue;
+
+    let id: string;
+    let label: string;
+    let flag: string;
+
+    // Detect schema: canonical ("value" + "name") vs legacy ("id" + "label")
+    if (stateItem.has("value")) {
+      // Canonical schema — value drives id and flag; name drives label
+      const valueNode = stateItem.get("value", true);
+      if (!(valueNode instanceof Scalar)) {
+        const nodeRange = valueNode as unknown as { range?: [number, number, number] };
+        issues.push(
+          issue(
+            "error",
+            "invalid-type",
+            `options "${optionLabel}" state: "value" must be a scalar`,
+            toVsRange(lineCounter, nodeRange?.range)
+          )
+        );
+        continue;
+      }
+      const rawValue = valueNode.value;
+      if (rawValue === null || rawValue === undefined) {
+        id = "null";
+        flag = "";
+      } else {
+        id = String(rawValue);
+        flag = `${optionFlag}=${rawValue}`;
+      }
+
+      const nameNode = stateItem.get("name", true);
+      if (!(nameNode instanceof Scalar) || typeof nameNode.value !== "string" || !nameNode.value.trim()) {
+        const nodeRange = nameNode as unknown as { range?: [number, number, number] };
+        issues.push(
+          issue(
+            "error",
+            "missing-field",
+            `options "${optionLabel}" state: required field "name" is missing or empty`,
+            toVsRange(lineCounter, nodeRange?.range)
+          )
+        );
+        continue;
+      }
+      label = nameNode.value;
+    } else {
+      // Legacy schema — id + label + optional flag
+      const idVal = validateStringField(stateItem, "id", lineCounter, issues, `options "${optionLabel}" state`);
+      const labelVal = validateStringField(stateItem, "label", lineCounter, issues, `options "${optionLabel}" state`);
+      if (!idVal || !labelVal) {
+        continue;
+      }
+      id = idVal;
+      label = labelVal;
+      const flagNode = stateItem.get("flag", true);
+      flag =
+        flagNode instanceof Scalar && typeof flagNode.value === "string"
+          ? flagNode.value
+          : "";
     }
+
     if (seenStateIds.has(id)) {
       const idNode = stateItem.get("id", true) as unknown as { range?: [number, number, number] };
       issues.push(
         issue(
           "error",
           "duplicate-id",
-          `buildOptions "${optionLabel}": duplicate state id "${id}"`,
+          `options "${optionLabel}": duplicate state id "${id}"`,
           toVsRange(lineCounter, idNode?.range)
         )
       );
       continue;
     }
     seenStateIds.add(id);
-    const flagNode = stateItem.get("flag", true);
-    const flag =
-      flagNode instanceof Scalar && typeof flagNode.value === "string"
-        ? flagNode.value
-        : "";
 
     const isDefault = stateItem.get("default") === true;
     if (isDefault) {
