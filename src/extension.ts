@@ -3,8 +3,8 @@ import { hasSupportedWorkspace, requireWorkspaceFolder } from "./workspace/works
 import { resolveManifestUri } from "./workspace/settings";
 import { ManifestService } from "./manifest/manifest-service";
 import { ConfigurationTreeProvider } from "./ui/configuration-tree";
-import { disposeLogChannel, revealLogs } from "./observability/log-channel";
-import { disposeDiagnostics } from "./observability/diagnostics";
+import { disposeLogChannel, revealLogs, logManifestState } from "./observability/log-channel";
+import { disposeDiagnostics, handleManifestStateDiagnostics } from "./observability/diagnostics";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
@@ -78,10 +78,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   _manifestService = new ManifestService(manifestUri);
   context.subscriptions.push(_manifestService);
 
-  // Connect manifest state changes to the tree provider (expanded in T020)
+  // Connect manifest state changes to the tree provider, diagnostics and logs (T020)
   context.subscriptions.push(
     _manifestService.onDidChangeState((state) => {
       _treeProvider?.update(state);
+      handleManifestStateDiagnostics(state);
+      logManifestState(state);
     })
   );
 
