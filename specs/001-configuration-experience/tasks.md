@@ -94,7 +94,7 @@
 ### Tests for User Story 3 ⚠️
 
 - [X] T027 [P] [US3] Add unit tests for status-bar text and visibility rules in `src/test/unit/ui/status-bar.test.ts`
-- [ ] T028 [P] [US3] Add integration tests for restore-on-reload and status-bar reveal behavior in `src/test/integration/persistence-status-bar.integration.test.ts`
+- [X] T028 [P] [US3] Add integration tests for restore-on-reload and status-bar reveal behavior in `src/test/integration/persistence-status-bar.integration.test.ts`
 
 ### Implementation for User Story 3
 
