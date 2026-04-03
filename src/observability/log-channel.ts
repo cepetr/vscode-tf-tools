@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { ManifestState } from "../manifest/manifest-types";
 
 const CHANNEL_NAME = "Trezor Firmware Tools";
 let _channel: vscode.OutputChannel | undefined;
@@ -50,4 +51,38 @@ export function revealLogs(): void {
 export function disposeLogChannel(): void {
   _channel?.dispose();
   _channel = undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Manifest state logging
+// ---------------------------------------------------------------------------
+
+/**
+ * Logs a human-readable description of the new manifest state.
+ * Does NOT show user notifications — that is done by the caller.
+ */
+export function logManifestState(state: ManifestState): void {
+  const path = state.manifestUri.fsPath;
+  switch (state.status) {
+    case "loaded":
+      log(
+        `Manifest loaded: ${path} — ` +
+          `${(state as Extract<ManifestState, { status: "loaded" }>).models.length} model(s), ` +
+          `${(state as Extract<ManifestState, { status: "loaded" }>).targets.length} target(s), ` +
+          `${(state as Extract<ManifestState, { status: "loaded" }>).components.length} component(s)`
+      );
+      break;
+    case "missing":
+      log(`Manifest missing: ${path}`);
+      break;
+    case "invalid": {
+      const issues = (state as Extract<ManifestState, { status: "invalid" }>)
+        .validationIssues;
+      log(`Manifest invalid: ${path} — ${issues.length} issue(s)`);
+      for (const issue of issues) {
+        log(`  [${issue.severity}] ${issue.message} (${issue.code})`);
+      }
+      break;
+    }
+  }
 }

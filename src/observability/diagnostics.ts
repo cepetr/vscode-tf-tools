@@ -1,5 +1,9 @@
 import * as vscode from "vscode";
-import { ValidationIssue } from "../manifest/manifest-types";
+import { ValidationIssue, ManifestState } from "../manifest/manifest-types";
+
+// ---------------------------------------------------------------------------
+// Diagnostic collection
+// ---------------------------------------------------------------------------
 
 /** Reusable diagnostic collection for manifest validation problems. */
 let _collection: vscode.DiagnosticCollection | undefined;
@@ -51,4 +55,35 @@ export function clearDiagnostics(uri: vscode.Uri): void {
 export function disposeDiagnostics(): void {
   _collection?.dispose();
   _collection = undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Manifest state → diagnostics
+// ---------------------------------------------------------------------------
+
+/**
+ * Translates a `ManifestState` to VS Code diagnostics.
+ *
+ * - `loaded`: publishes any warning-level validation issues and clears errors.
+ * - `invalid`: publishes all validation issues as diagnostics.
+ * - `missing`: clears all diagnostics for the manifest URI (the missing state
+ *   is communicated through notifications and log output, not diagnostics).
+ */
+export function handleManifestStateDiagnostics(state: ManifestState): void {
+  switch (state.status) {
+    case "loaded":
+      // Only publish warnings present on a successfully loaded manifest
+      if (state.validationIssues.length > 0) {
+        publishDiagnostics(state.manifestUri, state.validationIssues);
+      } else {
+        clearDiagnostics(state.manifestUri);
+      }
+      break;
+    case "invalid":
+      publishDiagnostics(state.manifestUri, state.validationIssues);
+      break;
+    case "missing":
+      clearDiagnostics(state.manifestUri);
+      break;
+  }
 }
