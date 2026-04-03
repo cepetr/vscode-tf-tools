@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as path from "path";
 import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 
@@ -50,6 +51,10 @@ const SELECTOR_ICONS: Readonly<Record<SelectorKind, string>> = {
   component: "extensions",
 };
 
+const INACTIVE_CHOICE_ICON = vscode.Uri.file(
+  path.resolve(__dirname, "../../images/blank-tree-icon.svg")
+);
+
 export class SelectorHeaderItem extends vscode.TreeItem {
   constructor(
     public readonly selectorKind: SelectorKind,
@@ -83,9 +88,7 @@ export class SelectorChoiceItem extends vscode.TreeItem {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.contextValue = `choice-${selectorKind}`;
     this.description = isActive ? "active" : undefined;
-    this.iconPath = isActive
-      ? new vscode.ThemeIcon("check")
-      : new vscode.ThemeIcon("circle-large-outline");
+    this.iconPath = isActive ? new vscode.ThemeIcon("check") : INACTIVE_CHOICE_ICON;
     this.command = {
       title: `Select ${label}`,
       command: SELECT_COMMANDS[selectorKind],

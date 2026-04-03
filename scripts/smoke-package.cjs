@@ -29,7 +29,10 @@ function ensureBundleLoads(bundlePath) {
       "  TreeItem,",
       "  ThemeIcon,",
       "  ThemeColor: class ThemeColor { constructor(id) { this.id = id; } },",
-      "  Uri: { joinPath: (...parts) => ({ fsPath: parts.map((part) => part && (part.fsPath || part.path || String(part))).join('/') }) },",
+      "  Uri: {",
+      "    file: (filePath) => ({ fsPath: filePath }),",
+      "    joinPath: (...parts) => ({ fsPath: parts.map((part) => part && (part.fsPath || part.path || String(part))).join('/') })",
+      "  },",
       "  TreeItemCollapsibleState: { None: 0, Collapsed: 1, Expanded: 2 },",
       "  StatusBarAlignment: { Left: 1, Right: 2 },",
       "  DiagnosticSeverity: { Error: 0, Warning: 1, Information: 2, Hint: 3 }",
@@ -77,6 +80,7 @@ function ensureVsixHasExpectedFiles(vsixPath) {
   const requiredEntries = [
     "extension/package.json",
     "extension/out/extension.js",
+    "extension/images/blank-tree-icon.svg",
     "extension/images/tf-tools-logo.png",
     "extension/images/tf-tools.svg",
   ];

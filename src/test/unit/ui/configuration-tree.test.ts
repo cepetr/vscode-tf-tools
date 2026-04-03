@@ -1,6 +1,6 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { SectionItem, SelectorHeaderItem } from "../../../ui/configuration-tree";
+import { SectionItem, SelectorChoiceItem, SelectorHeaderItem } from "../../../ui/configuration-tree";
 
 suite("SectionItem icons", () => {
   test("uses symbol-folder for Build Context", () => {
@@ -33,5 +33,18 @@ suite("SelectorHeaderItem icons", () => {
   test("uses a distinct icon for component", () => {
     const item = new SelectorHeaderItem("component", "Component", "core");
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "extensions");
+  });
+});
+
+suite("SelectorChoiceItem icons", () => {
+  test("uses a check icon for the active choice", () => {
+    const item = new SelectorChoiceItem("model", "T2T1", "Trezor Model T", true);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "check");
+  });
+
+  test("uses a transparent spacer icon for an inactive choice", () => {
+    const item = new SelectorChoiceItem("model", "T3W1", "Trezor Model T3", false);
+    assert.ok(item.iconPath instanceof vscode.Uri);
+    assert.ok((item.iconPath as vscode.Uri).fsPath.endsWith("images/blank-tree-icon.svg"));
   });
 });

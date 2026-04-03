@@ -19,6 +19,8 @@ This contract captures the user-visible VS Code surfaces introduced by the Confi
   - `Model` uses the VS Code `circuit-board` theme icon
   - `Target` uses the VS Code `target` theme icon
   - `Component` uses the VS Code `extensions` theme icon
+  - active selector choice rows may use the VS Code `check` theme icon
+  - inactive selector choice rows use an empty spacer icon so labels stay aligned without a semantic icon
 
 ## View Title Actions
 

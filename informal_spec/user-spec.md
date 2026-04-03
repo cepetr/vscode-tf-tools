@@ -186,7 +186,9 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - The `Map File` row action shall use the VS Code `go-to-file` theme icon.
 - The `Trezor: Flash {model-id}-{component-name}` action shall use the VS Code `zap` theme icon.
 - The `Trezor: Upload {model-id}-{component-name}` action shall use the VS Code `arrow-up` theme icon.
-- Choice rows and checkbox option rows shall rely on checkbox state and shall not require additional dedicated icons.
+- Active choice rows may use the VS Code `check` theme icon.
+- Inactive choice rows shall use an empty spacer icon so choice labels remain aligned without presenting an additional semantic icon.
+- Checkbox option rows shall rely on checkbox state and shall not require additional dedicated icons.
 
 ### UI-08 Notifications And Status Feedback
 
