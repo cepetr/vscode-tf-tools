@@ -2,7 +2,7 @@
 
 ## Project Summary
 
-Trezor Firmware Tools is a Visual Studio Code extension for working with the `trezor-firmware` repository. Its core purpose is to keep the active firmware build context visible inside the editor and make that context actionable. The extension reads build metadata from a project-local `tf-tools.yaml`, lets the user select the active model, target, component, and build options from a dedicated sidebar, runs `cargo xtask` clean, build, clippy, and check commands for that selection, applies IntelliSense state from generated compile-commands artifacts, and marks files that are outside the active build configuration.
+Trezor Firmware Tools is a Visual Studio Code extension for working with the `trezor-firmware` repository. Its core purpose is to keep the active firmware build context visible inside the editor and make that context actionable. The extension reads build metadata from a project-local `tf-tools-manifest.yaml`, lets the user select the active model, target, component, and build options from a dedicated sidebar, runs `cargo xtask` clean, build, clippy, and check commands for that selection, applies IntelliSense state from generated compile-commands artifacts, and marks files that are outside the active build configuration.
 
 The primary interaction surface is a dedicated activity-bar container with a tree view for selecting build context, inspecting build artifact availability, and launching the most common actions.
 
@@ -56,7 +56,7 @@ Where the extension needs a short internal identifier, abbreviation, or compact 
 
 ### HR-01 Workspace And Manifest Discovery
 
-The extension shall work against one opened firmware workspace. It shall resolve the cargo workspace path and manifest path from settings, load `tf-tools.yaml` from the configured manifest path, validate its structure, and treat the manifest as the live source of available build choices.
+The extension shall work against one opened firmware workspace. It shall resolve the cargo workspace path and manifest path from settings, load `tf-tools-manifest.yaml` from the configured manifest path, validate its structure, and treat the manifest as the live source of available build choices.
 
 ### HR-02 Active Build Context Selection
 
@@ -100,7 +100,7 @@ The extension shall fail visibly and specifically when prerequisites are not met
 
 ### HR-12 Persistent Diagnostics And Logs
 
-The user shall be able to inspect extension-reported warnings and errors after they occur. Actionable file-backed problems, especially validation errors in `tf-tools.yaml`, shall be surfaced through VS Code diagnostics. Runtime warnings, non-file-backed failures, and debugging detail shall be written to a dedicated `Trezor Firmware Tools` log output channel.
+The user shall be able to inspect extension-reported warnings and errors after they occur. Actionable file-backed problems, especially validation errors in `tf-tools-manifest.yaml`, shall be surfaced through VS Code diagnostics. Runtime warnings, non-file-backed failures, and debugging detail shall be written to a dedicated `Trezor Firmware Tools` log output channel.
 
 ## UI Requirements
 
@@ -209,7 +209,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 ### UI-09 Diagnostics And Logs
 
 - The extension shall create VS Code diagnostics for actionable file-backed problems.
-- Diagnostics for `tf-tools.yaml` shall appear in the Problems view and in the editor for that file.
+- Diagnostics for `tf-tools-manifest.yaml` shall appear in the Problems view and in the editor for that file.
 - Manifest diagnostics shall cover YAML parse failures, invalid schema structure, invalid `when`, `flashWhen`, and `uploadWhen` expressions, references to unknown model, target, or component ids, duplicate ids, duplicate option flags, and missing required fields.
 - Where a precise source range is known, the diagnostic shall be attached to that range.
 - Where a precise source range is not known, the diagnostic may be attached to the manifest file without a more specific location.
@@ -239,7 +239,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
   - `tfTools.excludedFiles.folderGlobs`
 - Default values shall be:
   - `tfTools.cargoWorkspacePath`: `${workspaceFolder}/core/embed`
-  - `tfTools.manifestPath`: `${workspaceFolder}/core/embed/tf-tools.yaml`
+  - `tfTools.manifestPath`: `${workspaceFolder}/tf-tools-manifest.yaml`
   - `tfTools.artifactsPath`: `${workspaceFolder}/core/build-xtask/artifacts`
   - `tfTools.debug.templatesPath`: `${workspaceFolder}/.vscode/tf-tools/debug`
   - `tfTools.showConfigurationInStatusBar`: `true`
@@ -269,9 +269,9 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - Replacing the tree-view layout with a custom webview.
 
 
-## tf-tools.yaml Specification
+## tf-tools-manifest.yaml Specification
 
-`tf-tools.yaml` defines the selectable build metadata for the extension. The file shall be loaded from the path referenced by `tfTools.manifestPath`.
+`tf-tools-manifest.yaml` defines the selectable build metadata for the extension. The file shall be loaded from the path referenced by `tfTools.manifestPath`.
 
 The manifest also defines debug-profile selection for the `Trezor: Debug` command. Debugger adapter details remain in external template files loaded from `tfTools.debug.templatesPath`.
 
@@ -338,7 +338,7 @@ Each `options` entry shall be a mapping with:
 - `type`: either `checkbox` or `multistate`
 - `when`: optional string expression that determines whether the option is available for the active build context
 
-`tf-tools.yaml` shall not require or expose an option `id`. If the implementation needs internal identifiers for persistence or UI state, those identifiers shall be treated as an internal detail rather than user-authored YAML data.
+`tf-tools-manifest.yaml` shall not require or expose an option `id`. If the implementation needs internal identifiers for persistence or UI state, those identifiers shall be treated as an internal detail rather than user-authored YAML data.
 
 `flashWhen` and `uploadWhen` expression semantics:
 

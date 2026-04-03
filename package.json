@@ -103,20 +103,20 @@
       "properties": {
         "tfTools.manifestPath": {
           "type": "string",
-          "default": "tf-tools.yaml",
-          "description": "Path to the tf-tools manifest file, relative to the workspace root.",
+          "default": "tf-tools-manifest.yaml",
+          "description": "(Trezor) Path to the tf-tools manifest file, relative to the workspace root.",
           "scope": "resource"
         },
         "tfTools.cargoWorkspacePath": {
           "type": "string",
-          "default": "",
-          "description": "Path to the cargo workspace directory used for build tasks, relative to the workspace root. Defaults to the workspace root when empty.",
+          "default": "core/embed",
+          "description": "(Trezor) Path to the cargo workspace directory used for build tasks, relative to the workspace root. Defaults to the workspace root when empty.",
           "scope": "resource"
         },
         "tfTools.showConfigurationInStatusBar": {
           "type": "boolean",
           "default": true,
-          "description": "Show the active build configuration in the status bar.",
+          "description": "(Trezor) Show the active build configuration in the status bar.",
           "scope": "resource"
         }
       }

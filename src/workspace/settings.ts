@@ -8,7 +8,7 @@ export function resolveManifestUri(
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.Uri {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
-  const relative: string = cfg.get<string>("manifestPath") || "tf-tools.yaml";
+  const relative: string = cfg.get<string>("manifestPath") || "tf-tools-manifest.yaml";
   return vscode.Uri.joinPath(workspaceFolder.uri, relative);
 }
 

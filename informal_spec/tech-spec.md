@@ -8,7 +8,7 @@ Unless noted otherwise, product-facing names in this document follow the naming 
 
 - product name: `Trezor Firmware Tools`
 - settings namespace: `tfTools`
-- manifest filename: `tf-tools.yaml`
+- manifest filename: `tf-tools-manifest.yaml`
 
 ## Architecture Overview
 
@@ -23,7 +23,7 @@ The extension is organized around a single activation flow that wires together s
 
 The activation layer acts as the composition root. It constructs services, registers commands and providers, subscribes to VS Code events, and coordinates refresh flows.
 
-For the Configuration Experience slice, activation must be early enough that the extension can render a visible missing-manifest or unsupported-workspace state. The extension therefore cannot rely only on manifest-presence activation events because the user still needs the tree view, log command, and warning-state UI when `tf-tools.yaml` is absent.
+For the Configuration Experience slice, activation must be early enough that the extension can render a visible missing-manifest or unsupported-workspace state. The extension therefore cannot rely only on manifest-presence activation events because the user still needs the tree view, log command, and warning-state UI when `tf-tools-manifest.yaml` is absent.
 
 ## Core Modules
 
@@ -140,7 +140,7 @@ The `when` expression language is intentionally small:
 
 Parsing may be implemented as a small recursive-descent parser. The parser should produce an internal expression tree that can be evaluated against an active build context.
 
-Manifest validation should produce structured diagnostics with severity, message, and source location when available. Diagnostics should be attached to the configured manifest file so invalid `tf-tools.yaml` content appears in the Problems view and editor.
+Manifest validation should produce structured diagnostics with severity, message, and source location when available. Diagnostics should be attached to the configured manifest file so invalid `tf-tools-manifest.yaml` content appears in the Problems view and editor.
 
 If an option's `when` expression evaluates to `false` for the active build context, that option is unavailable. Unavailable options are excluded from the rendered Build Options tree, are not user-selectable in the current context, and do not participate in effective build-argument derivation until the active build context makes them available again.
 
@@ -152,7 +152,7 @@ Persisted configuration normalization:
 - drops persisted build-option entries whose internal keys are no longer valid
 - retains persisted values for options that are currently unavailable because their `when` condition evaluates to `false`
 
-Because `tf-tools.yaml` does not expose user-authored option ids, the implementation requires an internal key-generation strategy for option persistence, selection state, and state lookup.
+Because `tf-tools-manifest.yaml` does not expose user-authored option ids, the implementation requires an internal key-generation strategy for option persistence, selection state, and state lookup.
 
 ## Diagnostics And Logging
 
@@ -452,7 +452,7 @@ The extension reads these configuration areas:
 - `tfTools.excludedFiles.fileNamePatterns`
 - `tfTools.excludedFiles.folderGlobs`
 
-The manifest file path is resolved from `tfTools.manifestPath`. The default path remains `${workspaceFolder}/core/embed/tf-tools.yaml`.
+The manifest file path is resolved from `tfTools.manifestPath`. The default path is `${workspaceFolder}/tf-tools-manifest.yaml`.
 
 ## Technical Constraints
 
