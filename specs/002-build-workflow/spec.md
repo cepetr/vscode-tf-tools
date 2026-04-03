@@ -93,6 +93,7 @@ As a firmware developer, I want build actions to derive their arguments from the
 - **FR-003**: The system MUST display grouped options under their group heading while leaving ungrouped options at the same hierarchy level as group headings.
 - **FR-004**: The system MUST allow users to toggle checkbox build options on and off from the Configuration view.
 - **FR-005**: The system MUST allow users to select exactly one state for each multistate build option and MUST present the currently active state inline.
+- **FR-005A**: The system MUST ensure that only one multistate choice list is open at a time, collapsing any previously open list when another is expanded.
 - **FR-006**: The system MUST apply a default state for multistate options when no explicit workspace selection is stored.
 - **FR-007**: The system MUST parse, validate, and evaluate each option `when` rule against the active model, target, and component before rendering Build Options or deriving effective build arguments.
 - **FR-008**: The system MUST show only build options whose `when` rule evaluates to true or that omit a `when` rule.

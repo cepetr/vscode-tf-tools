@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
 import { resolveManifestUri, isStatusBarEnabled } from "./workspace/settings";
 import { ManifestService } from "./manifest/manifest-service";
-import { ConfigurationTreeProvider, SelectorHeaderItem } from "./ui/configuration-tree";
+import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
 import { disposeLogChannel, revealLogs, logManifestState } from "./observability/log-channel";
 import { disposeDiagnostics, handleManifestStateDiagnostics } from "./observability/diagnostics";
@@ -140,12 +140,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _configurationTreeView.onDidExpandElement(({ element }) => {
       if (element instanceof SelectorHeaderItem) {
         _treeProvider?.setExpandedSelector(element.selectorKind);
+      } else if (element instanceof BuildOptionMultistateHeaderItem) {
+        _treeProvider?.setExpandedMultistateKey(element.optionKey);
       }
     }),
     _configurationTreeView.onDidCollapseElement(({ element }) => {
       if (element instanceof SelectorHeaderItem) {
         if (_treeProvider?.getExpandedSelector() === element.selectorKind) {
           _treeProvider.setExpandedSelector(undefined);
+        }
+      } else if (element instanceof BuildOptionMultistateHeaderItem) {
+        if (_treeProvider?.getExpandedMultistateKey() === element.optionKey) {
+          _treeProvider.setExpandedMultistateKey(undefined);
         }
       }
     })

@@ -129,10 +129,16 @@ export class BuildOptionMultistateHeaderItem extends vscode.TreeItem {
     public readonly optionKey: string,
     label: string,
     activeStateLabel: string,
-    public readonly stateChildren: BuildOptionStateItem[]
+    public readonly stateChildren: BuildOptionStateItem[],
+    expanded: boolean
   ) {
-    super(label, vscode.TreeItemCollapsibleState.Expanded);
-    this.id = `build-option-multistate:${optionKey}`;
+    super(
+      label,
+      expanded
+        ? vscode.TreeItemCollapsibleState.Expanded
+        : vscode.TreeItemCollapsibleState.Collapsed
+    );
+    this.id = `build-option-multistate:${optionKey}:${expanded ? "expanded" : "collapsed"}`;
     this.contextValue = "build-option-multistate";
     this.description = activeStateLabel;
     this.iconPath = new vscode.ThemeIcon("list-selection");
@@ -188,6 +194,7 @@ export class ConfigurationTreeProvider
   private _state: ManifestState | undefined;
   private _activeConfig: ActiveConfig | undefined;
   private _expandedSelector: SelectorKind | undefined;
+  private _expandedMultistateKey: string | undefined;
   private _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
@@ -207,6 +214,7 @@ export class ConfigurationTreeProvider
     this._resolvedOptions = resolvedOptions ?? [];
     if (state.status !== "loaded") {
       this._expandedSelector = undefined;
+      this._expandedMultistateKey = undefined;
     }
     this._onDidChangeTreeData.fire(undefined);
   }
@@ -215,13 +223,24 @@ export class ConfigurationTreeProvider
     if (this._expandedSelector === selectorKind) {
       return;
     }
-
     this._expandedSelector = selectorKind;
     this._onDidChangeTreeData.fire(undefined);
   }
 
   getExpandedSelector(): SelectorKind | undefined {
     return this._expandedSelector;
+  }
+
+  setExpandedMultistateKey(key: string | undefined): void {
+    if (this._expandedMultistateKey === key) {
+      return;
+    }
+    this._expandedMultistateKey = key;
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  getExpandedMultistateKey(): string | undefined {
+    return this._expandedMultistateKey;
   }
 
   getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
@@ -450,11 +469,13 @@ export class ConfigurationTreeProvider
     const stateChildren = (option.states ?? []).map(
       (s) => new BuildOptionStateItem(option.key, s.id, s.label, s.id === activeStateId)
     );
+    const expanded = this._expandedMultistateKey === option.key;
     return new BuildOptionMultistateHeaderItem(
       option.key,
       option.label,
       activeStateLabel,
-      stateChildren
+      stateChildren,
+      expanded
     );
   }
 

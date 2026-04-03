@@ -12,6 +12,7 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
   - preserves grouped and ungrouped manifest declaration order
   - shows checkbox options as direct toggle rows
   - shows multistate options as selector-style parent rows with inline active state
+  - only one multistate choice list is open at a time; expanding one collapses the previous
   - omits options whose `when` expression evaluates to `false`
   - restores prior stored selections when an option becomes available again
 

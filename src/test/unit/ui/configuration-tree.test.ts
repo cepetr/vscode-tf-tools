@@ -1,6 +1,12 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { SectionItem, SelectorChoiceItem, SelectorHeaderItem } from "../../../ui/configuration-tree";
+import {
+  SectionItem,
+  SelectorChoiceItem,
+  SelectorHeaderItem,
+  BuildOptionMultistateHeaderItem,
+  BuildOptionStateItem,
+} from "../../../ui/configuration-tree";
 
 suite("SectionItem icons", () => {
   test("uses no icon for Build Context", () => {
@@ -58,5 +64,37 @@ suite("SelectorChoiceItem icons", () => {
     const item = new SelectorChoiceItem("model", "T3W1", "Trezor Model T3", false);
     assert.ok(item.iconPath instanceof vscode.Uri);
     assert.ok((item.iconPath as vscode.Uri).fsPath.endsWith("images/blank-tree-icon.svg"));
+  });
+});
+
+suite("BuildOptionMultistateHeaderItem accordion", () => {
+  function makeHeader(expanded: boolean): BuildOptionMultistateHeaderItem {
+    const stateChildren: BuildOptionStateItem[] = [];
+    return new BuildOptionMultistateHeaderItem("verbose", "Verbosity", "Off", stateChildren, expanded);
+  }
+
+  test("uses Expanded collapsible state when expanded = true", () => {
+    const item = makeHeader(true);
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+  });
+
+  test("uses Collapsed collapsible state when expanded = false", () => {
+    const item = makeHeader(false);
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+  });
+
+  test("id encodes 'expanded' when open", () => {
+    const item = makeHeader(true);
+    assert.strictEqual(item.id, "build-option-multistate:verbose:expanded");
+  });
+
+  test("id encodes 'collapsed' when closed", () => {
+    const item = makeHeader(false);
+    assert.strictEqual(item.id, "build-option-multistate:verbose:collapsed");
+  });
+
+  test("description shows the active state label", () => {
+    const item = makeHeader(false);
+    assert.strictEqual(item.description, "Off");
   });
 });
