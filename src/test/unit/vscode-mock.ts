@@ -68,6 +68,14 @@ const window = {
     show: () => {},
     dispose: () => {},
   }),
+  createStatusBarItem: (_alignment?: number, _priority?: number) => ({
+    text: "" as string,
+    command: undefined as string | undefined,
+    tooltip: undefined as string | undefined,
+    show: () => {},
+    hide: () => {},
+    dispose: () => {},
+  }),
   showWarningMessage: () => Promise.resolve(undefined),
   showErrorMessage: () => Promise.resolve(undefined),
   registerTreeDataProvider: () => ({ dispose: () => {} }),
@@ -122,6 +130,7 @@ class TreeItem {
 }
 
 const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 };
+const StatusBarAlignment = { Left: 1, Right: 2 };
 
 module.exports = {
   Position,
@@ -137,4 +146,5 @@ module.exports = {
   RelativePattern,
   TreeItem,
   TreeItemCollapsibleState,
+  StatusBarAlignment,
 };
