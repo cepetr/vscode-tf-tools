@@ -1,22 +1,22 @@
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder } from "./workspace/workspace-guard";
-import { resolveManifestUri } from "./workspace/settings";
+import { resolveManifestUri, isStatusBarEnabled } from "./workspace/settings";
 import { ManifestService } from "./manifest/manifest-service";
 import { ConfigurationTreeProvider } from "./ui/configuration-tree";
+import { StatusBarPresenter } from "./ui/status-bar";
 import { disposeLogChannel, revealLogs, logManifestState } from "./observability/log-channel";
 import { disposeDiagnostics, handleManifestStateDiagnostics } from "./observability/diagnostics";
 import {
-  readActiveConfig,
-  writeActiveConfig,
+  restoreActiveConfig,
   selectModel,
   selectTarget,
   selectComponent,
 } from "./configuration/active-config";
-import { normalizeActiveConfig } from "./configuration/normalize-config";
 import { ManifestState } from "./manifest/manifest-types";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
+let _statusBar: StatusBarPresenter | undefined;
 let _manifestState: ManifestState | undefined;
 
 // ---------------------------------------------------------------------------
@@ -84,31 +84,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.window.registerTreeDataProvider("tfTools.configuration", _treeProvider)
   );
 
+  // --- Status-bar presenter (T031) ---
+  _statusBar = new StatusBarPresenter();
+  context.subscriptions.push(_statusBar);
+
   // --- Manifest service ---
   _manifestService = new ManifestService(manifestUri);
   context.subscriptions.push(_manifestService);
 
   // Connect manifest state changes to the tree provider, diagnostics and logs (T020)
-  // On each state change, normalize the active config against the new manifest (T026)
+  // On each state change, restore and normalize the active config (T026/T031)
   context.subscriptions.push(
     _manifestService.onDidChangeState(async (state) => {
       _manifestState = state;
-      let activeConfig = readActiveConfig(context);
+      let activeConfig;
       if (state.status === "loaded") {
-        const normalized = normalizeActiveConfig(state, activeConfig);
-        // Write to storage only when normalization changed one or more ids
-        if (
-          !activeConfig ||
-          activeConfig.modelId !== normalized.modelId ||
-          activeConfig.targetId !== normalized.targetId ||
-          activeConfig.componentId !== normalized.componentId
-        ) {
-          activeConfig = await writeActiveConfig(context, normalized);
-        }
-        _treeProvider?.update(state, activeConfig);
-      } else {
-        _treeProvider?.update(state);
+        activeConfig = await restoreActiveConfig(context, state);
       }
+      _treeProvider?.update(state, activeConfig);
+      _statusBar?.update(state, activeConfig, isStatusBarEnabled(workspaceFolder));
       handleManifestStateDiagnostics(state);
       logManifestState(state);
     })
@@ -127,13 +121,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- Build-context selector commands (T026) ---
+  // --- Build-context selector commands (T026+T031) ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.selectModel", async (modelId: string) => {
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
       const config = await selectModel(context, modelId, state);
       _treeProvider?.update(state, config);
+      _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
     })
   );
 
@@ -143,6 +138,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (!state || state.status !== "loaded") { return; }
       const config = await selectTarget(context, targetId, state);
       _treeProvider?.update(state, config);
+      _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
     })
   );
 
@@ -152,6 +148,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (!state || state.status !== "loaded") { return; }
       const config = await selectComponent(context, componentId, state);
       _treeProvider?.update(state, config);
+      _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
     })
   );
 
@@ -164,6 +161,8 @@ export function deactivate(): void {
   _manifestService = undefined;
   _treeProvider?.dispose();
   _treeProvider = undefined;
+  _statusBar?.dispose();
+  _statusBar = undefined;
   _manifestState = undefined;
   disposeDiagnostics();
   disposeLogChannel();
