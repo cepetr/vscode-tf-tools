@@ -5,9 +5,16 @@ import {
   ManifestModel,
   ManifestTarget,
   ManifestComponent,
+  BuildOption,
+  BuildOptionState,
   ValidationIssue,
   ValidationCode,
 } from "./manifest-types";
+import {
+  parseWhenExpression,
+  findUnknownIds,
+  WhenContext,
+} from "./when-expressions";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -236,6 +243,260 @@ function validateComponents(
 }
 
 // ---------------------------------------------------------------------------
+// Build options validator
+// ---------------------------------------------------------------------------
+
+/**
+ * Deterministic persistence key for a build option.
+ * Uses only the flag since flags are required to be unique per FR-002
+ * (duplicate-flag validation) and serve as stable identifiers.
+ */
+function buildOptionKey(flag: string): string {
+  // Strip leading dashes and replace non-alphanumeric chars with underscores
+  return flag.replace(/^-+/, "").replace(/[^a-zA-Z0-9]/g, "_") || flag;
+}
+
+function validateBuildOptions(
+  doc: YAMLMap,
+  lineCounter: LineCounter,
+  issues: ValidationIssue[],
+  whenContext: WhenContext
+): { options: BuildOption[]; hasWorkflowBlockingIssues: boolean } {
+  const options: BuildOption[] = [];
+  let hasWorkflowBlockingIssues = false;
+
+  const seqNode = doc.get("buildOptions", true);
+  if (seqNode === undefined || seqNode === null) {
+    // buildOptions is optional; absence is not an error
+    return { options, hasWorkflowBlockingIssues };
+  }
+
+  if (!(seqNode instanceof YAMLSeq)) {
+    const seqRange = seqNode as unknown as { range?: [number, number, number] };
+    issues.push(
+      issue(
+        "error",
+        "invalid-type",
+        "buildOptions must be a YAML sequence",
+        toVsRange(lineCounter, seqRange.range)
+      )
+    );
+    return { options, hasWorkflowBlockingIssues };
+  }
+
+  const seenFlags = new Set<string>();
+
+  for (const item of seqNode.items) {
+    if (!(item instanceof YAMLMap)) {
+      continue;
+    }
+
+    // Required: label
+    const label = validateStringField(item, "label", lineCounter, issues, "buildOptions entry");
+    if (!label) {
+      continue;
+    }
+
+    // Required: flag
+    const flag = validateStringField(item, "flag", lineCounter, issues, `buildOptions entry "${label}"`);
+    if (flag === undefined) {
+      continue;
+    }
+
+    // Duplicate flag check
+    if (seenFlags.has(flag)) {
+      const flagNode = item.get("flag", true) as unknown as { range?: [number, number, number] };
+      issues.push(
+        issue(
+          "error",
+          "duplicate-flag",
+          `buildOptions: duplicate flag "${flag}" for option "${label}"`,
+          toVsRange(lineCounter, flagNode?.range)
+        )
+      );
+      continue;
+    }
+    seenFlags.add(flag);
+
+    // Required: kind
+    const kindNode = item.get("kind", true);
+    if (!(kindNode instanceof Scalar) || (kindNode.value !== "checkbox" && kindNode.value !== "multistate")) {
+      const nodeRange = kindNode as unknown as { range?: [number, number, number] };
+      issues.push(
+        issue(
+          "error",
+          "invalid-type",
+          `buildOptions entry "${label}": field "kind" must be "checkbox" or "multistate"`,
+          toVsRange(lineCounter, nodeRange?.range)
+        )
+      );
+      continue;
+    }
+    const kind = kindNode.value as "checkbox" | "multistate";
+
+    // Optional: group
+    const groupNode = item.get("group", true);
+    const group =
+      groupNode instanceof Scalar && typeof groupNode.value === "string" && groupNode.value.trim()
+        ? groupNode.value
+        : undefined;
+
+    // Optional: description
+    const descNode = item.get("description", true);
+    const description =
+      descNode instanceof Scalar && typeof descNode.value === "string" && descNode.value.trim()
+        ? descNode.value
+        : undefined;
+
+    // Optional: when
+    let whenExpr = undefined;
+    const whenNode = item.get("when", true);
+    if (whenNode !== undefined && whenNode !== null) {
+      if (!(whenNode instanceof Scalar) || typeof whenNode.value !== "string") {
+        const nodeRange = whenNode as unknown as { range?: [number, number, number] };
+        issues.push(
+          issue(
+            "error",
+            "invalid-when",
+            `buildOptions entry "${label}": "when" must be a string expression`,
+            toVsRange(lineCounter, nodeRange?.range)
+          )
+        );
+        hasWorkflowBlockingIssues = true;
+      } else {
+        const parseResult = parseWhenExpression(whenNode.value);
+        if (!parseResult.ok) {
+          const nodeRange = whenNode as unknown as { range?: [number, number, number] };
+          issues.push(
+            issue(
+              "error",
+              "invalid-when",
+              `buildOptions entry "${label}": invalid "when" expression — ${parseResult.error}`,
+              toVsRange(lineCounter, nodeRange?.range)
+            )
+          );
+          hasWorkflowBlockingIssues = true;
+        } else {
+          // Validate referenced ids
+          const unknownIds = findUnknownIds(parseResult.expr, whenContext);
+          if (unknownIds.length > 0) {
+            const nodeRange = whenNode as unknown as { range?: [number, number, number] };
+            issues.push(
+              issue(
+                "error",
+                "invalid-when",
+                `buildOptions entry "${label}": "when" expression references unknown ids: ${unknownIds.join(", ")}`,
+                toVsRange(lineCounter, nodeRange?.range)
+              )
+            );
+            hasWorkflowBlockingIssues = true;
+          } else {
+            whenExpr = parseResult.expr;
+          }
+        }
+      }
+    }
+
+    // For multistate: parse states
+    let states: BuildOptionState[] | undefined;
+    let defaultState: string | undefined;
+    if (kind === "multistate") {
+      const statesResult = validateBuildOptionStates(item, lineCounter, issues, label);
+      states = statesResult.states;
+      defaultState = statesResult.defaultState;
+      if (states.length === 0) {
+        continue; // skip invalid multistate option
+      }
+    }
+
+    const key = buildOptionKey(flag);
+    options.push({
+      key,
+      label,
+      flag,
+      kind,
+      group,
+      description,
+      when: whenExpr,
+      states,
+      defaultState,
+    });
+  }
+
+  return { options, hasWorkflowBlockingIssues };
+}
+
+function validateBuildOptionStates(
+  item: YAMLMap,
+  lineCounter: LineCounter,
+  issues: ValidationIssue[],
+  optionLabel: string
+): { states: BuildOptionState[]; defaultState: string | undefined } {
+  const statesNode = item.get("states", true);
+  let defaultState: string | undefined;
+
+  if (!(statesNode instanceof YAMLSeq) || statesNode.items.length === 0) {
+    const nodeRange = statesNode instanceof YAMLSeq
+      ? (statesNode as YAMLSeq & { range?: [number, number, number] }).range
+      : undefined;
+    issues.push(
+      issue(
+        "error",
+        "empty-collection",
+        `buildOptions entry "${optionLabel}": multistate option must define at least one state`,
+        toVsRange(lineCounter, nodeRange)
+      )
+    );
+    return { states: [], defaultState };
+  }
+
+  const states: BuildOptionState[] = [];
+  const seenStateIds = new Set<string>();
+
+  for (const stateItem of statesNode.items) {
+    if (!(stateItem instanceof YAMLMap)) {
+      continue;
+    }
+    const id = validateStringField(stateItem, "id", lineCounter, issues, `buildOptions "${optionLabel}" state`);
+    const label = validateStringField(stateItem, "label", lineCounter, issues, `buildOptions "${optionLabel}" state`);
+    if (!id || !label) {
+      continue;
+    }
+    if (seenStateIds.has(id)) {
+      const idNode = stateItem.get("id", true) as unknown as { range?: [number, number, number] };
+      issues.push(
+        issue(
+          "error",
+          "duplicate-id",
+          `buildOptions "${optionLabel}": duplicate state id "${id}"`,
+          toVsRange(lineCounter, idNode?.range)
+        )
+      );
+      continue;
+    }
+    seenStateIds.add(id);
+    const flagNode = stateItem.get("flag", true);
+    const flag =
+      flagNode instanceof Scalar && typeof flagNode.value === "string"
+        ? flagNode.value
+        : "";
+
+    const isDefault = stateItem.get("default") === true;
+    if (isDefault) {
+      defaultState = id;
+    }
+    states.push({ id, label, flag });
+  }
+
+  // If no explicit default, use the first state
+  if (!defaultState && states.length > 0) {
+    defaultState = states[0].id;
+  }
+
+  return { states, defaultState };
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -249,6 +510,8 @@ export function parseManifest(source: string): {
   models: ManifestModel[];
   targets: ManifestTarget[];
   components: ManifestComponent[];
+  buildOptions: BuildOption[];
+  hasWorkflowBlockingIssues: boolean;
   issues: ValidationIssue[];
 } {
   const lineCounter = new LineCounter();
@@ -272,20 +535,33 @@ export function parseManifest(source: string): {
   }
 
   if (issues.length > 0) {
-    return { models: [], targets: [], components: [], issues };
+    return { models: [], targets: [], components: [], buildOptions: [], hasWorkflowBlockingIssues: false, issues };
   }
 
   const root = doc.contents;
   if (!(root instanceof YAMLMap)) {
     issues.push(issue("error", "invalid-type", "manifest root must be a YAML mapping"));
-    return { models: [], targets: [], components: [], issues };
+    return { models: [], targets: [], components: [], buildOptions: [], hasWorkflowBlockingIssues: false, issues };
   }
 
   const models = validateModels(root, lineCounter, issues);
   const targets = validateTargets(root, lineCounter, issues);
   const components = validateComponents(root, lineCounter, issues);
 
-  return { models, targets, components, issues };
+  // Build options validation requires known ids for `when` expression validation
+  const whenContext: WhenContext = {
+    modelIds: new Set(models.map((m) => m.id)),
+    targetIds: new Set(targets.map((t) => t.id)),
+    componentIds: new Set(components.map((c) => c.id)),
+  };
+  const { options: buildOptions, hasWorkflowBlockingIssues } = validateBuildOptions(
+    root,
+    lineCounter,
+    issues,
+    whenContext
+  );
+
+  return { models, targets, components, buildOptions, hasWorkflowBlockingIssues, issues };
 }
 
 /**
@@ -297,7 +573,7 @@ export function validateManifest(
   source: string,
   uri: vscode.Uri
 ): ManifestState {
-  const { models, targets, components, issues } = parseManifest(source);
+  const { models, targets, components, buildOptions, hasWorkflowBlockingIssues, issues } = parseManifest(source);
 
   const structuralErrors = issues.filter((i) => i.severity === "error");
 
@@ -316,6 +592,8 @@ export function validateManifest(
     models,
     targets,
     components,
+    buildOptions,
+    hasWorkflowBlockingIssues,
     validationIssues: issues, // may contain warnings
     loadedAt: new Date(),
   };
