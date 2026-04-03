@@ -87,3 +87,19 @@ suite("CLEAN_TASK_LABEL", () => {
     assert.strictEqual(CLEAN_TASK_LABEL, "Clean");
   });
 });
+
+suite("formatTaskLabel – Clean always returns fixed label", () => {
+  test("formatTaskLabel with Clean kind returns 'Clean' regardless of context", () => {
+    assert.strictEqual(
+      formatTaskLabel("Clean", ctx("T2T1", "HW", "Core")),
+      "Clean"
+    );
+  });
+
+  test("formatTaskLabel with Clean kind ignores long component name", () => {
+    assert.strictEqual(
+      formatTaskLabel("Clean", ctx("T3W1", "Emulator", "Core Firmware", "emu")),
+      "Clean"
+    );
+  });
+});

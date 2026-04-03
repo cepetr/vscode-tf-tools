@@ -219,4 +219,93 @@ suite("Build Options – effective flag derivation", () => {
     // Next Gen is for T3W1 only — should not appear
     assert.ok(!flags.includes("--next-gen"), "should not include --next-gen");
   });
+
+  test("unavailable option with persisted true value does not produce a flag", () => {
+    const parsed = parseManifest(fixtureManifestSource("options-hidden-preserved"));
+
+    // Legacy Mode is only for T2T1 — persisted as true but context is T3W1
+    const saved: BuildOptionsState = {
+      values: { legacy: true },
+      persistedAt: "2026-01-01T00:00:00Z",
+    };
+    const t3w1Ctx: BuildContext = { modelId: "T3W1", targetId: "hw", componentId: "core" };
+    const resolved = normalizeBuildOptions(parsed.buildOptions, saved, t3w1Ctx);
+
+    const legacy = resolved.find((r) => r.option.label === "Legacy Mode");
+    assert.ok(legacy, "expected Legacy Mode in resolved options");
+    assert.strictEqual(legacy!.available, false, "Legacy Mode should be unavailable for T3W1");
+    assert.strictEqual(legacy!.value, true, "persisted value should still be true");
+
+    const flags = deriveOptionFlags(resolved);
+    assert.ok(!flags.includes("--legacy"), "unavailable option must not produce --legacy flag");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: regression – multi-hop hidden value preservation
+// ---------------------------------------------------------------------------
+
+suite("Build Options – multi-hop hidden value preservation", () => {
+  let parsed: ReturnType<typeof parseManifest>;
+
+  setup(() => {
+    parsed = parseManifest(fixtureManifestSource("options-hidden-preserved"));
+  });
+
+  test("value survives T2T1 → T3W1 → T2T1 context round-trip", () => {
+    // Step 1: select Legacy Mode in T2T1 context
+    const t2t1Ctx: BuildContext = { modelId: "T2T1", targetId: "hw", componentId: "core" };
+    const initialSaved: BuildOptionsState = {
+      values: { legacy: true },
+      persistedAt: "2026-01-01T00:00:00Z",
+    };
+
+    // Step 2: switch to T3W1 — value should be preserved but unavailable
+    const t3w1Ctx: BuildContext = { modelId: "T3W1", targetId: "hw", componentId: "core" };
+    const midResolved = normalizeBuildOptions(parsed.buildOptions, initialSaved, t3w1Ctx);
+    const midLegacy = midResolved.find((r) => r.option.label === "Legacy Mode");
+    assert.ok(midLegacy);
+    assert.strictEqual(midLegacy!.available, false);
+    assert.strictEqual(midLegacy!.value, true, "value preserved at T3W1 hop");
+
+    // Simulate persisting mid-state (value retained even though unavailable)
+    const midSaved: BuildOptionsState = {
+      values: { legacy: midLegacy!.value as boolean },
+      persistedAt: "2026-01-01T00:00:01Z",
+    };
+
+    // Step 3: switch back to T2T1 — value must still be true
+    const finalResolved = normalizeBuildOptions(parsed.buildOptions, midSaved, t2t1Ctx);
+    const finalLegacy = finalResolved.find((r) => r.option.label === "Legacy Mode");
+    assert.ok(finalLegacy);
+    assert.strictEqual(finalLegacy!.available, true, "Legacy Mode available again for T2T1");
+    assert.strictEqual(finalLegacy!.value, true, "preserved value survives full round-trip");
+  });
+
+  test("value survives three-hop chain: T2T1 → T3W1 → T2T1 → T3W1", () => {
+    const t2t1Ctx: BuildContext = { modelId: "T2T1", targetId: "hw", componentId: "core" };
+    const t3w1Ctx: BuildContext = { modelId: "T3W1", targetId: "hw", componentId: "core" };
+
+    // Start: selected in T2T1
+    let saved: BuildOptionsState = { values: { legacy: true }, persistedAt: "2026-01-01T00:00:00Z" };
+
+    // Hop 1: T2T1 → T3W1
+    let resolved = normalizeBuildOptions(parsed.buildOptions, saved, t3w1Ctx);
+    let opt = resolved.find((r) => r.option.label === "Legacy Mode")!;
+    assert.strictEqual(opt.value, true);
+    saved = { values: { legacy: opt.value as boolean }, persistedAt: saved.persistedAt };
+
+    // Hop 2: T3W1 → T2T1
+    resolved = normalizeBuildOptions(parsed.buildOptions, saved, t2t1Ctx);
+    opt = resolved.find((r) => r.option.label === "Legacy Mode")!;
+    assert.strictEqual(opt.available, true);
+    assert.strictEqual(opt.value, true);
+    saved = { values: { legacy: opt.value as boolean }, persistedAt: saved.persistedAt };
+
+    // Hop 3: T2T1 → T3W1 again — value must still be true
+    resolved = normalizeBuildOptions(parsed.buildOptions, saved, t3w1Ctx);
+    opt = resolved.find((r) => r.option.label === "Legacy Mode")!;
+    assert.strictEqual(opt.available, false);
+    assert.strictEqual(opt.value, true, "value survives three-hop chain");
+  });
 });
