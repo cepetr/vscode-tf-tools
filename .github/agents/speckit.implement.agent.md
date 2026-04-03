@@ -39,7 +39,7 @@ You **MUST** consider the user input before proceeding (if not empty).
     **Automatic Pre-Hook**: {extension}
     Executing: `/{command}`
     EXECUTE_COMMAND: {command}
-    
+
     Wait for the result of the hook command before proceeding to the Outline.
     ```
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
@@ -133,15 +133,20 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 5. Parse tasks.md structure and extract:
    - **Task phases**: Setup, Tests, Core, Integration, Polish
-   - **Task dependencies**: Sequential vs parallel execution rules
+   - **Task dependencies**: Sequential execution order and any [P] markers that
+     identify dependency-safe tasks
    - **Task details**: ID, description, file paths, parallel markers [P]
    - **Execution flow**: Order and dependency requirements
 
 6. Execute implementation following the task plan:
    - **Phase-by-phase execution**: Complete each phase before moving to the next
-   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
+   - **Respect dependencies**: Execute exactly one task at a time in order;
+     treat [P] tasks as dependency metadata, not permission to batch execution
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
+   - **Per-task completion discipline**: After each finished task, update
+     `tasks.md` to mark it as `[X]`, validate the change, and create one
+     descriptive git commit before proceeding
    - **Validation checkpoints**: Verify each phase completion before proceeding
 
 7. Implementation execution rules:
@@ -152,9 +157,9 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Polish and validation**: Unit tests, performance optimization, documentation
 
 8. Progress tracking and error handling:
-   - Report progress after each completed task
+  - Report progress after each completed task and commit
    - Halt execution if any non-parallel task fails
-   - For parallel tasks [P], continue with successful tasks, report failed ones
+  - Halt execution if the required post-task git commit fails
    - Provide clear error messages with context for debugging
    - Suggest next steps if implementation cannot proceed
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.

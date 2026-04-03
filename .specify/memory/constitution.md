@@ -1,22 +1,15 @@
 <!--
 Sync Impact Report
-Version change: template -> 1.0.0
+Version change: 1.0.0 -> 1.1.0
 Modified principles:
-- Template principle slot 1 -> I. TypeScript Extension First
-- Template principle slot 2 -> II. Manifest-Driven Behavior
-- Template principle slot 3 -> III. Tests Are Mandatory
-- Template principle slot 4 -> IV. Failures Must Be Visible
-- Template principle slot 5 -> V. Keep It Small And Clear
+- None (core principle titles unchanged; Delivery Workflow materially expanded)
 Added sections:
-- Technical Guardrails
-- Delivery Workflow
+- None
 Removed sections:
 - None
 Templates requiring updates:
-- ✅ .specify/templates/plan-template.md
-- ✅ .specify/templates/spec-template.md
 - ✅ .specify/templates/tasks-template.md
-- ✅ .github/agents/speckit.tasks.agent.md
+- ✅ .github/agents/speckit.implement.agent.md
 Follow-up TODOs:
 - None
 -->
@@ -90,6 +83,10 @@ concise code and justified complexity keep it maintainable.
 - Each task list MUST schedule tests before implementation tasks for every user
 	story and MUST include observability work whenever a feature adds new failure
 	modes or validation paths.
+- When an automated agent executes `tasks.md`, it MUST complete exactly one task
+	at a time, mark that task complete in `tasks.md`, and create one descriptive
+	git commit before starting the next task. Grouping multiple tasks into a
+	single commit is prohibited unless this constitution is amended.
 - Code review and self-review MUST verify constitutional compliance before merge.
 - Documentation and generated scaffolding MUST stay consistent with this
 	constitution whenever the rules change.
@@ -105,4 +102,4 @@ requirements, and PATCH for clarifications that do not change project obligation
 Compliance review is required for every plan, task list, and pull request that
 changes behavior, tooling, or development workflow.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-02
+**Version**: 1.1.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-03
