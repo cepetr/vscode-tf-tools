@@ -12,6 +12,12 @@
 - **Scope Guard**: This feature includes resolving the active compile-commands artifact, showing compile-commands artifact presence and expected-path tooltip in the `Build Artifacts` section, registering and updating the cpptools custom configuration provider, warning when IntelliSense prerequisites are unavailable or misconfigured, and refreshing IntelliSense state when the active context or relevant workspace state changes. This feature excludes excluded-file explorer badges, optional tree graying, editor overlays, file-scope and pattern rules, Binary and Map File artifact behavior, Flash/Upload actions, and Debug launch.
 - **Critical Informal Details**: IntelliSense must always follow the active model, target, and component rather than silently reusing another compile database; the expected compile-commands artifact path is derived from the artifact base path `<tfTools.artifactsPath>/<artifact-folder>/`, where `<artifact-folder>` comes from the selected model's required manifest field and is interpreted relative to `tfTools.artifactsPath`, and an artifact basename constructed as `<artifact-name><artifact-suffix>`, where `<artifact-name>` comes from the selected component's required manifest field and the selected target's optional `artifact-suffix` defaults to an empty string when omitted; the user must be able to see whether the active compile-commands artifact is present and where it is expected; IntelliSense refresh runs on activation, configuration changes, successful builds, explicit refresh, and relevant workspace/settings/provider changes; cpptools is the only supported IntelliSense provider; missing provider support or an inactive tf-tools provider configuration must produce both a visible user message and a persistent log entry.
 
+## Clarifications
+
+### Session 2026-04-03
+
+- Q: Where should the manual `Refresh IntelliSense` action be exposed? → A: Expose `Refresh IntelliSense` in both the Configuration view title/overflow and the Command Palette.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - See Correct IntelliSense For The Active Context (Priority: P1)
@@ -62,6 +68,7 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 1. **Given** no supported C/C++ provider is installed, **When** IntelliSense refresh runs, **Then** the user sees a warning that IntelliSense integration is unavailable and the condition is recorded persistently.
 2. **Given** cpptools is installed but Trezor Firmware Tools is not the active configuration provider, **When** IntelliSense refresh runs, **Then** the user sees a warning describing the provider misconfiguration and the condition is recorded persistently.
 3. **Given** a provider warning condition is corrected, **When** IntelliSense refresh runs again, **Then** the stale warning state is cleared and IntelliSense readiness reflects the current environment.
+4. **Given** the user needs to resynchronize IntelliSense on demand, **When** they open either the Configuration view title/overflow or the Command Palette, **Then** `Refresh IntelliSense` is available from both surfaces.
 
 ### Edge Cases
 
@@ -83,7 +90,8 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 - **FR-002**: The system MUST treat the resolved compile-commands artifact for the active configuration as the only valid IntelliSense source for that configuration and MUST NOT fall back to a different artifact path, model, target-derived suffix, component, or previously applied IntelliSense state.
 - **FR-003**: The system MUST register and maintain IntelliSense integration through the Microsoft C/C++ custom configuration provider model.
 - **FR-004**: The system MUST update IntelliSense state when refresh is triggered by extension activation, active configuration changes, successful build completion, explicit refresh, workspace-folder changes, provider-availability changes, manifest-path changes, manifest-content changes, and `tfTools.artifactsPath` changes.
-- **FR-005**: The system MUST expose a user-invokable IntelliSense refresh action once this slice is implemented.
+- **FR-005**: The system MUST expose a user-invokable `Refresh IntelliSense` action once this slice is implemented.
+- **FR-005A**: The `Refresh IntelliSense` action MUST be available from both the Configuration view title or overflow menu and the Command Palette.
 - **FR-006**: The `Build Artifacts` section MUST show a `Compile Commands` row for the active configuration.
 - **FR-007**: The `Compile Commands` row MUST display `valid` when the expected compile-commands artifact for the active configuration exists.
 - **FR-008**: The `Compile Commands` row MUST display `missing` when the expected compile-commands artifact for the active configuration does not exist.
