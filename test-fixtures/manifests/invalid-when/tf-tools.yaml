@@ -1,0 +1,40 @@
+# Manifest fixture: contains an invalid when expression.
+# Used by US3 tests to verify that invalid when logic makes the manifest
+# invalid for Build Workflow, blocking Build/Clippy/Check/Clean.
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+
+components:
+  - id: core
+    name: Core
+  - id: prodtest
+    name: Prodtest
+
+buildOptions:
+  # Valid option
+  - label: "Debug Build"
+    flag: "--debug"
+    kind: checkbox
+
+  # Option with an invalid when expression (references unknown manifest id)
+  - label: "Broken Option"
+    flag: "--broken"
+    kind: checkbox
+    when: "model(UNKNOWN_MODEL_ID)"
+
+  # Another option with a syntactically malformed when expression
+  - label: "Syntax Error Option"
+    flag: "--syntax-err"
+    kind: checkbox
+    when: "all()"

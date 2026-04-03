@@ -2,7 +2,7 @@
 
 ## Project Summary
 
-Trezor Firmware Tools is a Visual Studio Code extension for working with the `trezor-firmware` repository. Its core purpose is to keep the active firmware build context visible inside the editor and make that context actionable. The extension reads build metadata from a project-local `tf-tools.yaml`, lets the user select the active model, target, component, and build options from a dedicated sidebar, runs `cargo xtask` clean, build, clippy, and check commands for that selection, applies IntelliSense state from generated compile-commands artifacts, and marks files that are outside the active build configuration.
+Trezor Firmware Tools is a Visual Studio Code extension for working with the `trezor-firmware` repository. Its core purpose is to keep the active firmware build context visible inside the editor and make that context actionable. The extension reads build metadata from a project-local `tf-tools-manifest.yaml`, lets the user select the active model, target, component, and build options from a dedicated sidebar, runs `cargo xtask` clean, build, clippy, and check commands for that selection, applies IntelliSense state from generated compile-commands artifacts, and marks files that are outside the active build configuration.
 
 The primary interaction surface is a dedicated activity-bar container with a tree view for selecting build context, inspecting build artifact availability, and launching the most common actions.
 
@@ -56,7 +56,7 @@ Where the extension needs a short internal identifier, abbreviation, or compact 
 
 ### HR-01 Workspace And Manifest Discovery
 
-The extension shall work against one opened firmware workspace. It shall resolve the cargo workspace path and manifest path from settings, load `tf-tools.yaml` from the configured manifest path, validate its structure, and treat the manifest as the live source of available build choices.
+The extension shall work against one opened firmware workspace. It shall resolve the cargo workspace path and manifest path from settings, load `tf-tools-manifest.yaml` from the configured manifest path, validate its structure, and treat the manifest as the live source of available build choices.
 
 ### HR-02 Active Build Context Selection
 
@@ -76,7 +76,7 @@ The extension shall restore the last active configuration on restart. If saved v
 
 ### HR-06 In-Editor Command Execution
 
-The user shall be able to run command workflows directly from VS Code. The initial task set shall support clean, build, clippy, and check actions. `Build`, `Clippy`, `Check`, and `Clean` shall be exposed as VS Code build tasks, not only as commands. The `Build`, `Clippy`, and `Check` task labels shall include the active build context in the form `{Task} {model-id}-{target-display}-{component-name}` so the task picker shows what will be run. `Clean` shall use the label `Clean`. If a target defines a short name, that short name shall be used as `target-display`; otherwise the full target name shall be used. `Clippy` and `Check` shall use the same active-configuration-derived arguments as `Build`, with `xtask clippy` and `xtask check` used in place of `xtask build`. `Clean` shall invoke `xtask clean` without active-build-context-derived arguments. User-facing command titles shall use the `Trezor:` prefix. The command model shall also support `Flash` and `Upload` actions from the Build Artifacts section when the selected component's `flashWhen` or `uploadWhen` expression evaluates to `true`. `Flash` shall use the dynamic title `Trezor: Flash {model-id}-{component-name}` and shall invoke `xtask flash <component-id> -m <model-id>`. `Upload` shall use the dynamic title `Trezor: Upload {model-id}-{component-name}` and shall invoke `xtask upload <component-id>`. The command model shall also support a `Trezor: Debug` action that resolves the active build context to exactly one manifest-defined debug profile, loads the referenced debugger template, applies tf-tools substitution variables, and launches the resulting VS Code debug configuration. If no debug profile matches, if more than one matching profile remains after priority-based tie-breaking, or if the referenced template cannot be loaded, the extension shall show an error instead of starting the debugger.
+The user shall be able to run command workflows directly from VS Code. The initial task set shall support clean, build, clippy, and check actions. `Build`, `Clippy`, `Check`, and `Clean` shall be exposed as VS Code build tasks, not only as commands. The `Build`, `Clippy`, and `Check` task labels shall include the active build context in the form `{Task} {model-id}-{target-display}-{component-name}` so the task picker shows what will be run. `Clean` shall use the label `Clean`. If a target defines a short name, that short name shall be used as `target-display`; otherwise the full target name shall be used. `Clippy` and `Check` shall use the same active-configuration-derived arguments as `Build`, with `xtask clippy` and `xtask check` used in place of `xtask build`. `Clean` shall invoke `xtask clean` without active-build-context-derived arguments when it is allowed to start. If the manifest is missing, invalid, or contains invalid build-option `when` logic, `Build`, `Clippy`, `Check`, and `Clean` shall all be blocked and shall show an error instead of starting a task. User-facing command titles shall use the `Trezor:` prefix. The command model shall also support `Flash` and `Upload` actions from the Build Artifacts section when the selected component's `flashWhen` or `uploadWhen` expression evaluates to `true`. `Flash` shall use the dynamic title `Trezor: Flash {model-id}-{component-name}` and shall invoke `xtask flash <component-id> -m <model-id>`. `Upload` shall use the dynamic title `Trezor: Upload {model-id}-{component-name}` and shall invoke `xtask upload <component-id>`. The command model shall also support a `Trezor: Debug` action that resolves the active build context to exactly one manifest-defined debug profile, loads the referenced debugger template, applies tf-tools substitution variables, and launches the resulting VS Code debug configuration. If no debug profile matches, if more than one matching profile remains after priority-based tie-breaking, or if the referenced template cannot be loaded, the extension shall show an error instead of starting the debugger.
 
 ### HR-07 IntelliSense Aligned With Active Configuration
 
@@ -100,7 +100,7 @@ The extension shall fail visibly and specifically when prerequisites are not met
 
 ### HR-12 Persistent Diagnostics And Logs
 
-The user shall be able to inspect extension-reported warnings and errors after they occur. Actionable file-backed problems, especially validation errors in `tf-tools.yaml`, shall be surfaced through VS Code diagnostics. Runtime warnings, non-file-backed failures, and debugging detail shall be written to a dedicated `Trezor Firmware Tools` log output channel.
+The user shall be able to inspect extension-reported warnings and errors after they occur. Actionable file-backed problems, especially validation errors in `tf-tools-manifest.yaml`, shall be surfaced through VS Code diagnostics. Runtime warnings, non-file-backed failures, and debugging detail shall be written to a dedicated `Trezor Firmware Tools` log output channel.
 
 ## UI Requirements
 
@@ -150,7 +150,11 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - Multistate options shall render as selector-style parent rows that open to show their available states.
 - Multistate rows shall display the active state inline.
 - When a multistate value is not the default presentation value, the active value shall remain visually emphasized in the row label.
-- Option descriptions shall remain available through tooltips.
+- When a checkbox option is enabled (non-default), its label shall be visually emphasized.
+- When a group heading is collapsed and contains at least one option that is in a non-default state, the group heading label shall be visually emphasized so users can see that something changed inside without expanding it.
+- When a build option defines a `description` field, that description shall be shown as the tooltip for the option row.
+- Build option rows without a `description` field shall have no tooltip.
+- Group headings and Model, Target, and Component selector rows shall have no tooltip.
 - Only options whose `when` expression evaluates to `true`, or that omit `when`, shall be shown.
 - If the build manifest is missing or invalid, the section shall show a warning-style status row instead of option content.
 
@@ -198,7 +202,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - If cpptools is installed but Trezor Firmware Tools is not the active configuration provider, the extension shall warn the user and offer to switch the workspace setting to the Trezor provider.
 - If no supported C/C++ provider is installed, the extension shall warn that IntelliSense integration is unavailable.
 - If a build fails after starting, the extension shall show an error and shall not run post-build refresh.
-- If `Build`, `Clippy`, or `Check` cannot start because the manifest is unavailable, the extension shall show an error instead of starting a task.
+- If `Build`, `Clippy`, `Check`, or `Clean` cannot start because the manifest is unavailable or invalid for Build Workflow, the extension shall show an error instead of starting a task.
 - If any task cannot start because the workspace is unsupported, the extension shall show an error instead of starting a task.
 - If `Debug` cannot start because no unique matching debug profile can be resolved, because the selected debug template is invalid, or because required debug variables cannot be resolved, the extension shall show an error instead of starting the debugger.
 - If the selected debug template file is malformed JSON, the extension shall show an error notification when debug launch is attempted.
@@ -209,7 +213,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 ### UI-09 Diagnostics And Logs
 
 - The extension shall create VS Code diagnostics for actionable file-backed problems.
-- Diagnostics for `tf-tools.yaml` shall appear in the Problems view and in the editor for that file.
+- Diagnostics for `tf-tools-manifest.yaml` shall appear in the Problems view and in the editor for that file.
 - Manifest diagnostics shall cover YAML parse failures, invalid schema structure, invalid `when`, `flashWhen`, and `uploadWhen` expressions, references to unknown model, target, or component ids, duplicate ids, duplicate option flags, and missing required fields.
 - Where a precise source range is known, the diagnostic shall be attached to that range.
 - Where a precise source range is not known, the diagnostic may be attached to the manifest file without a more specific location.
@@ -239,7 +243,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
   - `tfTools.excludedFiles.folderGlobs`
 - Default values shall be:
   - `tfTools.cargoWorkspacePath`: `${workspaceFolder}/core/embed`
-  - `tfTools.manifestPath`: `${workspaceFolder}/core/embed/tf-tools.yaml`
+  - `tfTools.manifestPath`: `${workspaceFolder}/tf-tools-manifest.yaml`
   - `tfTools.artifactsPath`: `${workspaceFolder}/core/build-xtask/artifacts`
   - `tfTools.debug.templatesPath`: `${workspaceFolder}/.vscode/tf-tools/debug`
   - `tfTools.showConfigurationInStatusBar`: `true`
@@ -269,9 +273,9 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - Replacing the tree-view layout with a custom webview.
 
 
-## tf-tools.yaml Specification
+## tf-tools-manifest.yaml Specification
 
-`tf-tools.yaml` defines the selectable build metadata for the extension. The file shall be loaded from the path referenced by `tfTools.manifestPath`.
+`tf-tools-manifest.yaml` defines the selectable build metadata for the extension. The file shall be loaded from the path referenced by `tfTools.manifestPath`.
 
 The manifest also defines debug-profile selection for the `Trezor: Debug` command. Debugger adapter details remain in external template files loaded from `tfTools.debug.templatesPath`.
 
@@ -338,7 +342,7 @@ Each `options` entry shall be a mapping with:
 - `type`: either `checkbox` or `multistate`
 - `when`: optional string expression that determines whether the option is available for the active build context
 
-`tf-tools.yaml` shall not require or expose an option `id`. If the implementation needs internal identifiers for persistence or UI state, those identifiers shall be treated as an internal detail rather than user-authored YAML data.
+`tf-tools-manifest.yaml` shall not require or expose an option `id`. If the implementation needs internal identifiers for persistence or UI state, those identifiers shall be treated as an internal detail rather than user-authored YAML data.
 
 `flashWhen` and `uploadWhen` expression semantics:
 

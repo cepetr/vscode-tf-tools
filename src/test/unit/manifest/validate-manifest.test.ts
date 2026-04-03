@@ -318,3 +318,356 @@ components:
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// parseManifest – Build Options
+// ---------------------------------------------------------------------------
+
+suite("parseManifest – buildOptions", () => {
+  function baseManifest(buildOptions: string): string {
+    return `
+models:
+  - id: T2T1
+    name: Trezor Model T
+  - id: T3W1
+    name: Trezor Model T3
+targets:
+  - id: hw
+    name: Hardware
+  - id: emu
+    name: Emulator
+components:
+  - id: core
+    name: Core
+${buildOptions}
+`.trim();
+  }
+
+  // -------------------------------------------------------------------------
+  // No build options
+  // -------------------------------------------------------------------------
+
+  test("parses manifest without buildOptions without error", () => {
+    const source = baseManifest("");
+    const result = parseManifest(source);
+    assert.deepStrictEqual(result.buildOptions, []);
+    assert.strictEqual(result.hasWorkflowBlockingIssues, false);
+    assert.ok(!result.issues.some((i) => i.code === "invalid-when"));
+  });
+
+  // -------------------------------------------------------------------------
+  // Valid checkbox option
+  // -------------------------------------------------------------------------
+
+  test("parses a valid ungrouped checkbox option", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Debug Build"
+    flag: "--debug"
+    kind: checkbox
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    assert.strictEqual(result.buildOptions.length, 1);
+    const opt = result.buildOptions[0];
+    assert.strictEqual(opt.label, "Debug Build");
+    assert.strictEqual(opt.flag, "--debug");
+    assert.strictEqual(opt.kind, "checkbox");
+    assert.strictEqual(opt.group, undefined);
+    assert.strictEqual(opt.when, undefined);
+  });
+
+  test("parses a grouped checkbox option", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Fast"
+    flag: "--fast"
+    kind: checkbox
+    group: "Build Tuning"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.buildOptions[0].group, "Build Tuning");
+  });
+
+  test("parses option description when present", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Debug"
+    flag: "--debug"
+    kind: checkbox
+    description: "Enable debug symbols"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.buildOptions[0].description, "Enable debug symbols");
+  });
+
+  test("assigns deterministic key derived from flag", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Debug"
+    flag: "--debug"
+    kind: checkbox
+`);
+    const result = parseManifest(source);
+    // Key is derived from flag: strip leading dashes, replace non-alnum with _
+    assert.strictEqual(result.buildOptions[0].key, "debug");
+  });
+
+  // -------------------------------------------------------------------------
+  // Valid multistate option
+  // -------------------------------------------------------------------------
+
+  test("parses a valid multistate option with explicit default", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Verbosity"
+    flag: "--verbose"
+    kind: multistate
+    states:
+      - id: "off"
+        label: "Off"
+        flag: ""
+      - id: "on"
+        label: "On"
+        flag: "--verbose"
+        default: true
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const opt = result.buildOptions[0];
+    assert.strictEqual(opt.kind, "multistate");
+    assert.strictEqual(opt.states?.length, 2);
+    assert.strictEqual(opt.defaultState, "on");
+  });
+
+  test("uses first state as default when no explicit default is set", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Verbosity"
+    flag: "--verbose"
+    kind: multistate
+    states:
+      - id: "off"
+        label: "Off"
+        flag: ""
+      - id: "on"
+        label: "On"
+        flag: "--verbose"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.buildOptions[0].defaultState, "off");
+  });
+
+  // -------------------------------------------------------------------------
+  // when expressions
+  // -------------------------------------------------------------------------
+
+  test("parses a valid when expression and stores it as AST", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "T2T1 Only"
+    flag: "--t2t1"
+    kind: checkbox
+    when: "model(T2T1)"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.code === "invalid-when").length, 0);
+    const opt = result.buildOptions[0];
+    assert.deepStrictEqual(opt.when, { type: "model", id: "T2T1" });
+  });
+
+  test("reports invalid-when error and sets hasWorkflowBlockingIssues for syntactically invalid when", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Broken"
+    flag: "--broken"
+    kind: checkbox
+    when: "all()"
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "invalid-when"));
+    assert.strictEqual(result.hasWorkflowBlockingIssues, true);
+  });
+
+  test("reports invalid-when error for unknown model id in when expression", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Unknown"
+    flag: "--unknown"
+    kind: checkbox
+    when: "model(NONEXISTENT)"
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "invalid-when"));
+    assert.strictEqual(result.hasWorkflowBlockingIssues, true);
+  });
+
+  test("does not block workflow for manifests with only valid when expressions", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "T2T1"
+    flag: "--t2t1"
+    kind: checkbox
+    when: "model(T2T1)"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.hasWorkflowBlockingIssues, false);
+  });
+
+  // -------------------------------------------------------------------------
+  // Duplicate flag validation
+  // -------------------------------------------------------------------------
+
+  test("reports duplicate-flag error for options with the same flag", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "First"
+    flag: "--debug"
+    kind: checkbox
+  - label: "Second"
+    flag: "--debug"
+    kind: checkbox
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "duplicate-flag"));
+  });
+
+  // -------------------------------------------------------------------------
+  // Declaration order preserved
+  // -------------------------------------------------------------------------
+
+  test("preserves manifest declaration order for options", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Alpha"
+    flag: "--alpha"
+    kind: checkbox
+  - label: "Beta"
+    flag: "--beta"
+    kind: checkbox
+  - label: "Gamma"
+    flag: "--gamma"
+    kind: checkbox
+`);
+    const result = parseManifest(source);
+    assert.deepStrictEqual(
+      result.buildOptions.map((o) => o.label),
+      ["Alpha", "Beta", "Gamma"]
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseManifest – canonical "options" schema
+// ---------------------------------------------------------------------------
+
+suite("parseManifest – canonical options schema", () => {
+  function baseManifest(optionsBlock: string): string {
+    return `
+models:
+  - id: t2t1
+    name: T2T1
+targets:
+  - id: hardware
+    name: Hardware
+  - id: emulator
+    name: Emulator
+components:
+  - id: firmware
+    name: Firmware
+${optionsBlock}
+`.trim();
+  }
+
+  test("parses checkbox option using 'options:', 'name:', 'type:', and id-derived flag", () => {
+    const source = baseManifest(`
+options:
+  - id: perf-overlay
+    name: Performance Overlay
+    type: checkbox
+    group: Debugging
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    assert.strictEqual(result.buildOptions.length, 1);
+    const opt = result.buildOptions[0];
+    assert.strictEqual(opt.label, "Performance Overlay");
+    assert.strictEqual(opt.flag, "--perf-overlay");
+    assert.strictEqual(opt.key, "perf_overlay");
+    assert.strictEqual(opt.kind, "checkbox");
+    assert.strictEqual(opt.group, "Debugging");
+  });
+
+  test("parses multistate option with value-based states", () => {
+    const source = baseManifest(`
+options:
+  - id: debug
+    name: Debug Optimization
+    type: multistate
+    states:
+      - value: null
+        name: Default
+        default: true
+      - value: "true"
+        name: Enabled
+      - value: "false"
+        name: Disabled
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const opt = result.buildOptions[0];
+    assert.strictEqual(opt.flag, "--debug");
+    assert.strictEqual(opt.kind, "multistate");
+    assert.strictEqual(opt.states?.length, 3);
+
+    const nullState = opt.states?.find((s) => s.id === "null");
+    assert.ok(nullState, "expected state with id 'null'");
+    assert.strictEqual(nullState!.flag, "");
+
+    const trueState = opt.states?.find((s) => s.id === "true");
+    assert.ok(trueState, "expected state with id 'true'");
+    assert.strictEqual(trueState!.flag, "--debug=true");
+    assert.strictEqual(trueState!.label, "Enabled");
+
+    assert.strictEqual(opt.defaultState, "null");
+  });
+
+  test("derives multistate flag as --{id}={value} for string values", () => {
+    const source = baseManifest(`
+options:
+  - id: dbg-console
+    name: Debug Console
+    type: multistate
+    states:
+      - value: null
+        name: Default
+        default: true
+      - value: vcp
+        name: VCP
+      - value: swo
+        name: SWO
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const opt = result.buildOptions[0];
+    const vcpState = opt.states?.find((s) => s.id === "vcp");
+    assert.ok(vcpState);
+    assert.strictEqual(vcpState!.flag, "--dbg-console=vcp");
+    const swoState = opt.states?.find((s) => s.id === "swo");
+    assert.ok(swoState);
+    assert.strictEqual(swoState!.flag, "--dbg-console=swo");
+  });
+
+  test("parses when expression in canonical schema option", () => {
+    const source = baseManifest(`
+options:
+  - id: production
+    name: Production
+    type: checkbox
+    when: "target(hardware)"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.code === "invalid-when").length, 0);
+    assert.deepStrictEqual(result.buildOptions[0].when, { type: "target", id: "hardware" });
+  });
+});

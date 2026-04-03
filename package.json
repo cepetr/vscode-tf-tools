@@ -44,21 +44,79 @@
         "command": "tfTools.showLogs",
         "title": "Show Logs",
         "category": "Trezor"
+      },
+      {
+        "command": "tfTools.build",
+        "title": "Build",
+        "category": "Trezor",
+        "icon": "$(play)"
+      },
+      {
+        "command": "tfTools.clippy",
+        "title": "Clippy",
+        "category": "Trezor",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "tfTools.check",
+        "title": "Check",
+        "category": "Trezor",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "tfTools.clean",
+        "title": "Clean",
+        "category": "Trezor",
+        "icon": "$(trash)"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "tfTools.build",
+          "when": "view == tfTools.configuration",
+          "group": "navigation@1",
+          "enablement": "!tfTools.workflowBlocked"
+        },
+        {
+          "command": "tfTools.clippy",
+          "when": "view == tfTools.configuration",
+          "group": "navigation@2",
+          "enablement": "!tfTools.workflowBlocked"
+        },
+        {
+          "command": "tfTools.check",
+          "when": "view == tfTools.configuration",
+          "group": "navigation@3",
+          "enablement": "!tfTools.workflowBlocked"
+        },
+        {
+          "command": "tfTools.clean",
+          "when": "view == tfTools.configuration",
+          "group": "navigation@4",
+          "enablement": "!tfTools.workflowBlocked"
+        }
+      ]
+    },
     "configuration": {
       "title": "Trezor Firmware Tools",
       "properties": {
         "tfTools.manifestPath": {
           "type": "string",
-          "default": "tf-tools.yaml",
-          "description": "Path to the tf-tools manifest file, relative to the workspace root.",
+          "default": "tf-tools-manifest.yaml",
+          "description": "(Trezor) Path to the tf-tools manifest file, relative to the workspace root.",
+          "scope": "resource"
+        },
+        "tfTools.cargoWorkspacePath": {
+          "type": "string",
+          "default": "core/embed",
+          "description": "(Trezor) Path to the cargo workspace directory used for build tasks, relative to the workspace root. Defaults to the workspace root when empty.",
           "scope": "resource"
         },
         "tfTools.showConfigurationInStatusBar": {
           "type": "boolean",
           "default": true,
-          "description": "Show the active build configuration in the status bar.",
+          "description": "(Trezor) Show the active build configuration in the status bar.",
           "scope": "resource"
         }
       }

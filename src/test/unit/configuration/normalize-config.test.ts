@@ -24,6 +24,8 @@ function makeManifest(overrides?: Partial<ManifestStateLoaded>): ManifestStateLo
       { kind: "component", id: "core", name: "Core" },
       { kind: "component", id: "prodtest", name: "Prodtest" },
     ],
+    buildOptions: [],
+    hasWorkflowBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date(),
     ...overrides,

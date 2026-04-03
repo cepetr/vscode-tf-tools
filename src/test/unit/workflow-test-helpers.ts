@@ -1,0 +1,146 @@
+/**
+ * Shared helpers for Build Workflow unit and integration tests.
+ *
+ * Provides factory functions for constructing ManifestState objects with
+ * build options so individual test files stay concise.
+ */
+
+import * as path from "path";
+import * as vscode from "vscode";
+import {
+  ManifestStateLoaded,
+  ManifestStateMissing,
+  ManifestStateInvalid,
+  BuildOption,
+  WhenExpression,
+} from "../../manifest/manifest-types";
+
+// ---------------------------------------------------------------------------
+// Manifest URI helpers
+// ---------------------------------------------------------------------------
+
+export function fixtureUri(relPath: string): vscode.Uri {
+  return vscode.Uri.file(
+    path.resolve(__dirname, "../../../../test-fixtures", relPath)
+  );
+}
+
+export function manifestUri(fixtureName: string): vscode.Uri {
+  return fixtureUri(`manifests/${fixtureName}/tf-tools.yaml`);
+}
+
+// ---------------------------------------------------------------------------
+// Manifest state factories
+// ---------------------------------------------------------------------------
+
+export function makeLoadedState(
+  overrides: Partial<ManifestStateLoaded> = {}
+): ManifestStateLoaded {
+  return {
+    status: "loaded",
+    manifestUri: manifestUri("valid-basic"),
+    models: [
+      { kind: "model", id: "T2T1", name: "Trezor Model T (v1)" },
+      { kind: "model", id: "T3W1", name: "Trezor Model T3 (w1)" },
+    ],
+    targets: [
+      { kind: "target", id: "hw", name: "Hardware", shortName: "HW" },
+      { kind: "target", id: "emu", name: "Emulator" },
+    ],
+    components: [
+      { kind: "component", id: "core", name: "Core" },
+      { kind: "component", id: "prodtest", name: "Prodtest" },
+    ],
+    buildOptions: [],
+    hasWorkflowBlockingIssues: false,
+    validationIssues: [],
+    loadedAt: new Date("2026-01-01T00:00:00Z"),
+    ...overrides,
+  };
+}
+
+export function makeMissingState(
+  over: Partial<ManifestStateMissing> = {}
+): ManifestStateMissing {
+  return {
+    status: "missing",
+    manifestUri: manifestUri("missing"),
+    ...over,
+  };
+}
+
+export function makeInvalidState(
+  over: Partial<ManifestStateInvalid> = {}
+): ManifestStateInvalid {
+  return {
+    status: "invalid",
+    manifestUri: manifestUri("invalid-structure"),
+    validationIssues: [
+      { severity: "error", code: "empty-collection", message: "manifest must define at least one model" },
+    ],
+    loadedAt: new Date("2026-01-01T00:00:00Z"),
+    ...over,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Build option factories
+// ---------------------------------------------------------------------------
+
+export function makeCheckboxOption(
+  overrides: Partial<BuildOption> & { key: string; label: string; flag: string }
+): BuildOption {
+  return {
+    kind: "checkbox",
+    group: undefined,
+    description: undefined,
+    when: undefined,
+    ...overrides,
+  };
+}
+
+export function makeMultistateOption(
+  overrides: Partial<BuildOption> & {
+    key: string;
+    label: string;
+    flag: string;
+    states: BuildOption["states"];
+    defaultState: string;
+  }
+): BuildOption {
+  return {
+    kind: "multistate",
+    group: undefined,
+    description: undefined,
+    when: undefined,
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// When expression helpers (mirrors WhenExpression type)
+// ---------------------------------------------------------------------------
+
+export function whenModel(id: string): WhenExpression {
+  return { type: "model", id };
+}
+
+export function whenTarget(id: string): WhenExpression {
+  return { type: "target", id };
+}
+
+export function whenComponent(id: string): WhenExpression {
+  return { type: "component", id };
+}
+
+export function whenAll(...children: WhenExpression[]): WhenExpression {
+  return { type: "all", children };
+}
+
+export function whenAny(...children: WhenExpression[]): WhenExpression {
+  return { type: "any", children };
+}
+
+export function whenNot(child: WhenExpression): WhenExpression {
+  return { type: "not", child };
+}

@@ -104,6 +104,59 @@ const commands = {
   executeCommand: () => Promise.resolve(undefined),
 };
 
+// ---------------------------------------------------------------------------
+// Task doubles for Build Workflow unit tests
+// ---------------------------------------------------------------------------
+
+const TaskScope = { Workspace: 1, Global: 2 };
+const TaskRevealKind = { Always: 1, Silent: 2, Never: 3 };
+const TaskPanelKind = { Shared: 1, Dedicated: 2, New: 3 };
+
+class ShellExecution {
+  constructor(
+    public readonly commandLine: string,
+    public readonly options?: { cwd?: string }
+  ) {}
+}
+
+class ProcessExecution {
+  constructor(
+    public readonly process: string,
+    public readonly args: string[],
+    public readonly options?: { cwd?: string }
+  ) {}
+}
+
+class Task {
+  public group: unknown;
+  public presentationOptions: unknown;
+  constructor(
+    public readonly definition: { type: string; [key: string]: unknown },
+    public readonly scope: number | unknown,
+    public readonly name: string,
+    public readonly source: string,
+    public readonly execution?: ShellExecution | ProcessExecution
+  ) {}
+}
+
+class TaskGroup {
+  static Build = { id: "build", isDefault: false };
+  static Test = { id: "test", isDefault: false };
+  static Rebuild = { id: "rebuild", isDefault: false };
+  static Clean = { id: "clean", isDefault: false };
+  constructor(public readonly id: string, public readonly isDefault: boolean) {}
+}
+
+const tasks = {
+  registerTaskProvider: (_type: string, _provider: unknown) => ({ dispose: () => {} }),
+  fetchTasks: () => Promise.resolve([]),
+  executeTask: () => Promise.resolve({}),
+  onDidStartTask: () => ({ dispose: () => {} }),
+  onDidEndTask: () => ({ dispose: () => {} }),
+  onDidStartTaskProcess: () => ({ dispose: () => {} }),
+  onDidEndTaskProcess: () => ({ dispose: () => {} }),
+};
+
 class EventEmitter {
   private _listeners: Array<(e: unknown) => void> = [];
   event = (listener: (e: unknown) => void) => {
@@ -126,9 +179,10 @@ class TreeItem {
   public contextValue: string | undefined;
   public description: string | undefined;
   public iconPath: unknown;
+  public tooltip: string | undefined;
   public collapsibleState: number;
   constructor(
-    public label: string,
+    public label: string | { label: string; highlights?: [number, number][] },
     collapsibleState: number = 0
   ) {
     this.collapsibleState = collapsibleState;
@@ -140,6 +194,7 @@ class ThemeIcon {
 }
 
 const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 };
+const TreeItemCheckboxState = { Unchecked: 0, Checked: 1 };
 const StatusBarAlignment = { Left: 1, Right: 2 };
 
 module.exports = {
@@ -152,10 +207,19 @@ module.exports = {
   window,
   workspace,
   commands,
+  tasks,
   EventEmitter,
   RelativePattern,
   TreeItem,
   ThemeIcon,
   TreeItemCollapsibleState,
+  TreeItemCheckboxState,
   StatusBarAlignment,
+  TaskScope,
+  TaskRevealKind,
+  TaskPanelKind,
+  ShellExecution,
+  ProcessExecution,
+  Task,
+  TaskGroup,
 };

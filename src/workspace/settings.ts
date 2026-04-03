@@ -8,7 +8,7 @@ export function resolveManifestUri(
   workspaceFolder: vscode.WorkspaceFolder
 ): vscode.Uri {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
-  const relative: string = cfg.get<string>("manifestPath") || "tf-tools.yaml";
+  const relative: string = cfg.get<string>("manifestPath") || "tf-tools-manifest.yaml";
   return vscode.Uri.joinPath(workspaceFolder.uri, relative);
 }
 
@@ -20,4 +20,20 @@ export function isStatusBarEnabled(
 ): boolean {
   const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
   return cfg.get<boolean>("showConfigurationInStatusBar") ?? true;
+}
+
+/**
+ * Returns the cargo workspace directory for the given workspace folder.
+ * Uses `tfTools.cargoWorkspacePath` when set; falls back to the workspace
+ * folder root so the extension works without explicit configuration.
+ */
+export function resolveCargoWorkspacePath(
+  workspaceFolder: vscode.WorkspaceFolder
+): string {
+  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
+  const relative: string | undefined = cfg.get<string>("cargoWorkspacePath");
+  if (relative && relative.trim()) {
+    return vscode.Uri.joinPath(workspaceFolder.uri, relative.trim()).fsPath;
+  }
+  return workspaceFolder.uri.fsPath;
 }

@@ -1,0 +1,69 @@
+# Manifest fixture: grouped and ungrouped build options.
+# Used by US1 tests to verify declaration-order rendering, grouping,
+# checkbox/multistate handling, and when-expression gating.
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+
+components:
+  - id: core
+    name: Core
+  - id: prodtest
+    name: Prodtest
+
+buildOptions:
+  # Ungrouped checkbox option – always available
+  - label: "Debug Build"
+    flag: "--debug"
+    kind: checkbox
+
+  # Group: Build Tuning
+  - label: "Fast"
+    flag: "--fast"
+    kind: checkbox
+    group: "Build Tuning"
+
+  - label: "Optimize"
+    flag: "--optimize"
+    kind: checkbox
+    group: "Build Tuning"
+
+  # Group: Feature Flags
+  - label: "Experimental"
+    flag: "--experimental"
+    kind: checkbox
+    group: "Feature Flags"
+    when: "model(T3W1)"
+
+  # Ungrouped multistate option – available only for hardware target
+  - label: "Verbosity"
+    flag: "--verbose"
+    kind: multistate
+    when: "target(hw)"
+    states:
+      - id: "off"
+        label: "Off"
+        flag: ""
+      - id: "normal"
+        label: "Normal"
+        flag: "--verbose"
+      - id: "high"
+        label: "High"
+        flag: "--verbose=2"
+    defaultState: "off"
+
+  # Group: Build Tuning (same group, later in file – still merges under first occurrence)
+  - label: "Strict"
+    flag: "--strict"
+    kind: checkbox
+    group: "Build Tuning"
