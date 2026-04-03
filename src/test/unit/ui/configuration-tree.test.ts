@@ -169,3 +169,27 @@ suite("BuildOptionGroupItem bold label", () => {
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
   });
 });
+
+suite("BuildOptionCheckboxItem tooltip", () => {
+  test("tooltip is set when description is provided", () => {
+    const item = new BuildOptionCheckboxItem("opt", "Verbose", false, "Enables verbose output");
+    assert.strictEqual(item.tooltip, "Enables verbose output");
+  });
+
+  test("tooltip is undefined when description is omitted", () => {
+    const item = new BuildOptionCheckboxItem("opt", "Verbose", false);
+    assert.strictEqual(item.tooltip, undefined);
+  });
+});
+
+suite("BuildOptionMultistateHeaderItem tooltip", () => {
+  test("tooltip is set when description is provided", () => {
+    const item = new BuildOptionMultistateHeaderItem("opt", "Level", "Off", [], false, false, "Sets verbosity level");
+    assert.strictEqual(item.tooltip, "Sets verbosity level");
+  });
+
+  test("tooltip is undefined when description is omitted", () => {
+    const item = new BuildOptionMultistateHeaderItem("opt", "Level", "Off", [], false, false);
+    assert.strictEqual(item.tooltip, undefined);
+  });
+});

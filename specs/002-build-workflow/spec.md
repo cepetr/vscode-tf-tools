@@ -95,6 +95,7 @@ As a firmware developer, I want build actions to derive their arguments from the
 - **FR-005**: The system MUST allow users to select exactly one state for each multistate build option and MUST present the currently active state inline.
 - **FR-005A**: The system MUST ensure that only one multistate choice list is open at a time, collapsing any previously open list when another is expanded.
 - **FR-005B**: The system MUST visually emphasize the label of any checkbox or multistate build option whose value is not the default, and MUST visually emphasize a group heading label when the group is collapsed and contains at least one non-default option.
+- **FR-005C**: When a build option defines a `description` field, the system MUST display that description as the tooltip for the option row. Build option rows without a `description` field MUST have no tooltip. Group headings, Model, Target, and Component selector rows MUST have no tooltip.
 - **FR-006**: The system MUST apply a default state for multistate options when no explicit workspace selection is stored.
 - **FR-007**: The system MUST parse, validate, and evaluate each option `when` rule against the active model, target, and component before rendering Build Options or deriving effective build arguments.
 - **FR-008**: The system MUST show only build options whose `when` rule evaluates to true or that omit a `when` rule.

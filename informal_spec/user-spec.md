@@ -152,7 +152,9 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - When a multistate value is not the default presentation value, the active value shall remain visually emphasized in the row label.
 - When a checkbox option is enabled (non-default), its label shall be visually emphasized.
 - When a group heading is collapsed and contains at least one option that is in a non-default state, the group heading label shall be visually emphasized so users can see that something changed inside without expanding it.
-- Option descriptions shall remain available through tooltips.
+- When a build option defines a `description` field, that description shall be shown as the tooltip for the option row.
+- Build option rows without a `description` field shall have no tooltip.
+- Group headings and Model, Target, and Component selector rows shall have no tooltip.
 - Only options whose `when` expression evaluates to `true`, or that omit `when`, shall be shown.
 - If the build manifest is missing or invalid, the section shall show a warning-style status row instead of option content.
 

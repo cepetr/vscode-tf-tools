@@ -179,6 +179,7 @@ class TreeItem {
   public contextValue: string | undefined;
   public description: string | undefined;
   public iconPath: unknown;
+  public tooltip: string | undefined;
   public collapsibleState: number;
   constructor(
     public label: string | { label: string; highlights?: [number, number][] },

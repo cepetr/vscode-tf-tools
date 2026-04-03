@@ -15,6 +15,7 @@ export class SectionItem extends vscode.TreeItem {
     super(label, vscode.TreeItemCollapsibleState.Expanded);
     this.id = `section:${sectionId}`;
     this.contextValue = sectionId;
+    this.tooltip = "";
     if (sectionId !== "build-context") {
       // Non-interactive placeholder sections collapse by default
       this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -67,6 +68,7 @@ export class SelectorHeaderItem extends vscode.TreeItem {
     this.contextValue = `selector-${selectorKind}`;
     this.description = activeValue ?? "—";
     this.iconPath = new vscode.ThemeIcon(SELECTOR_ICONS[selectorKind]);
+    this.tooltip = "";
   }
 }
 
@@ -108,6 +110,7 @@ export class BuildOptionGroupItem extends vscode.TreeItem {
     );
     this.id = `build-option-group:${groupLabel}:${collapsed ? "collapsed" : "expanded"}`;
     this.contextValue = "build-option-group";
+    this.tooltip = "";
   }
 }
 
@@ -116,7 +119,8 @@ export class BuildOptionCheckboxItem extends vscode.TreeItem {
   constructor(
     public readonly optionKey: string,
     label: string,
-    checked: boolean
+    checked: boolean,
+    description?: string
   ) {
     super(
       checked ? { label, highlights: [[0, label.length]] } : label,
@@ -127,6 +131,9 @@ export class BuildOptionCheckboxItem extends vscode.TreeItem {
     this.checkboxState = checked
       ? vscode.TreeItemCheckboxState.Checked
       : vscode.TreeItemCheckboxState.Unchecked;
+    if (description) {
+      this.tooltip = description;
+    }
   }
 }
 
@@ -138,7 +145,8 @@ export class BuildOptionMultistateHeaderItem extends vscode.TreeItem {
     activeStateLabel: string,
     public readonly stateChildren: BuildOptionStateItem[],
     expanded: boolean,
-    isNonDefault: boolean = false
+    isNonDefault: boolean = false,
+    description?: string
   ) {
     super(
       isNonDefault ? { label, highlights: [[0, label.length]] } : label,
@@ -150,6 +158,9 @@ export class BuildOptionMultistateHeaderItem extends vscode.TreeItem {
     this.contextValue = "build-option-multistate";
     this.description = activeStateLabel;
     this.iconPath = new vscode.ThemeIcon("list-selection");
+    if (description) {
+      this.tooltip = description;
+    }
   }
 }
 
@@ -498,7 +509,7 @@ export class ConfigurationTreeProvider
     const { option, value } = resolved;
 
     if (option.kind === "checkbox") {
-      return new BuildOptionCheckboxItem(option.key, option.label, value === true);
+      return new BuildOptionCheckboxItem(option.key, option.label, value === true, option.description);
     }
 
     // multistate
@@ -518,7 +529,8 @@ export class ConfigurationTreeProvider
       activeStateLabel,
       stateChildren,
       expanded,
-      isNonDefault
+      isNonDefault,
+      option.description
     );
   }
 
