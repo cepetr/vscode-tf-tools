@@ -93,12 +93,12 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T027 [P] [US3] Add unit tests for status-bar text and visibility rules in `src/test/unit/ui/status-bar.test.ts`
+- [X] T027 [P] [US3] Add unit tests for status-bar text and visibility rules in `src/test/unit/ui/status-bar.test.ts`
 - [ ] T028 [P] [US3] Add integration tests for restore-on-reload and status-bar reveal behavior in `src/test/integration/persistence-status-bar.integration.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T029 [P] [US3] Implement the status-bar presenter and reveal command handling in `src/ui/status-bar.ts`
+- [X] T029 [P] [US3] Implement the status-bar presenter and reveal command handling in `src/ui/status-bar.ts`
 - [ ] T030 [P] [US3] Extend persisted active-configuration restore logic in `src/configuration/active-config.ts`
 - [ ] T031 [US3] Wire status-bar updates and restore-on-activation behavior in `src/extension.ts`
 - [ ] T032 [US3] Handle manifest-change re-normalization for restored selections in `src/manifest/manifest-service.ts` and `src/extension.ts`
