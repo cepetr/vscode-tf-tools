@@ -77,7 +77,7 @@
 ### Implementation for User Story 2
 
 - [X] T023 [P] [US2] Implement model, target, and component normalization helpers in `src/configuration/normalize-config.ts`
-- [ ] T024 [P] [US2] Implement workspace-scoped active-configuration storage and mutation helpers in `src/configuration/active-config.ts`
+- [X] T024 [P] [US2] Implement workspace-scoped active-configuration storage and mutation helpers in `src/configuration/active-config.ts`
 - [ ] T025 [US2] Implement interactive build-context selector rows and selection commands in `src/ui/configuration-tree.ts`
 - [ ] T026 [US2] Integrate selector updates, manifest normalization, and tree refresh in `src/extension.ts`
 
