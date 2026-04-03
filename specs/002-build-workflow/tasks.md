@@ -13,10 +13,10 @@
 
 **Purpose**: Prepare fixtures and test helpers needed by the Build Workflow slice.
 
-- [ ] T001 Create Build Workflow manifest fixtures in `test-fixtures/manifests/options-grouped/tf-tools.yaml`, `test-fixtures/manifests/options-hidden-preserved/tf-tools.yaml`, and `test-fixtures/manifests/invalid-when/tf-tools.yaml`
-- [ ] T002 Create unsupported-workflow fixture scaffolding in `test-fixtures/workspaces/unsupported-workflow/.gitkeep`
-- [ ] T003 [P] Extend VS Code/task test doubles for workflow execution in `src/test/unit/vscode-mock.ts`
-- [ ] T004 [P] Add shared workflow test utilities in `src/test/unit/setup.ts` and `src/test/integration/index.ts`
+- [X] T001 Create Build Workflow manifest fixtures in `test-fixtures/manifests/options-grouped/tf-tools.yaml`, `test-fixtures/manifests/options-hidden-preserved/tf-tools.yaml`, and `test-fixtures/manifests/invalid-when/tf-tools.yaml`
+- [X] T002 Create unsupported-workflow fixture scaffolding in `test-fixtures/workspaces/unsupported-workflow/.gitkeep`
+- [X] T003 [P] Extend VS Code/task test doubles for workflow execution in `src/test/unit/vscode-mock.ts`
+- [X] T004 [P] Add shared workflow test utilities in `src/test/unit/setup.ts` and `src/test/integration/index.ts`
 
 ---
 
@@ -26,12 +26,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Define build-option and validation types in `src/manifest/manifest-types.ts`
-- [ ] T006 [P] Implement `when` expression parsing and evaluation in `src/manifest/when-expressions.ts`
-- [ ] T007 [P] Extend manifest parsing and validation for options, flags, states, and invalid `when` diagnostics in `src/manifest/validate-manifest.ts`
-- [ ] T008 [P] Add workflow-related settings helpers for cargo workspace resolution in `src/workspace/settings.ts` and `package.json`
-- [ ] T009 Implement persisted build-option selection state and normalization helpers in `src/configuration/build-options.ts` and `src/configuration/active-config.ts`
-- [ ] T010 Extend manifest reload and blocking-state publication for Build Workflow in `src/manifest/manifest-service.ts` and `src/observability/diagnostics.ts`
+- [X] T005 Define build-option and validation types in `src/manifest/manifest-types.ts`
+- [X] T006 [P] Implement `when` expression parsing and evaluation in `src/manifest/when-expressions.ts`
+- [X] T007 [P] Extend manifest parsing and validation for options, flags, states, and invalid `when` diagnostics in `src/manifest/validate-manifest.ts`
+- [X] T008 [P] Add workflow-related settings helpers for cargo workspace resolution in `src/workspace/settings.ts` and `package.json`
+- [X] T009 Implement persisted build-option selection state and normalization helpers in `src/configuration/build-options.ts` and `src/configuration/active-config.ts`
+- [X] T010 Extend manifest reload and blocking-state publication for Build Workflow in `src/manifest/manifest-service.ts` and `src/observability/diagnostics.ts`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin.
 
@@ -45,18 +45,18 @@
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T011 [P] [US1] Add unit tests for `when` parsing and evaluation in `src/test/unit/manifest/when-expressions.test.ts`
-- [ ] T012 [P] [US1] Extend manifest validation tests for grouped options, duplicate flags, defaults, and invalid `when` rules in `src/test/unit/manifest/validate-manifest.test.ts`
-- [ ] T013 [P] [US1] Add unit tests for build-option persistence and normalization in `src/test/unit/configuration/build-options.test.ts`
-- [ ] T014 [P] [US1] Add integration tests for Build Options ordering, visibility, and hidden-value restoration in `src/test/integration/build-options-when.integration.test.ts`
+- [X] T011 [P] [US1] Add unit tests for `when` parsing and evaluation in `src/test/unit/manifest/when-expressions.test.ts`
+- [X] T012 [P] [US1] Extend manifest validation tests for grouped options, duplicate flags, defaults, and invalid `when` rules in `src/test/unit/manifest/validate-manifest.test.ts`
+- [X] T013 [P] [US1] Add unit tests for build-option persistence and normalization in `src/test/unit/configuration/build-options.test.ts`
+- [X] T014 [P] [US1] Add integration tests for Build Options ordering, visibility, and hidden-value restoration in `src/test/integration/build-options-when.integration.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T015 [P] [US1] Expand manifest option parsing and loaded-state option data in `src/manifest/manifest-types.ts` and `src/manifest/validate-manifest.ts`
-- [ ] T016 [P] [US1] Implement workspace-scoped build-option storage and normalization in `src/configuration/build-options.ts` and `src/configuration/active-config.ts`
-- [ ] T017 [US1] Render grouped checkbox and multistate Build Options rows in `src/ui/configuration-tree.ts`
-- [ ] T018 [US1] Wire Build Options refresh to manifest and build-context changes in `src/extension.ts`
-- [ ] T019 [US1] Surface invalid build-option `when` diagnostics and logs in `src/observability/diagnostics.ts` and `src/observability/log-channel.ts`
+- [X] T015 [P] [US1] Expand manifest option parsing and loaded-state option data in `src/manifest/manifest-types.ts` and `src/manifest/validate-manifest.ts`
+- [X] T016 [P] [US1] Implement workspace-scoped build-option storage and normalization in `src/configuration/build-options.ts` and `src/configuration/active-config.ts`
+- [X] T017 [US1] Render grouped checkbox and multistate Build Options rows in `src/ui/configuration-tree.ts`
+- [X] T018 [US1] Wire Build Options refresh to manifest and build-context changes in `src/extension.ts`
+- [X] T019 [US1] Surface invalid build-option `when` diagnostics and logs in `src/observability/diagnostics.ts` and `src/observability/log-channel.ts`
 
 **Checkpoint**: User Story 1 should now be functional and independently testable.
 
@@ -70,18 +70,18 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T020 [P] [US2] Add unit tests for workflow label formatting in `src/test/unit/workflow/task-labels.test.ts`
-- [ ] T021 [P] [US2] Add unit tests for effective argument derivation in `src/test/unit/workflow/build-arguments.test.ts`
-- [ ] T022 [P] [US2] Add integration tests for workflow commands and view-header actions in `src/test/integration/build-workflow.integration.test.ts`
-- [ ] T023 [P] [US2] Add integration tests for VS Code build-task exposure and labels in `src/test/integration/task-provider.integration.test.ts`
+- [X] T020 [P] [US2] Add unit tests for workflow label formatting in `src/test/unit/workflow/task-labels.test.ts`
+- [X] T021 [P] [US2] Add unit tests for effective argument derivation in `src/test/unit/workflow/build-arguments.test.ts`
+- [X] T022 [P] [US2] Add integration tests for workflow commands and view-header actions in `src/test/integration/build-workflow.integration.test.ts`
+- [X] T023 [P] [US2] Add integration tests for VS Code build-task exposure and labels in `src/test/integration/task-provider.integration.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T024 [P] [US2] Add Build Workflow command, menu, and setting contributions in `package.json`
-- [ ] T025 [P] [US2] Implement effective workflow configuration and argument derivation in `src/commands/build-workflow.ts`
-- [ ] T026 [P] [US2] Implement VS Code build-task exposure for `Build`, `Clippy`, `Check`, and `Clean` in `src/tasks/build-task-provider.ts`
-- [ ] T027 [US2] Wire workflow commands, task provider, and active-context execution through `src/extension.ts`
-- [ ] T028 [US2] Keep `Build`, `Clippy`, `Check`, and `Clean` synchronized with the Configuration view header in `package.json` and `src/extension.ts`
+- [X] T024 [P] [US2] Add Build Workflow command, menu, and setting contributions in `package.json`
+- [X] T025 [P] [US2] Implement effective workflow configuration and argument derivation in `src/commands/build-workflow.ts`
+- [X] T026 [P] [US2] Implement VS Code build-task exposure for `Build`, `Clippy`, `Check`, and `Clean` in `src/tasks/build-task-provider.ts`
+- [X] T027 [US2] Wire workflow commands, task provider, and active-context execution through `src/extension.ts`
+- [X] T028 [US2] Keep `Build`, `Clippy`, `Check`, and `Clean` synchronized with the Configuration view header in `package.json` and `src/extension.ts`
 
 **Checkpoint**: User Stories 1 and 2 should both work, and workflow actions should launch from both the Configuration view and standard task entry points.
 
@@ -95,16 +95,16 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T029 [P] [US3] Add unit tests for blocked-action gating and failure reasons in `src/test/unit/workflow/preconditions.test.ts`
-- [ ] T030 [P] [US3] Extend integration tests for invalid manifest and blocked header actions in `src/test/integration/build-workflow.integration.test.ts`
-- [ ] T031 [P] [US3] Extend integration tests for task failure notifications and logging in `src/test/integration/task-provider.integration.test.ts`
+- [X] T029 [P] [US3] Add unit tests for blocked-action gating and failure reasons in `src/test/unit/workflow/preconditions.test.ts`
+- [X] T030 [P] [US3] Extend integration tests for invalid manifest and blocked header actions in `src/test/integration/build-workflow.integration.test.ts`
+- [X] T031 [P] [US3] Extend integration tests for task failure notifications and logging in `src/test/integration/task-provider.integration.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T032 [P] [US3] Implement shared workflow precondition checks and blocked reasons in `src/commands/build-workflow.ts`
-- [ ] T033 [P] [US3] Extend workflow failure notifications and output-channel logging in `src/commands/build-workflow.ts` and `src/observability/log-channel.ts`
-- [ ] T034 [US3] Keep blocked workflow actions visible but disabled in `package.json`, `src/extension.ts`, and `src/tasks/build-task-provider.ts`
-- [ ] T035 [US3] Prevent out-of-scope post-build refresh behavior during workflow execution in `src/tasks/build-task-provider.ts` and `src/extension.ts`
+- [X] T032 [P] [US3] Implement shared workflow precondition checks and blocked reasons in `src/commands/build-workflow.ts`
+- [X] T033 [P] [US3] Extend workflow failure notifications and output-channel logging in `src/commands/build-workflow.ts` and `src/observability/log-channel.ts`
+- [X] T034 [US3] Keep blocked workflow actions visible but disabled in `package.json`, `src/extension.ts`, and `src/tasks/build-task-provider.ts`
+- [X] T035 [US3] Prevent out-of-scope post-build refresh behavior during workflow execution in `src/tasks/build-task-provider.ts` and `src/extension.ts`
 
 **Checkpoint**: All user stories should now be independently testable and the Build Workflow slice should be complete without crossing into later slices.
 
@@ -114,9 +114,9 @@
 
 **Purpose**: Final consistency, regression coverage, and end-to-end validation for the completed feature.
 
-- [ ] T036 [P] Review package and activation wiring for cross-slice command drift in `package.json` and `src/extension.ts`
-- [ ] T037 [P] Expand regression coverage for preserved hidden values and target short-name fallback in `src/test/integration/build-options-when.integration.test.ts` and `src/test/unit/workflow/task-labels.test.ts`
-- [ ] T038 Validate end-to-end Build Workflow scenarios from `specs/002-build-workflow/quickstart.md`
+- [X] T036 [P] Review package and activation wiring for cross-slice command drift in `package.json` and `src/extension.ts`
+- [X] T037 [P] Expand regression coverage for preserved hidden values and target short-name fallback in `src/test/integration/build-options-when.integration.test.ts` and `src/test/unit/workflow/task-labels.test.ts`
+- [X] T038 Validate end-to-end Build Workflow scenarios from `specs/002-build-workflow/quickstart.md`
 
 ---
 
