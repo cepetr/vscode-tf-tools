@@ -11,14 +11,21 @@ import {
   selectModel,
   selectTarget,
   selectComponent,
+  ActiveConfig,
 } from "./configuration/active-config";
-import { ManifestState } from "./manifest/manifest-types";
+import {
+  readBuildOptions,
+  normalizeBuildOptions,
+  ResolvedOption,
+} from "./configuration/build-options";
+import { ManifestState, ManifestStateLoaded } from "./manifest/manifest-types";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
 let _configurationTreeView: vscode.TreeView<vscode.TreeItem> | undefined;
 let _statusBar: StatusBarPresenter | undefined;
 let _manifestState: ManifestState | undefined;
+let _activeConfig: ActiveConfig | undefined;
 
 // ---------------------------------------------------------------------------
 // Scope guard (FR-016, FR-017)
@@ -60,6 +67,24 @@ function assertNoUnauthorizedContributions(
     // In development host, fail loudly; in packaged extension log to channel
     console.error(msg);
   }
+}
+
+/**
+ * Computes the resolved build options for the given manifest state, active
+ * configuration, and current persisted selections. Returns an empty array
+ * when the manifest is not loaded or no active configuration is available.
+ */
+function computeResolvedOptions(
+  state: ManifestState,
+  activeConfig: ActiveConfig | undefined,
+  context: vscode.ExtensionContext
+): ResolvedOption[] {
+  if (state.status !== "loaded" || !activeConfig) {
+    return [];
+  }
+  const loaded = state as ManifestStateLoaded;
+  const saved = readBuildOptions(context);
+  return normalizeBuildOptions(loaded.buildOptions, saved, activeConfig);
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -113,11 +138,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     _manifestService.onDidChangeState(async (state) => {
       _manifestState = state;
-      let activeConfig;
+      let activeConfig: ActiveConfig | undefined;
       if (state.status === "loaded") {
         activeConfig = await restoreActiveConfig(context, state);
       }
-      _treeProvider?.update(state, activeConfig);
+      _activeConfig = activeConfig;
+      const resolvedOptions = computeResolvedOptions(state, activeConfig, context);
+      _treeProvider?.update(state, activeConfig, resolvedOptions);
       _statusBar?.update(state, activeConfig, isStatusBarEnabled(workspaceFolder));
       handleManifestStateDiagnostics(state);
       logManifestState(state);
@@ -137,7 +164,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
       const config = await selectModel(context, modelId, state);
-      _treeProvider?.update(state, config);
+      _activeConfig = config;
+      const resolvedOptions = computeResolvedOptions(state, config, context);
+      _treeProvider?.update(state, config, resolvedOptions);
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
     })
   );
@@ -147,7 +176,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
       const config = await selectTarget(context, targetId, state);
-      _treeProvider?.update(state, config);
+      _activeConfig = config;
+      const resolvedOptions = computeResolvedOptions(state, config, context);
+      _treeProvider?.update(state, config, resolvedOptions);
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
     })
   );
@@ -157,7 +188,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const state = _manifestState;
       if (!state || state.status !== "loaded") { return; }
       const config = await selectComponent(context, componentId, state);
-      _treeProvider?.update(state, config);
+      _activeConfig = config;
+      const resolvedOptions = computeResolvedOptions(state, config, context);
+      _treeProvider?.update(state, config, resolvedOptions);
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
     })
   );
@@ -176,6 +209,7 @@ export function deactivate(): void {
   _statusBar?.dispose();
   _statusBar = undefined;
   _manifestState = undefined;
+  _activeConfig = undefined;
   disposeDiagnostics();
   disposeLogChannel();
 }
