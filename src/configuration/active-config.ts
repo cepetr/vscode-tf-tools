@@ -91,3 +91,31 @@ export async function selectComponent(
   const base = normalizeActiveConfig(manifest, readActiveConfig(context));
   return writeActiveConfig(context, { ...base, componentId });
 }
+
+// ---------------------------------------------------------------------------
+// Restore helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Reads the persisted active configuration, normalizes it against `manifest`,
+ * writes back if any id was stale, and returns the resulting valid config.
+ *
+ * Use this at activation time and on every manifest state change to keep the
+ * workspace-state selection in sync with the manifest.
+ */
+export async function restoreActiveConfig(
+  context: vscode.ExtensionContext,
+  manifest: ManifestStateLoaded
+): Promise<ActiveConfig> {
+  const saved = readActiveConfig(context);
+  const normalized = normalizeActiveConfig(manifest, saved);
+  if (
+    !saved ||
+    saved.modelId !== normalized.modelId ||
+    saved.targetId !== normalized.targetId ||
+    saved.componentId !== normalized.componentId
+  ) {
+    return writeActiveConfig(context, normalized);
+  }
+  return saved;
+}
