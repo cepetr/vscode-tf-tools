@@ -177,8 +177,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 ### UI-07 Tree View Icons
 
-- The `Build Context` and `Build Options` top-level sections shall use the VS Code `symbol-folder` theme icon.
-- The `Build Artifacts` top-level section shall use the VS Code `info` theme icon.
+- The `Build Context`, `Build Options`, and `Build Artifacts` top-level sections shall render as plain text group headers without dedicated icons.
 - The `Model` selector row shall use the VS Code `circuit-board` theme icon.
 - The `Target` selector row shall use the VS Code `target` theme icon.
 - The `Component` selector row shall use the VS Code `extensions` theme icon.

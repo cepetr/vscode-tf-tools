@@ -3,19 +3,19 @@ import * as vscode from "vscode";
 import { SectionItem, SelectorChoiceItem, SelectorHeaderItem } from "../../../ui/configuration-tree";
 
 suite("SectionItem icons", () => {
-  test("uses symbol-folder for Build Context", () => {
+  test("uses no icon for Build Context", () => {
     const item = new SectionItem("build-context", "Build Context");
-    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "symbol-folder");
+    assert.strictEqual(item.iconPath, undefined);
   });
 
-  test("uses symbol-folder for Build Options", () => {
+  test("uses no icon for Build Options", () => {
     const item = new SectionItem("build-options", "Build Options");
-    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "symbol-folder");
+    assert.strictEqual(item.iconPath, undefined);
   });
 
-  test("uses info for Build Artifacts", () => {
+  test("uses no icon for Build Artifacts", () => {
     const item = new SectionItem("build-artifacts", "Build Artifacts");
-    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "info");
+    assert.strictEqual(item.iconPath, undefined);
   });
 });
 

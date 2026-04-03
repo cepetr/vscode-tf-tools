@@ -95,7 +95,7 @@ As a firmware developer, I want the chosen configuration to remain visible after
 - **FR-015**: The system MUST fail visibly when the manifest is missing, unreadable, or invalid by combining immediate user feedback with at least one persistent signal.
 - **FR-016**: The configuration view for this feature MUST not expose `Build` or `Debug` actions in the view title bar.
 - **FR-017**: This feature MUST not expose build execution, build-option behavior, `when` handling, build-artifact status evaluation, IntelliSense state, excluded-file markers, flash/upload actions, or debug launch controls.
-- **FR-018**: The configuration tree MUST use the following VS Code theme icons in this slice: `symbol-folder` for `Build Context` and `Build Options`, `info` for `Build Artifacts`, `circuit-board` for the `Model` selector, `target` for the `Target` selector, and `extensions` for the `Component` selector.
+- **FR-018**: The configuration tree MUST render `Build Context`, `Build Options`, and `Build Artifacts` as plain-text top-level group headers without dedicated icons, and it MUST use the following VS Code theme icons for selector rows in this slice: `circuit-board` for the `Model` selector, `target` for the `Target` selector, and `extensions` for the `Component` selector.
 - **FR-019**: Expanded selector choice rows in this slice MUST rely on selection state rather than dedicated semantic inactive icons; the active choice may use a `check` icon, and inactive choices MUST render with an empty spacer icon so choice labels remain aligned.
 - **FR-020**: Build-context selector headers MUST display user-facing selected values inline: model `name`, target `shortName` when present otherwise target `name`, and component `name`.
 

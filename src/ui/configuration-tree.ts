@@ -9,17 +9,10 @@ import { ActiveConfig } from "../configuration/active-config";
 
 export type SectionId = "build-context" | "build-options" | "build-artifacts";
 
-const SECTION_ICONS: Readonly<Record<SectionId, string>> = {
-  "build-context": "symbol-folder",
-  "build-options": "symbol-folder",
-  "build-artifacts": "info",
-};
-
 export class SectionItem extends vscode.TreeItem {
   constructor(public readonly sectionId: SectionId, label: string) {
     super(label, vscode.TreeItemCollapsibleState.Expanded);
     this.contextValue = sectionId;
-    this.iconPath = new vscode.ThemeIcon(SECTION_ICONS[sectionId]);
     if (sectionId !== "build-context") {
       // Non-interactive placeholder sections collapse by default
       this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
