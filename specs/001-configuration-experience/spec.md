@@ -9,13 +9,12 @@
 
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
 - **Selected Slice**: `1. Configuration Experience`
-- **Scope Guard**: This feature includes manifest discovery, manifest validation feedback, the configuration activity-bar surface, build-context selection for model/target/component, workspace-scoped persistence and normalization of the active selection, status-bar visibility of the active selection, and persistent diagnostics/log output for configuration-related failures. The configuration tree preserves the final three-section shape by showing `Build Context` as the active interactive section and showing `Build Options` and `Build Artifacts` as non-interactive placeholder or status sections only. This feature does not expose `Build` or `Debug` actions in the view title bar. This feature explicitly excludes build, clippy, check, clean, build-option editing, build-artifact status evaluation, IntelliSense integration, excluded-file visibility, flash/upload actions, and debug launch.
+- **Scope Guard**: This feature includes manifest discovery, manifest validation feedback, the configuration activity-bar surface, build-context selection for model/target/component, workspace-scoped persistence and normalization of the active selection, status-bar visibility of the active selection, and persistent diagnostics/log output for configuration-related failures. This feature does not expose `Build Options` behavior, `Build Artifacts` behavior, or `Build` and `Debug` view-title actions. This feature explicitly excludes build, clippy, check, clean, build-option editing, `when` handling, build-artifact status evaluation, IntelliSense integration, excluded-file visibility, flash/upload actions, and debug launch.
 
 ## Clarifications
 
 ### Session 2026-04-03
 
-- Q: Should this feature show only `Build Context`, or preserve the final tree shape with `Build Options` and `Build Artifacts` visible as non-interactive placeholders? → A: Preserve the final tree shape with `Build Context` interactive and `Build Options` plus `Build Artifacts` shown as non-interactive placeholder or status sections.
 - Q: What exact format should the status-bar item use for the active configuration? → A: `{model-id} | {target-display} | {component-name}`.
 - Q: Should this feature expose `Build` or `Debug` actions in the view title bar? → A: No. This feature does not expose `Build` or `Debug` view-title actions.
 
@@ -31,7 +30,7 @@ As a firmware developer, I want to open the extension and immediately see whethe
 
 **Acceptance Scenarios**:
 
-1. **Given** a workspace with a valid manifest, **When** the extension loads, **Then** the configuration view shows the three top-level sections `Build Context`, `Build Options`, and `Build Artifacts`, with selectable model, target, and component values available under `Build Context`.
+1. **Given** a workspace with a valid manifest, **When** the extension loads, **Then** the configuration view shows selectable model, target, and component values derived from that manifest.
 2. **Given** a workspace where the manifest file is missing, **When** the extension loads, **Then** the configuration view shows a warning state instead of stale selectors and the failure is recorded in persistent logs.
 3. **Given** a workspace with invalid manifest content, **When** the extension loads or the manifest is edited, **Then** the user can inspect validation problems from persistent diagnostics and the configuration view does not present invalid choices.
 
@@ -82,22 +81,20 @@ As a firmware developer, I want the chosen configuration to remain visible after
 - **FR-001**: The system MUST resolve the workspace configuration manifest from the configured manifest path and treat that file as the source of truth for available model, target, and component selections.
 - **FR-002**: The system MUST classify manifest state as valid, missing, or invalid each time the extension loads or the manifest changes.
 - **FR-003**: The system MUST present a dedicated configuration view in the extension activity-bar container for this feature slice.
-- **FR-004**: The configuration view MUST preserve the final three-section tree shape by showing `Build Context`, `Build Options`, and `Build Artifacts` as top-level sections in that order.
-- **FR-005**: The configuration view MUST show build-context selectors for model, target, and component inside `Build Context` when the manifest state is valid.
-- **FR-006**: The configuration view MUST show non-interactive placeholder or status content in `Build Options` and `Build Artifacts` for this feature instead of future controls from later slices.
-- **FR-007**: The configuration view MUST show a warning state instead of selectable values when the manifest is missing or invalid.
-- **FR-008**: Users MUST be able to select exactly one active model, one active target, and one active component from values defined by the current manifest.
-- **FR-009**: The system MUST persist the active model, target, and component per workspace and restore them on the next session.
-- **FR-010**: When restored values are absent from the current manifest, the system MUST replace them with valid manifest-defined defaults and discard invalid persisted values.
-- **FR-011**: The system MUST keep the configuration view synchronized with manifest changes so stale choices are not shown after the manifest is updated.
-- **FR-012**: The system MUST provide a status-bar surface for the active configuration when that surface is enabled in workspace settings.
-- **FR-013**: The status-bar surface MUST display the active configuration in the format `{model-id} | {target-display} | {component-name}` and update whenever the active selection changes.
-- **FR-014**: Activating the status-bar surface MUST reveal the configuration view.
-- **FR-015**: The system MUST produce persistent diagnostics for actionable manifest validation problems so users can inspect them after transient notifications disappear.
-- **FR-016**: The system MUST record configuration-related runtime warnings and errors in a dedicated persistent log surface.
-- **FR-017**: The system MUST fail visibly when the manifest is missing, unreadable, or invalid by combining immediate user feedback with at least one persistent signal.
-- **FR-018**: The configuration view for this feature MUST not expose `Build` or `Debug` actions in the view title bar.
-- **FR-019**: This feature MUST not expose build execution, build-option editing, build-artifact status evaluation, IntelliSense state, excluded-file markers, flash/upload actions, or debug launch controls.
+- **FR-004**: The configuration view MUST show build-context selectors for model, target, and component when the manifest state is valid.
+- **FR-005**: The configuration view MUST show a warning state instead of selectable values when the manifest is missing or invalid.
+- **FR-006**: Users MUST be able to select exactly one active model, one active target, and one active component from values defined by the current manifest.
+- **FR-007**: The system MUST persist the active model, target, and component per workspace and restore them on the next session.
+- **FR-008**: When restored values are absent from the current manifest, the system MUST replace them with valid manifest-defined defaults and discard invalid persisted values.
+- **FR-009**: The system MUST keep the configuration view synchronized with manifest changes so stale choices are not shown after the manifest is updated.
+- **FR-010**: The system MUST provide a status-bar surface for the active configuration when that surface is enabled in workspace settings.
+- **FR-011**: The status-bar surface MUST display the active configuration in the format `{model-id} | {target-display} | {component-name}` and update whenever the active selection changes.
+- **FR-012**: Activating the status-bar surface MUST reveal the configuration view.
+- **FR-013**: The system MUST produce persistent diagnostics for actionable manifest validation problems so users can inspect them after transient notifications disappear.
+- **FR-014**: The system MUST record configuration-related runtime warnings and errors in a dedicated persistent log surface.
+- **FR-015**: The system MUST fail visibly when the manifest is missing, unreadable, or invalid by combining immediate user feedback with at least one persistent signal.
+- **FR-016**: The configuration view for this feature MUST not expose `Build` or `Debug` actions in the view title bar.
+- **FR-017**: This feature MUST not expose build execution, build-option behavior, `when` handling, build-artifact status evaluation, IntelliSense state, excluded-file markers, flash/upload actions, or debug launch controls.
 
 ### Key Entities *(include if feature involves data)*
 

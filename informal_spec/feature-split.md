@@ -9,12 +9,12 @@ The goal is to keep each feature user-visible, independently testable, and narro
 ### 1. Configuration Experience
 Manifest load and validation, configuration tree, persisted active selection, status bar, diagnostics, and log output.
 
-This feature should produce the first usable UI slice. After it is implemented, a user should be able to open the extension, load the manifest, inspect validation problems, select model/target/component, and see the active configuration reflected in the UI and restored across reloads.
+This feature should produce the first usable UI slice. After it is implemented, a user should be able to open the extension, load the manifest, inspect validation problems for the configuration context, select model/target/component, and see the active configuration reflected in the UI and restored across reloads. Build Options may be visible only as a placeholder section in this slice; manifest-driven Build Options behavior and `when` handling are deferred.
 
 ### 2. Build Workflow
-Build, clippy, check, and clean actions; dynamic task labels; command argument derivation; build-artifact status refresh.
+Build Options behavior, `when` parsing/validation/evaluation, build, clippy, check, and clean actions; dynamic task labels; command argument derivation; build-artifact status refresh.
 
-This feature adds in-editor execution of the main xtask workflows and connects the active configuration to task invocation and artifact state.
+This feature adds the first runtime behaviors driven by the full active configuration. It implements real Build Options rendering and selection, validates and evaluates option `when` expressions against the active model/target/component, derives command arguments from the effective configuration, and adds in-editor execution of the main xtask workflows together with build-artifact status refresh.
 
 ### 3. IntelliSense Integration
 Compile-commands resolution, cpptools configuration provider integration, provider warnings, and IntelliSense refresh behavior.
@@ -41,6 +41,7 @@ This feature is intentionally separate from flash/upload. It is a debug-configur
 - Each feature has a visible user outcome.
 - Each feature has a clear integration boundary.
 - Each feature can be specified and tested without dragging the whole extension into one plan.
+- Build Options and `when` handling are grouped with Build Workflow because they first become user-testable when they affect visible option availability and build argument derivation.
 - Debug is separated from flash/upload because their workflows, failure modes, and tests are materially different.
 - IntelliSense is separated from excluded-file visibility because excluded-file UX depends on compile-database data, but the user-facing behavior is still different enough to justify distinct features when building the full product.
 
