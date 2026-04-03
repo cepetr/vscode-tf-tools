@@ -50,3 +50,4 @@ Verify the first feature slice end-to-end in a VS Code Extension Development Hos
 
 - Unit tests cover manifest parsing, validation, normalization, and status-bar formatting.
 - Integration tests cover tree rendering, manifest watcher refresh, diagnostics publication, log command behavior, and workspace-state restoration.
+- Package smoke validation confirms the bundled `out/extension.js` loads with only the `vscode` host API externalized and that the generated VSIX contains the expected bundle and icon assets.

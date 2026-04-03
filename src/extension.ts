@@ -67,6 +67,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Scope guard: verify no cross-slice commands are registered (T019) ---
   assertNoUnauthorizedContributions(context);
 
+  // Always register the tree provider so VS Code never shows
+  // "no data provider registered" when the activity bar is clicked.
+  _treeProvider = new ConfigurationTreeProvider();
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider("tfTools.configuration", _treeProvider)
+  );
+
   if (!hasSupportedWorkspace()) {
     // Extension activated without a workspace — show a visible warning and bail.
     vscode.window.showWarningMessage(
@@ -77,12 +84,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const workspaceFolder = requireWorkspaceFolder();
   const manifestUri = resolveManifestUri(workspaceFolder);
-
-  // --- Tree view provider ---
-  _treeProvider = new ConfigurationTreeProvider();
-  context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("tfTools.configuration", _treeProvider)
-  );
 
   // --- Status-bar presenter (T031) ---
   _statusBar = new StatusBarPresenter();

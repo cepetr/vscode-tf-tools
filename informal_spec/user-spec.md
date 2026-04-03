@@ -109,7 +109,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 ### UI-01 Activity Bar Surface
 
 - The extension shall contribute an activity-bar container named `Trezor Firmware Tools`.
-- The extension shall use `tf-tools.png` from the repository root as the extension icon shown in the VS Code extensions view.
+- The extension shall use `images/tf-tools-logo.png` as the extension icon shown in the VS Code extensions view.
 - The activity-bar container shall use `images/tf-tools.svg` as its icon.
 - The container shall expose a single view named `Configuration`.
 
@@ -121,18 +121,9 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 ### UI-03 View Title Actions
 
-- The view title bar shall expose `Build` as the primary action.
-- The view title bar shall expose `Debug` beside `Build`.
-- The `Debug` action shall use the title `Debug`.
-- The `Debug` action shall invoke the `Trezor: Debug` command for the active build context shown in the tree.
-- The `Debug` action shall be visible whenever the active build context can be evaluated, even when the action is disabled.
-- The `Debug` action shall be enabled only when exactly one valid debug profile can be resolved for the active build context.
-- When the `Debug` action is disabled, its tooltip shall explain why debugging is unavailable for the current build context.
-- `Clippy`, `Check`, `Clean`, and `Refresh IntelliSense` shall be available from the view-title overflow menu.
-- These actions shall remain available in the Command Palette under `Trezor:`-prefixed command titles.
-- The title-bar actions shall operate on the active configuration shown in the tree.
-- The UI model shall allow additional future actions to be added without redesigning the view structure.
-- Artifact-row actions do not need to appear as standalone Command Palette entries unless explicitly required elsewhere.
+- The Configuration Experience slice shall not expose `Build`, `Debug`, `Clippy`, `Check`, `Clean`, or `Refresh IntelliSense` actions in the view title bar or its overflow menu.
+- These actions are deferred to later feature slices and shall not be contributed until their behavior is implemented.
+- The UI model shall still allow future view-title and overflow actions to be added without redesigning the view structure.
 
 ### UI-04 Build Context Section
 

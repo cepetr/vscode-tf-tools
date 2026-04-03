@@ -15,4 +15,4 @@ tsconfig.json
 specs/**
 informal_spec/**
 launch.json
-images/**
+scripts/**

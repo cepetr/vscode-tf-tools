@@ -20,7 +20,7 @@ Deliver the first usable VS Code extension slice for Trezor Firmware Tools: load
 **Language/Version**: TypeScript 5.x targeting VS Code 1.110+ desktop extension host
 **Primary Dependencies**: VS Code Extension API, `yaml` for range-aware manifest parsing, Node.js filesystem APIs, Mocha test runner, `@vscode/test-electron` for integration tests
 **Storage**: VS Code workspace settings for manifest path and status-bar visibility, workspace state for active configuration, repository manifest file for build-context source data
-**Testing**: Mocha unit tests for parsing, configuration-context validation, normalization, and status-bar formatting; `@vscode/test-electron` integration tests for build-context rendering, file watching, status-bar updates, diagnostics, and workspace-state restoration
+**Testing**: Mocha unit tests for parsing, configuration-context validation, normalization, and status-bar formatting; `@vscode/test-electron` integration tests for build-context rendering, file watching, status-bar updates, diagnostics, and workspace-state restoration; package smoke validation that confirms the bundled extension loads without runtime npm dependencies and that the VSIX contains the expected bundle and icon assets
 **Target Platform**: VS Code 1.110+ desktop extension host on single-root workspaces
 **Project Type**: Single-package VS Code extension initialized at repository root
 **Performance Goals**: Initial manifest load and selection-driven tree/status refresh should feel instantaneous for local manifests with tens of entries; filesystem-triggered refreshes should be debounced to avoid duplicate work and should complete without perceptible UI lag
