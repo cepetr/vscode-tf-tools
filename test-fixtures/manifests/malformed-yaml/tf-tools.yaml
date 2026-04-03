@@ -1,0 +1,5 @@
+# Intentionally malformed YAML to trigger yaml-parse validation error.
+models:
+  - id: T2T1
+    name: Trezor Model T
+    bad_yaml: [unclosed bracket

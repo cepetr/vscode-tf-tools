@@ -1,0 +1,10 @@
+# Structurally invalid manifest for testing: models entry is missing required fields
+# and the targets collection is empty.
+models:
+  - name: Missing ID Model   # no `id` field — should trigger missing-field validation error
+
+targets: []                  # empty collection — should trigger empty-collection error
+
+components:
+  - id: core
+    name: Core

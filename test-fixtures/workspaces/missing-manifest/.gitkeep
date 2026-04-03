@@ -1,0 +1,2 @@
+# This directory intentionally contains no tf-tools.yaml.
+# It is used to test the missing-manifest scenario.
