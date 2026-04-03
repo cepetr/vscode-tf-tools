@@ -1,6 +1,6 @@
 # Implementation Plan: Configuration Experience
 
-**Branch**: `001-configuration-experience` | **Date**: 2026-04-03 | **Spec**: `/home/pcernin/repos/tf-tools/specs/001-configuration-experience/spec.md`
+**Branch**: `001-configuration-experience` | **Date**: 2026-04-03 | **Spec**: `specs/001-configuration-experience/spec.md`
 **Input**: Feature specification from `/specs/001-configuration-experience/spec.md`
 
 **Note**: This plan covers only the first informal-spec slice. The repository does not yet contain extension scaffold files such as `package.json`, `tsconfig.json`, or `src/`, so this feature includes the minimum extension bootstrap needed to ship the Configuration Experience slice.

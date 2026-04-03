@@ -281,7 +281,6 @@
                         "label": "ITM",
                         "port": 0,
                         "encoding": "ascii",
-                        "logfile": "/home/pcernin/itm.log"
                     }
                 ]
       }
