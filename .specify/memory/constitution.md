@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 -> 1.1.0
+Version change: 1.1.0 -> 1.2.0
 Modified principles:
 - None (core principle titles unchanged; Delivery Workflow materially expanded)
 Added sections:
@@ -8,7 +8,12 @@ Added sections:
 Removed sections:
 - None
 Templates requiring updates:
+- ✅ .specify/templates/spec-template.md
+- ✅ .specify/templates/plan-template.md
 - ✅ .specify/templates/tasks-template.md
+- ✅ .github/agents/speckit.specify.agent.md
+- ✅ .github/agents/speckit.plan.agent.md
+- ✅ .github/agents/speckit.tasks.agent.md
 - ✅ .github/agents/speckit.implement.agent.md
 Follow-up TODOs:
 - None
@@ -75,8 +80,17 @@ concise code and justified complexity keep it maintainable.
 
 ## Delivery Workflow
 
+- Before `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, or
+	`/speckit.implement` proceeds, the agent MUST read the relevant documents in
+	`informal_spec/`, including `user-spec.md`, `tech-spec.md`, and
+	`feature-split.md`, when those files exist.
 - Each feature spec MUST describe user-visible behavior, edge cases, operational
 	constraints, and failure or diagnostic behavior.
+- Each generated spec, implementation plan, and task list MUST explicitly name
+	the informal-spec slice it implements and MUST stay aligned with that slice.
+	If requested work spans multiple slices from `feature-split.md`, the workflow
+	MUST stop and require the work to be split or the informal spec to be amended
+	before continuing.
 - Each implementation plan MUST pass a Constitution Check covering host
 	compatibility, manifest-driven design, test coverage, failure visibility, and
 	simplicity.
@@ -102,4 +116,4 @@ requirements, and PATCH for clarifications that do not change project obligation
 Compliance review is required for every plan, task list, and pull request that
 changes behavior, tooling, or development workflow.
 
-**Version**: 1.1.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-03
+**Version**: 1.2.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-03

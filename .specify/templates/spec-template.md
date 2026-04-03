@@ -5,6 +5,12 @@
 **Status**: Draft
 **Input**: User description: "$ARGUMENTS"
 
+## Informal Spec Alignment *(mandatory)*
+
+- **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
+- **Selected Slice**: [Name the feature slice from feature-split.md]
+- **Scope Guard**: [State what this spec includes and which adjacent slices are explicitly excluded]
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--

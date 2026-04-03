@@ -7,10 +7,14 @@ description: "Task list template for feature implementation"
 
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
+**Informal Spec Slice**: [Name the slice from spec.md and plan.md]
+**Scope Guard**: [Tasks in this file stay within the selected slice; reject cross-slice scope creep]
 
 **Tests**: Generate automated test tasks for every user story. Include regression coverage for bug fixes and integration coverage whenever the change crosses VS Code APIs, manifest parsing, task execution, or persisted state.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+**Slice Rule**: Include only tasks and stories that belong to the selected informal-spec slice.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -242,6 +246,7 @@ With multiple developers:
 
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
+- State the selected informal-spec slice at the top of the file and reject scope drift into other slices
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing
 - Complete and commit one task at a time; do not batch multiple tasks into a

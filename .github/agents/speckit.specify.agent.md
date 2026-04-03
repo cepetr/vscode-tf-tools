@@ -1,6 +1,6 @@
 ---
 description: Create or update the feature specification from a natural language feature description.
-handoffs: 
+handoffs:
   - label: Build Technical Plan
     agent: speckit.plan
     prompt: Create a plan for the spec. I am building with...
@@ -58,6 +58,11 @@ The text the user typed after `/speckit.specify` in the triggering message **is*
 
 Given that feature description, do this:
 
+0. **Load informal-spec context first**:
+   - Read `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, and `informal_spec/feature-split.md` before generating any artifact.
+   - Identify the single feature slice in `feature-split.md` that matches the request.
+   - If the request spans multiple slices, ERROR and instruct the user to split the request or amend the informal spec first.
+
 1. **Generate a concise short name** (2-4 words) for the branch:
    - Analyze the feature description and extract the most meaningful keywords
    - Create a 2-4 word short name that captures the essence of the feature
@@ -95,7 +100,7 @@ Given that feature description, do this:
 
     1. Parse user description from Input
        If empty: ERROR "No feature description provided"
-    2. Extract key concepts from description
+   2. Extract key concepts from description and determine the selected informal-spec slice
        Identify: actors, actions, data, constraints
     3. For unclear aspects:
        - Make informed guesses based on context and industry standards
@@ -109,6 +114,7 @@ Given that feature description, do this:
        If no clear user flow: ERROR "Cannot determine user scenarios"
     5. Generate Functional Requirements
        Each requirement must be testable
+       Every requirement MUST fit inside the selected informal-spec slice
        Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
     6. Define Success Criteria
        Create measurable, technology-agnostic outcomes
@@ -118,6 +124,8 @@ Given that feature description, do this:
     8. Return: SUCCESS (spec ready for planning)
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
+   - Fill the `Informal Spec Alignment` section with the selected slice and explicit exclusions.
+   - Reject scope creep: do not include requirements that belong to other slices from `feature-split.md`.
 
 6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
 
@@ -125,20 +133,22 @@ Given that feature description, do this:
 
       ```markdown
       # Specification Quality Checklist: [FEATURE NAME]
-      
+
       **Purpose**: Validate specification completeness and quality before proceeding to planning
       **Created**: [DATE]
       **Feature**: [Link to spec.md]
-      
+
       ## Content Quality
-      
+
       - [ ] No implementation details (languages, frameworks, APIs)
       - [ ] Focused on user value and business needs
       - [ ] Written for non-technical stakeholders
       - [ ] All mandatory sections completed
-      
+
       ## Requirement Completeness
-      
+
+      - [ ] Informal-spec slice is stated explicitly
+      - [ ] No requirements spill into other informal-spec slices
       - [ ] No [NEEDS CLARIFICATION] markers remain
       - [ ] Requirements are testable and unambiguous
       - [ ] Success criteria are measurable
@@ -147,16 +157,16 @@ Given that feature description, do this:
       - [ ] Edge cases are identified
       - [ ] Scope is clearly bounded
       - [ ] Dependencies and assumptions identified
-      
+
       ## Feature Readiness
-      
+
       - [ ] All functional requirements have clear acceptance criteria
       - [ ] User scenarios cover primary flows
       - [ ] Feature meets measurable outcomes defined in Success Criteria
       - [ ] No implementation details leak into specification
-      
+
       ## Notes
-      
+
       - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
       ```
 
@@ -181,20 +191,20 @@ Given that feature description, do this:
 
            ```markdown
            ## Question [N]: [Topic]
-           
+
            **Context**: [Quote relevant spec section]
-           
+
            **What we need to know**: [Specific question from NEEDS CLARIFICATION marker]
-           
+
            **Suggested Answers**:
-           
+
            | Option | Answer | Implications |
            |--------|--------|--------------|
            | A      | [First suggested answer] | [What this means for the feature] |
            | B      | [Second suggested answer] | [What this means for the feature] |
            | C      | [Third suggested answer] | [What this means for the feature] |
            | Custom | Provide your own answer | [Explain how to provide custom input] |
-           
+
            **Your choice**: _[Wait for user response]_
            ```
 
@@ -211,7 +221,7 @@ Given that feature description, do this:
 
    d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
 
-7. Report completion with branch name, spec file path, checklist results, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
+7. Report completion with branch name, spec file path, selected informal-spec slice, checklist results, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
 
 8. **Check for extension hooks**: After reporting completion, check if `.specify/extensions.yml` exists in the project root.
    - If it exists, read it and look for entries under the `hooks.after_specify` key

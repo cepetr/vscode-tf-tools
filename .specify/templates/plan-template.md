@@ -9,6 +9,12 @@
 
 [Extract from feature spec: primary requirement + technical approach from research]
 
+## Informal Spec Alignment
+
+**Selected Slice**: [Name the feature slice carried from spec.md]
+**Source Anchor**: [Quote or cite the relevant section from informal_spec/feature-split.md]
+**Scope Guard**: [Describe which nearby capabilities remain out of scope for this plan]
+
 ## Technical Context
 
 <!--
@@ -32,6 +38,7 @@
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 - [ ] Host compatibility: scoped to a TypeScript VS Code extension targeting VS Code 1.110+.
+- [ ] Informal-spec alignment: the selected slice is stated, the design stays within it, and cross-slice work is deferred or split.
 - [ ] Manifest authority: build/debug/configuration choices derive from settings and manifest data, not hardcoded matrices.
 - [ ] Test discipline: tests are defined before implementation and cover each changed behavior plus regressions.
 - [ ] Failure visibility: diagnostics, notifications, and log-channel behavior are specified for new failure modes.
