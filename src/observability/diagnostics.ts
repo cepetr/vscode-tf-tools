@@ -64,7 +64,8 @@ export function disposeDiagnostics(): void {
 /**
  * Translates a `ManifestState` to VS Code diagnostics.
  *
- * - `loaded`: publishes any warning-level validation issues and clears errors.
+ * - `loaded`: publishes all validation issues (including error-level
+ *   `invalid-when` issues that block Build Workflow) and clears if none exist.
  * - `invalid`: publishes all validation issues as diagnostics.
  * - `missing`: clears all diagnostics for the manifest URI (the missing state
  *   is communicated through notifications and log output, not diagnostics).
@@ -72,7 +73,6 @@ export function disposeDiagnostics(): void {
 export function handleManifestStateDiagnostics(state: ManifestState): void {
   switch (state.status) {
     case "loaded":
-      // Only publish warnings present on a successfully loaded manifest
       if (state.validationIssues.length > 0) {
         publishDiagnostics(state.manifestUri, state.validationIssues);
       } else {
