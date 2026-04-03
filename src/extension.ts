@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
 import { resolveManifestUri, isStatusBarEnabled } from "./workspace/settings";
 import { ManifestService } from "./manifest/manifest-service";
-import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem } from "./ui/configuration-tree";
+import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
 import { disposeLogChannel, revealLogs, logManifestState } from "./observability/log-channel";
 import { disposeDiagnostics, handleManifestStateDiagnostics } from "./observability/diagnostics";
@@ -142,6 +142,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         _treeProvider?.setExpandedSelector(element.selectorKind);
       } else if (element instanceof BuildOptionMultistateHeaderItem) {
         _treeProvider?.setExpandedMultistateKey(element.optionKey);
+      } else if (element instanceof BuildOptionGroupItem) {
+        _treeProvider?.setGroupCollapsed(element.groupLabel, false);
       }
     }),
     _configurationTreeView.onDidCollapseElement(({ element }) => {
@@ -153,6 +155,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         if (_treeProvider?.getExpandedMultistateKey() === element.optionKey) {
           _treeProvider.setExpandedMultistateKey(undefined);
         }
+      } else if (element instanceof BuildOptionGroupItem) {
+        _treeProvider?.setGroupCollapsed(element.groupLabel, true);
       }
     }),
     _configurationTreeView.onDidChangeCheckboxState(async ({ items }) => {

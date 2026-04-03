@@ -95,10 +95,18 @@ export const SELECT_BUILD_OPTION_STATE_COMMAND = "tfTools.selectBuildOptionState
 export class BuildOptionGroupItem extends vscode.TreeItem {
   constructor(
     public readonly groupLabel: string,
-    public readonly groupChildren: vscode.TreeItem[]
+    public readonly groupChildren: vscode.TreeItem[],
+    collapsed: boolean = false,
+    hasNonDefault: boolean = false
   ) {
-    super(groupLabel, vscode.TreeItemCollapsibleState.Expanded);
-    this.id = `build-option-group:${groupLabel}`;
+    const showBold = collapsed && hasNonDefault;
+    super(
+      showBold ? { label: groupLabel, highlights: [[0, groupLabel.length]] } : groupLabel,
+      collapsed
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.Expanded
+    );
+    this.id = `build-option-group:${groupLabel}:${collapsed ? "collapsed" : "expanded"}`;
     this.contextValue = "build-option-group";
   }
 }
@@ -110,7 +118,10 @@ export class BuildOptionCheckboxItem extends vscode.TreeItem {
     label: string,
     checked: boolean
   ) {
-    super(label, vscode.TreeItemCollapsibleState.None);
+    super(
+      checked ? { label, highlights: [[0, label.length]] } : label,
+      vscode.TreeItemCollapsibleState.None
+    );
     this.id = `build-option:${optionKey}`;
     this.contextValue = "build-option-checkbox";
     this.checkboxState = checked
@@ -126,10 +137,11 @@ export class BuildOptionMultistateHeaderItem extends vscode.TreeItem {
     label: string,
     activeStateLabel: string,
     public readonly stateChildren: BuildOptionStateItem[],
-    expanded: boolean
+    expanded: boolean,
+    isNonDefault: boolean = false
   ) {
     super(
-      label,
+      isNonDefault ? { label, highlights: [[0, label.length]] } : label,
       expanded
         ? vscode.TreeItemCollapsibleState.Expanded
         : vscode.TreeItemCollapsibleState.Collapsed
@@ -191,6 +203,7 @@ export class ConfigurationTreeProvider
   private _activeConfig: ActiveConfig | undefined;
   private _expandedSelector: SelectorKind | undefined;
   private _expandedMultistateKey: string | undefined;
+  private _collapsedGroups = new Set<string>();
   private _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
@@ -211,6 +224,7 @@ export class ConfigurationTreeProvider
     if (state.status !== "loaded") {
       this._expandedSelector = undefined;
       this._expandedMultistateKey = undefined;
+      this._collapsedGroups.clear();
     }
     this._onDidChangeTreeData.fire(undefined);
   }
@@ -237,6 +251,25 @@ export class ConfigurationTreeProvider
 
   getExpandedMultistateKey(): string | undefined {
     return this._expandedMultistateKey;
+  }
+
+  setGroupCollapsed(group: string, collapsed: boolean): void {
+    const changed = collapsed
+      ? !this._collapsedGroups.has(group)
+      : this._collapsedGroups.has(group);
+    if (!changed) {
+      return;
+    }
+    if (collapsed) {
+      this._collapsedGroups.add(group);
+    } else {
+      this._collapsedGroups.delete(group);
+    }
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  isGroupCollapsed(group: string): boolean {
+    return this._collapsedGroups.has(group);
   }
 
   getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
@@ -434,10 +467,11 @@ export class ConfigurationTreeProvider
       if (group) {
         if (!seenGroups.has(group)) {
           seenGroups.add(group);
-          const groupChildren = available
-            .filter((r) => r.option.group === group)
-            .map((r) => this._buildOptionItem(r));
-          items.push(new BuildOptionGroupItem(group, groupChildren));
+          const groupMembers = available.filter((r) => r.option.group === group);
+          const groupChildren = groupMembers.map((r) => this._buildOptionItem(r));
+          const collapsed = this._collapsedGroups.has(group);
+          const hasNonDefault = groupMembers.some((r) => this._isNonDefault(r));
+          items.push(new BuildOptionGroupItem(group, groupChildren, collapsed, hasNonDefault));
         }
         // else: already included under the group header
       } else {
@@ -446,6 +480,16 @@ export class ConfigurationTreeProvider
     }
 
     return items;
+  }
+
+  private _isNonDefault(resolved: ResolvedOption): boolean {
+    const { option, value } = resolved;
+    if (option.kind === "checkbox") {
+      return value === true;
+    }
+    const defaultStateId = option.defaultState ?? option.states?.[0]?.id ?? "";
+    const activeStateId = typeof value === "string" ? value : defaultStateId;
+    return activeStateId !== defaultStateId;
   }
 
   private _buildOptionItem(
@@ -466,12 +510,15 @@ export class ConfigurationTreeProvider
       (s) => new BuildOptionStateItem(option.key, s.id, s.label, s.id === activeStateId)
     );
     const expanded = this._expandedMultistateKey === option.key;
+    const defaultStateId = option.defaultState ?? option.states?.[0]?.id ?? "";
+    const isNonDefault = activeStateId !== defaultStateId;
     return new BuildOptionMultistateHeaderItem(
       option.key,
       option.label,
       activeStateLabel,
       stateChildren,
-      expanded
+      expanded,
+      isNonDefault
     );
   }
 

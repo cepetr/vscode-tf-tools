@@ -200,6 +200,8 @@ Implementation note: accordion-style tree rows must be backed by a real `TreeVie
 
 Checkbox handling uses the VS Code native `checkboxState` on `TreeItem` and `onDidChangeCheckboxState` on the `TreeView` so selection state stays synchronized with the active configuration without requiring a dedicated toggle command.
 
+Visual emphasis for non-default states uses `TreeItemLabel` with a `highlights` range covering the full label string. A checkbox option is non-default when it is `true` (enabled). A multistate option is non-default when its active state differs from `defaultState` (or the first declared state if `defaultState` is absent). A group heading is non-default when it is collapsed and at least one of its member options is in a non-default state; the bold is removed once the group is expanded because the individual rows then carry their own emphasis.
+
 The Build Options section preserves YAML order while consolidating repeated group labels under a single heading.
 
 Option availability is evaluated against the active build context before rendering. Options whose `when` expression evaluates to `false` are omitted from the visible tree, but their persisted values remain stored in workspace state.

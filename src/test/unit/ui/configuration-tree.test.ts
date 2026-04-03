@@ -4,7 +4,9 @@ import {
   SectionItem,
   SelectorChoiceItem,
   SelectorHeaderItem,
+  BuildOptionGroupItem,
   BuildOptionMultistateHeaderItem,
+  BuildOptionCheckboxItem,
   BuildOptionStateItem,
 } from "../../../ui/configuration-tree";
 
@@ -96,5 +98,74 @@ suite("BuildOptionMultistateHeaderItem accordion", () => {
   test("description shows the active state label", () => {
     const item = makeHeader(false);
     assert.strictEqual(item.description, "Off");
+  });
+});
+
+suite("BuildOptionCheckboxItem bold label", () => {
+  test("label has highlights when checked (non-default state)", () => {
+    const item = new BuildOptionCheckboxItem("verbose", "Verbose", true);
+    assert.deepStrictEqual(item.label, { label: "Verbose", highlights: [[0, 7]] });
+  });
+
+  test("label is plain string when unchecked (default state)", () => {
+    const item = new BuildOptionCheckboxItem("verbose", "Verbose", false);
+    assert.strictEqual(item.label, "Verbose");
+  });
+});
+
+suite("BuildOptionMultistateHeaderItem bold label", () => {
+  test("label has highlights when isNonDefault = true", () => {
+    const item = new BuildOptionMultistateHeaderItem("opt", "Verbosity", "High", [], false, true);
+    assert.deepStrictEqual(item.label, { label: "Verbosity", highlights: [[0, 9]] });
+  });
+
+  test("label is plain string when isNonDefault = false", () => {
+    const item = new BuildOptionMultistateHeaderItem("opt", "Verbosity", "Off", [], false, false);
+    assert.strictEqual(item.label, "Verbosity");
+  });
+
+  test("label is plain string when isNonDefault not provided", () => {
+    const item = new BuildOptionMultistateHeaderItem("opt", "Verbosity", "Off", [], false);
+    assert.strictEqual(item.label, "Verbosity");
+  });
+});
+
+suite("BuildOptionGroupItem bold label", () => {
+  test("label has highlights when collapsed and hasNonDefault = true", () => {
+    const item = new BuildOptionGroupItem("Advanced", [], true, true);
+    assert.deepStrictEqual(item.label, { label: "Advanced", highlights: [[0, 8]] });
+  });
+
+  test("label is plain string when expanded even if hasNonDefault = true", () => {
+    const item = new BuildOptionGroupItem("Advanced", [], false, true);
+    assert.strictEqual(item.label, "Advanced");
+  });
+
+  test("label is plain string when collapsed but hasNonDefault = false", () => {
+    const item = new BuildOptionGroupItem("Advanced", [], true, false);
+    assert.strictEqual(item.label, "Advanced");
+  });
+
+  test("uses Collapsed state when collapsed = true", () => {
+    const item = new BuildOptionGroupItem("Advanced", [], true, false);
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+  });
+
+  test("uses Expanded state when collapsed = false", () => {
+    const item = new BuildOptionGroupItem("Advanced", [], false, false);
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+  });
+
+  test("id encodes collapsed state", () => {
+    const collapsed = new BuildOptionGroupItem("Adv", [], true, false);
+    const expanded = new BuildOptionGroupItem("Adv", [], false, false);
+    assert.strictEqual(collapsed.id, "build-option-group:Adv:collapsed");
+    assert.strictEqual(expanded.id, "build-option-group:Adv:expanded");
+  });
+
+  test("defaults to expanded with no bold when constructed with no extra args", () => {
+    const item = new BuildOptionGroupItem("Adv", []);
+    assert.strictEqual(item.label, "Adv");
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
   });
 });

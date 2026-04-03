@@ -150,6 +150,8 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - Multistate options shall render as selector-style parent rows that open to show their available states.
 - Multistate rows shall display the active state inline.
 - When a multistate value is not the default presentation value, the active value shall remain visually emphasized in the row label.
+- When a checkbox option is enabled (non-default), its label shall be visually emphasized.
+- When a group heading is collapsed and contains at least one option that is in a non-default state, the group heading label shall be visually emphasized so users can see that something changed inside without expanding it.
 - Option descriptions shall remain available through tooltips.
 - Only options whose `when` expression evaluates to `true`, or that omit `when`, shall be shown.
 - If the build manifest is missing or invalid, the section shall show a warning-style status row instead of option content.
