@@ -1,8 +1,11 @@
-out/**
+out/test/**
 test-fixtures/**
-src/test/**
+src/**
 node_modules/**
 .vscode-test/**
+.venv/**
+.specify/**
+.vscode/**
 *.vsix
 .gitignore
 .eslintignore
