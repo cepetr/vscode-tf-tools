@@ -68,6 +68,7 @@
 - **Validation rules**:
   - only `Build Context` may contain interactive rows in this feature slice
   - placeholder sections may not expose build, artifact, or debug actions
+  - selector headers display model `name`, target `shortName` when present otherwise target `name`, and component `name`
 
 ## Status Bar Presentation
 

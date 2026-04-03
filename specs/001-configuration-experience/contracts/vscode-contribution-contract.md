@@ -12,6 +12,7 @@ This contract captures the user-visible VS Code surfaces introduced by the Confi
   - top-level sections are `Build Context`, `Build Options`, and `Build Artifacts`
   - only `Build Context` is interactive in this feature
   - `Build Options` and `Build Artifacts` show placeholder or warning content only
+  - selector headers show user-facing selected values inline: model `name`, target `shortName` when present otherwise target `name`, and component `name`
 - **Tree View Icons**:
   - `Build Context` uses the VS Code `symbol-folder` theme icon
   - `Build Options` uses the VS Code `symbol-folder` theme icon

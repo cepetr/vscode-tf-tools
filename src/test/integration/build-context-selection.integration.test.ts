@@ -99,12 +99,18 @@ suite("ConfigurationTreeProvider – selector rendering", () => {
     assert.strictEqual(component.selectorKind, "component");
   });
 
-  test("SelectorHeaderItems reflect active config ids as description", () => {
+  test("SelectorHeaderItems reflect user-facing selected values as description", () => {
     provider.update(makeLoadedState(), activeConfig("T3W1", "emu", "prodtest"));
     const [model, target, component] = getBuildContextChildren(provider) as SelectorHeaderItem[];
-    assert.strictEqual(model.description, "T3W1");
-    assert.strictEqual(target.description, "emu");
-    assert.strictEqual(component.description, "prodtest");
+    assert.strictEqual(model.description, "Trezor Model T3");
+    assert.strictEqual(target.description, "Emulator");
+    assert.strictEqual(component.description, "Prodtest");
+  });
+
+  test("SelectorHeaderItems use target shortName when available", () => {
+    provider.update(makeLoadedState(), activeConfig("T2T1", "hw", "core"));
+    const [, target] = getBuildContextChildren(provider) as SelectorHeaderItem[];
+    assert.strictEqual(target.description, "HW");
   });
 
   test("SelectorHeaderItem description falls back to em dash when no active config is set", () => {

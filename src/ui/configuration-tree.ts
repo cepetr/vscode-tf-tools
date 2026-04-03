@@ -183,11 +183,13 @@ export class ConfigurationTreeProvider
       return items;
     }
 
+    const loaded = state as ManifestStateLoaded;
+
     // Loaded state: show model, target, component selector headers
     return [
-      new SelectorHeaderItem("model", "Model", this._activeConfig?.modelId),
-      new SelectorHeaderItem("target", "Target", this._activeConfig?.targetId),
-      new SelectorHeaderItem("component", "Component", this._activeConfig?.componentId),
+      new SelectorHeaderItem("model", "Model", this._selectedDisplayValue(loaded, "model")),
+      new SelectorHeaderItem("target", "Target", this._selectedDisplayValue(loaded, "target")),
+      new SelectorHeaderItem("component", "Component", this._selectedDisplayValue(loaded, "component")),
     ];
   }
 
@@ -218,6 +220,26 @@ export class ConfigurationTreeProvider
     return entries.map(
       (e) => new SelectorChoiceItem(kind, e.id, e.name, e.id === activeId)
     );
+  }
+
+  private _selectedDisplayValue(
+    state: ManifestStateLoaded,
+    kind: SelectorKind
+  ): string | undefined {
+    if (!this._activeConfig) {
+      return undefined;
+    }
+
+    if (kind === "model") {
+      return state.models.find((entry) => entry.id === this._activeConfig?.modelId)?.name;
+    }
+
+    if (kind === "target") {
+      const target = state.targets.find((entry) => entry.id === this._activeConfig?.targetId);
+      return target ? (target.shortName ?? target.name) : undefined;
+    }
+
+    return state.components.find((entry) => entry.id === this._activeConfig?.componentId)?.name;
   }
 
   dispose(): void {

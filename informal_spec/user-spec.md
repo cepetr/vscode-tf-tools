@@ -129,6 +129,9 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 - The `Build Context` section shall show three selector rows: `Model`, `Target`, and `Component`.
 - Each selector row shall display the selected value inline.
+- The `Model` selector row shall display the selected model `name` inline.
+- The `Target` selector row shall display `shortName` when present and otherwise the target `name` inline.
+- The `Component` selector row shall display the selected component `name` inline.
 - Each selector row shall be collapsible and shall reveal its available choices as child rows when opened.
 - Only one selector or multistate choice list shall be open at a time.
 - Child choice rows shall use checkbox state to indicate which value is selected.
