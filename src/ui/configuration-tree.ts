@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
+import { ResolvedOption } from "../configuration/build-options";
 
 // ---------------------------------------------------------------------------
 // Tree item types
@@ -79,6 +80,85 @@ export const SELECT_COMMANDS: Readonly<Record<SelectorKind, string>> = {
   component: "tfTools.selectComponent",
 };
 
+// ---------------------------------------------------------------------------
+// Command identifiers for build-option interaction (registered in T027)
+// ---------------------------------------------------------------------------
+
+export const TOGGLE_BUILD_OPTION_COMMAND = "tfTools.toggleBuildOption";
+export const SELECT_BUILD_OPTION_STATE_COMMAND = "tfTools.selectBuildOptionState";
+
+// ---------------------------------------------------------------------------
+// Build Option tree items
+// ---------------------------------------------------------------------------
+
+/** Group header for a named option group; its children are pre-built. */
+export class BuildOptionGroupItem extends vscode.TreeItem {
+  constructor(
+    public readonly groupLabel: string,
+    public readonly groupChildren: vscode.TreeItem[]
+  ) {
+    super(groupLabel, vscode.TreeItemCollapsibleState.Expanded);
+    this.id = `build-option-group:${groupLabel}`;
+    this.contextValue = "build-option-group";
+  }
+}
+
+/** A single checkbox-style build option row. */
+export class BuildOptionCheckboxItem extends vscode.TreeItem {
+  constructor(
+    public readonly optionKey: string,
+    label: string,
+    checked: boolean
+  ) {
+    super(label, vscode.TreeItemCollapsibleState.None);
+    this.id = `build-option:${optionKey}`;
+    this.contextValue = "build-option-checkbox";
+    this.description = checked ? "on" : "off";
+    this.iconPath = new vscode.ThemeIcon(checked ? "check" : "circle-outline");
+    this.command = {
+      title: `Toggle ${label}`,
+      command: TOGGLE_BUILD_OPTION_COMMAND,
+      arguments: [optionKey],
+    };
+  }
+}
+
+/** Expandable header for a multistate build option; shows active state inline. */
+export class BuildOptionMultistateHeaderItem extends vscode.TreeItem {
+  constructor(
+    public readonly optionKey: string,
+    label: string,
+    activeStateLabel: string,
+    public readonly stateChildren: BuildOptionStateItem[]
+  ) {
+    super(label, vscode.TreeItemCollapsibleState.Expanded);
+    this.id = `build-option-multistate:${optionKey}`;
+    this.contextValue = "build-option-multistate";
+    this.description = activeStateLabel;
+    this.iconPath = new vscode.ThemeIcon("list-selection");
+  }
+}
+
+/** A selectable state choice under a multistate build option header. */
+export class BuildOptionStateItem extends vscode.TreeItem {
+  constructor(
+    public readonly optionKey: string,
+    public readonly stateId: string,
+    label: string,
+    isActive: boolean
+  ) {
+    super(label, vscode.TreeItemCollapsibleState.None);
+    this.id = `build-option-state:${optionKey}:${stateId}`;
+    this.contextValue = "build-option-state";
+    this.iconPath = isActive ? new vscode.ThemeIcon("check") : INACTIVE_CHOICE_ICON;
+    this.command = {
+      title: `Select ${label}`,
+      command: SELECT_BUILD_OPTION_STATE_COMMAND,
+      arguments: [optionKey, stateId],
+    };
+  }
+}
+
 export class SelectorChoiceItem extends vscode.TreeItem {
   constructor(
     public readonly selectorKind: SelectorKind,
@@ -108,6 +188,7 @@ export class ConfigurationTreeProvider
   private _state: ManifestState | undefined;
   private _activeConfig: ActiveConfig | undefined;
   private _expandedSelector: SelectorKind | undefined;
+  private _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
     vscode.TreeItem | undefined
@@ -116,9 +197,14 @@ export class ConfigurationTreeProvider
     this._onDidChangeTreeData.event;
 
   /** Updates the displayed manifest state and refreshes the view. */
-  update(state: ManifestState, activeConfig?: ActiveConfig): void {
+  update(
+    state: ManifestState,
+    activeConfig?: ActiveConfig,
+    resolvedOptions?: ReadonlyArray<ResolvedOption>
+  ): void {
     this._state = state;
     this._activeConfig = activeConfig;
+    this._resolvedOptions = resolvedOptions ?? [];
     if (state.status !== "loaded") {
       this._expandedSelector = undefined;
     }
@@ -156,9 +242,18 @@ export class ConfigurationTreeProvider
         case "build-context":
           return this._buildContextChildren();
         case "build-options":
+          return this._buildOptionsChildren();
         case "build-artifacts":
           return [new PlaceholderItem("Available in a future release")];
       }
+    }
+
+    if (element instanceof BuildOptionGroupItem) {
+      return element.groupChildren;
+    }
+
+    if (element instanceof BuildOptionMultistateHeaderItem) {
+      return element.stateChildren;
     }
 
     if (element instanceof SelectorHeaderItem) {
@@ -276,6 +371,91 @@ export class ConfigurationTreeProvider
     }
 
     return state.components.find((entry) => entry.id === this._activeConfig?.componentId)?.name;
+  }
+
+  // -------------------------------------------------------------------------
+  // Build Options section children
+  // -------------------------------------------------------------------------
+
+  private _buildOptionsChildren(): vscode.TreeItem[] {
+    const state = this._state;
+
+    if (!state) {
+      return [new PlaceholderItem("Loading…")];
+    }
+
+    if (state.status === "missing") {
+      return [new PlaceholderItem("No manifest — Build Options unavailable")];
+    }
+
+    if (state.status === "invalid") {
+      return [new PlaceholderItem("Manifest is invalid — Build Options unavailable")];
+    }
+
+    const loaded = state as ManifestStateLoaded;
+
+    if (loaded.hasWorkflowBlockingIssues) {
+      return [
+        new WarningItem("Build workflow blocked: invalid availability rules"),
+        new PlaceholderItem("Check the Problems view for details"),
+      ];
+    }
+
+    const available = this._resolvedOptions.filter((r) => r.available);
+
+    if (available.length === 0) {
+      if (this._resolvedOptions.length === 0) {
+        return [new PlaceholderItem("No build options defined")];
+      }
+      return [new PlaceholderItem("No options available for the active build context")];
+    }
+
+    // Render in declaration order, grouping items under first-seen group headers.
+    const items: vscode.TreeItem[] = [];
+    const seenGroups = new Set<string>();
+
+    for (const resolved of available) {
+      const { group } = resolved.option;
+      if (group) {
+        if (!seenGroups.has(group)) {
+          seenGroups.add(group);
+          const groupChildren = available
+            .filter((r) => r.option.group === group)
+            .map((r) => this._buildOptionItem(r));
+          items.push(new BuildOptionGroupItem(group, groupChildren));
+        }
+        // else: already included under the group header
+      } else {
+        items.push(this._buildOptionItem(resolved));
+      }
+    }
+
+    return items;
+  }
+
+  private _buildOptionItem(
+    resolved: ResolvedOption
+  ): BuildOptionCheckboxItem | BuildOptionMultistateHeaderItem {
+    const { option, value } = resolved;
+
+    if (option.kind === "checkbox") {
+      return new BuildOptionCheckboxItem(option.key, option.label, value === true);
+    }
+
+    // multistate
+    const activeStateId =
+      typeof value === "string" ? value : option.defaultState ?? option.states?.[0]?.id ?? "";
+    const activeStateLabel =
+      option.states?.find((s) => s.id === activeStateId)?.label ?? activeStateId;
+    const stateChildren = (option.states ?? []).map(
+      (s) => new BuildOptionStateItem(option.key, s.id, s.label, s.id === activeStateId)
+    );
+    return new BuildOptionMultistateHeaderItem(
+      option.key,
+      option.label,
+      activeStateLabel,
+      stateChildren
+    );
   }
 
   dispose(): void {
