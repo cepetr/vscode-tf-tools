@@ -91,7 +91,7 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 - **FR-002**: The system MUST treat the resolved compile-commands artifact for the active configuration as the only valid IntelliSense source for that configuration and MUST NOT fall back to a different artifact path, model, target-derived suffix, component, or previously applied IntelliSense state.
 - **FR-002A**: When the expected compile-commands artifact for the active configuration is missing, the system MUST clear any previously applied compile-commands configuration instead of leaving stale IntelliSense data active.
 - **FR-003**: The system MUST register and maintain IntelliSense integration through the Microsoft C/C++ custom configuration provider model.
-- **FR-004**: The system MUST update IntelliSense state when refresh is triggered by extension activation, active configuration changes, successful build completion, explicit refresh, workspace-folder changes, provider-availability changes, manifest-path changes, manifest-content changes, and `tfTools.artifactsPath` changes.
+- **FR-004**: The system MUST update IntelliSense state when refresh is triggered by extension activation, active configuration changes, successful build completion, explicit refresh, provider-availability changes, manifest-path changes, manifest-content changes, and `tfTools.artifactsPath` changes.
 - **FR-005**: The system MUST expose a user-invokable `Refresh IntelliSense` action once this slice is implemented.
 - **FR-005A**: The `Refresh IntelliSense` action MUST be available from both the Configuration view title or overflow menu and the Command Palette.
 - **FR-006**: The `Build Artifacts` section MUST show a `Compile Commands` row for the active configuration.

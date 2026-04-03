@@ -70,7 +70,7 @@
 
 - **Purpose**: Represents one event that requires IntelliSense recomputation.
 - **Fields**:
-  - `trigger`: `activation`, `active-config-change`, `successful-build`, `manual-refresh`, `workspace-change`, `provider-change`, `manifest-change`, or `artifacts-path-change`
+  - `trigger`: `activation`, `active-config-change`, `successful-build`, `manual-refresh`, `provider-change`, `manifest-change`, or `artifacts-path-change`
   - `requestedAt`: timestamp of the trigger
   - `targetContextKey`: active configuration key at scheduling time
 - **Relationships**:

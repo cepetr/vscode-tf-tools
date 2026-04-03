@@ -42,7 +42,7 @@
 
 ## Decision 6: Treat refresh work as serialized state recomputation triggered from existing extension events
 
-- **Decision**: Funnel activation, active-context changes, successful builds, manifest changes, provider-availability changes, workspace changes, and relevant settings changes into one serialized refresh path that recomputes artifact status and provider readiness before touching the tree or provider state.
+- **Decision**: Funnel activation, active-context changes, successful builds, manifest changes, provider-availability changes, and relevant settings changes into one serialized refresh path that recomputes artifact status and provider readiness before touching the tree or provider state.
 - **Rationale**: The extension already coordinates state changes centrally. Serializing refresh prevents races where a build completion, settings change, and active-context change could otherwise reapply stale compile-database state out of order.
 - **Alternatives considered**:
   - Let each trigger update IntelliSense independently: rejected because concurrent refreshes would make stale-state clearing and final-state correctness hard to reason about.
