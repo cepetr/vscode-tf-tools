@@ -1,0 +1,149 @@
+# Feature Specification: Build Workflow
+
+**Feature Branch**: `002-build-workflow`
+**Created**: 2026-04-03
+**Status**: Draft
+**Input**: User description: "Specify the second feature (Build Workflow) from feature-split.md document."
+
+## Informal Spec Alignment *(mandatory)*
+
+- **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
+- **Selected Slice**: `2. Build Workflow`
+- **Scope Guard**: This feature includes manifest-driven Build Options rendering and selection, `when` parsing/validation/evaluation against the active model/target/component, task and command execution for `Build`, `Clippy`, `Check`, and `Clean`, dynamic task labels, command argument derivation from the effective configuration, and Configuration view header actions for those four build actions. This feature excludes Build Artifacts section behavior, artifact-status refresh, Flash/Upload actions, Debug launch, IntelliSense integration, compile-commands refresh behavior, and excluded-file visibility.
+- **Critical Informal Details**: Build Options must become user-operable rather than placeholder-only; only options whose `when` logic matches the active build context may influence the UI or effective command arguments; `Build`, `Clippy`, and `Check` must expose context-aware labels so users can tell what will run before starting a task; `Clean` remains part of the workflow but does not depend on effective build-option arguments; and the Configuration view must surface header actions only for behaviors implemented in this slice.
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - Configure Effective Build Options (Priority: P1)
+
+As a firmware developer, I want the Build Options section to show only the options that apply to my active model, target, and component so I can prepare the correct effective build configuration without guessing which toggles matter.
+
+**Why this priority**: Build Options are the first new user-visible capability in this slice. Without trustworthy option visibility and selection behavior, later build actions would run with unclear or incorrect intent.
+
+**Independent Test**: Load a manifest containing checkbox and multistate options with mixed grouping and `when` rules, switch active build context values, and confirm the visible options, selected values, and preserved hidden values match the effective context.
+
+**Acceptance Scenarios**:
+
+1. **Given** a valid manifest with grouped and ungrouped options, **When** the Configuration view opens, **Then** the Build Options section shows options in manifest declaration order, preserving group headings and option ordering.
+2. **Given** a checkbox option whose availability rule matches the active build context, **When** the user toggles it, **Then** the effective configuration updates immediately and the selected state persists for that workspace.
+3. **Given** a multistate option with a default state, **When** the user chooses a non-default state, **Then** the active state is shown inline and remains selected until the user changes it or the manifest no longer supports it.
+4. **Given** an option whose availability rule becomes false after the user changes model, target, or component, **When** the tree refreshes, **Then** the option disappears from the visible list, contributes no effective build arguments, and its last selected value is retained for later reuse if the option becomes available again.
+
+---
+
+### User Story 2 - Launch Build Tasks From The Active Context (Priority: P2)
+
+As a firmware developer, I want to run Build, Clippy, Check, and Clean directly from VS Code so I can execute the standard workflow without manually reconstructing command arguments in a terminal.
+
+**Why this priority**: Once the effective configuration is visible and editable, executing the workflow from that configuration is the next direct source of user value.
+
+**Independent Test**: With a valid manifest and active configuration, invoke each of the four actions from the Configuration view and from standard task entry points, then verify the launched task names and action availability reflect the current build context.
+
+**Acceptance Scenarios**:
+
+1. **Given** a valid active configuration, **When** the user starts `Build`, **Then** VS Code launches a build task whose label identifies the active model, target display name, and component.
+2. **Given** the same active configuration, **When** the user starts `Clippy` or `Check`, **Then** each action launches its own task with the same effective configuration as `Build` and with a label that identifies the same active context.
+3. **Given** any supported workspace, **When** the user starts `Clean`, **Then** VS Code launches the `Clean` task without depending on build-option selections.
+4. **Given** the Configuration view is visible, **When** the user looks at the view header actions, **Then** `Build`, `Clippy`, `Check`, and `Clean` are available from that surface and match the currently active build context.
+
+---
+
+### User Story 3 - Trust Derived Arguments And Failures (Priority: P3)
+
+As a firmware developer, I want build actions to derive their arguments from the current effective configuration and to fail clearly when prerequisites are missing so I can trust what was attempted and correct problems quickly.
+
+**Why this priority**: Users need confidence that task labels correspond to the actual command context and that failures are specific enough to recover from.
+
+**Independent Test**: Run Build, Clippy, and Check across different combinations of model, target, component, and Build Options, then verify the launched workflow uses the effective configuration and surfaces visible errors when the manifest, availability rules, or workspace constraints block execution.
+
+**Acceptance Scenarios**:
+
+1. **Given** a valid active configuration with enabled options, **When** the user starts `Build`, `Clippy`, or `Check`, **Then** the launched action derives its effective arguments from the selected model, target, component, and currently applicable build options.
+2. **Given** the manifest is missing, invalid, or contains invalid availability logic, **When** the user attempts `Build`, `Clippy`, or `Check`, **Then** the action does not start and the user receives a visible error plus a persistent failure record.
+3. **Given** the workspace shape is unsupported, **When** the user attempts any build action, **Then** the action does not start and the failure explains that the workspace is unsupported.
+4. **Given** a build action starts and later fails, **When** the task finishes unsuccessfully, **Then** the user receives a visible failure message and no out-of-scope post-build refresh behavior is triggered by this feature.
+
+### Edge Cases
+
+- An option changes from visible to hidden because the active model, target, or component changed after the user selected a value.
+- A manifest contains an invalid `when` expression for a build option, preventing reliable option gating.
+- Multiple build-option groups are interleaved in the manifest and must still preserve first-seen group order.
+- The active target has no short display name, so task labels must fall back to the full target name.
+- The user triggers a build action immediately after the manifest changes and before the effective configuration is stable.
+- `Clean` is available in a supported workspace even when the manifest cannot supply a valid build context.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: The system MUST render the `Build Options` section from the manifest-defined option list when the manifest is valid.
+- **FR-002**: The system MUST preserve manifest declaration order for ungrouped options and MUST preserve first-seen group order for grouped options.
+- **FR-003**: The system MUST display grouped options under their group heading while leaving ungrouped options at the same hierarchy level as group headings.
+- **FR-004**: The system MUST allow users to toggle checkbox build options on and off from the Configuration view.
+- **FR-005**: The system MUST allow users to select exactly one state for each multistate build option and MUST present the currently active state inline.
+- **FR-006**: The system MUST apply a default state for multistate options when no explicit workspace selection is stored.
+- **FR-007**: The system MUST parse, validate, and evaluate each option `when` rule against the active model, target, and component before rendering Build Options or deriving effective build arguments.
+- **FR-008**: The system MUST show only build options whose `when` rule evaluates to true or that omit a `when` rule.
+- **FR-009**: When an option becomes unavailable for the active context, the system MUST remove it from the visible Build Options list and MUST exclude it from effective build arguments.
+- **FR-010**: When an option becomes unavailable for the active context, the system MUST retain the user’s last selected value so it can be restored if the option becomes available again.
+- **FR-011**: The system MUST treat invalid `when` expressions as actionable manifest validation failures and MUST prevent affected build behavior from proceeding on unreliable data.
+- **FR-012**: The system MUST expose `Build`, `Clippy`, `Check`, and `Clean` as user-runnable build workflow actions from the Configuration view.
+- **FR-013**: The system MUST expose `Build`, `Clippy`, `Check`, and `Clean` through standard VS Code task entry points rather than limiting them to custom commands.
+- **FR-014**: The `Build` task label MUST follow the format `Build {model-id}-{target-display}-{component-name}`.
+- **FR-015**: The `Clippy` task label MUST follow the format `Clippy {model-id}-{target-display}-{component-name}`.
+- **FR-016**: The `Check` task label MUST follow the format `Check {model-id}-{target-display}-{component-name}`.
+- **FR-017**: The `Clean` task label MUST be `Clean`.
+- **FR-018**: The `target-display` portion of workflow task labels MUST use the target short display name when one exists and otherwise MUST use the full target name.
+- **FR-019**: The system MUST derive the effective `Build`, `Clippy`, and `Check` workflow arguments from the active model, target, component, and currently applicable build-option selections.
+- **FR-020**: The system MUST use the same effective configuration for `Build`, `Clippy`, and `Check`, differing only by the workflow action being run.
+- **FR-021**: The `Clean` workflow MUST run without active build-option arguments.
+- **FR-022**: The Configuration view header MUST expose `Build`, `Clippy`, `Check`, and `Clean` actions only after their behavior is implemented in this slice.
+- **FR-023**: If the manifest is missing, invalid, or contains invalid `when` logic, the system MUST prevent `Build`, `Clippy`, and `Check` from starting and MUST show visible failure feedback.
+- **FR-024**: If the workspace is unsupported, the system MUST prevent all four workflow actions from starting and MUST show visible failure feedback.
+- **FR-025**: If a workflow task fails after starting, the system MUST show a visible failure notification and MUST write a persistent log entry for the failure.
+- **FR-026**: This feature MUST NOT implement Build Artifacts section behavior, build-artifact status refresh, Flash/Upload actions, Debug launch, IntelliSense refresh, compile-commands refresh, or excluded-file visibility behavior.
+
+### Key Entities *(include if feature involves data)*
+
+- **Build Option Definition**: A manifest-defined option that includes its presentation type, display text, optional grouping, optional availability rule, and any selectable states.
+- **Effective Build Configuration**: The active model, target, component, and currently applicable build-option selections that determine what a workflow action should run.
+- **Workflow Action**: One of the four user-runnable actions in this slice: `Build`, `Clippy`, `Check`, or `Clean`, including its user-facing label and launch preconditions.
+- **Availability Rule**: A manifest-defined condition that determines whether a build option is currently visible and able to influence the effective build configuration.
+
+## Operational Constraints *(mandatory)*
+
+- Supported host/version: VS Code 1.110+.
+- Source of truth inputs: Workspace settings, the manifest file, the active build-context selection restored by the previous slice, and workspace-scoped persisted build-option values.
+- Workspace assumptions: Single-root workspace only.
+- Compatibility exclusions: Multi-root workspaces, alternate manifest sources, Build Artifact behaviors, Flash/Upload actions, Debug launch, IntelliSense integration, and excluded-file visibility are out of scope.
+
+## Failure Modes & Diagnostics *(mandatory)*
+
+- **Trigger**: The manifest is missing, invalid, or contains invalid `when` logic.
+  - **User-visible response**: `Build`, `Clippy`, and `Check` do not start and the user sees a specific error explaining that the build context cannot be derived reliably.
+  - **Persistent signal**: Manifest diagnostics for actionable manifest problems and a dedicated log entry.
+- **Trigger**: The workspace is unsupported for workflow execution.
+  - **User-visible response**: `Build`, `Clippy`, `Check`, and `Clean` do not start and the user sees a specific unsupported-workspace error.
+  - **Persistent signal**: Dedicated log entry.
+- **Trigger**: A workflow task starts and then fails.
+  - **User-visible response**: The user sees a failure notification tied to the workflow action that ran.
+  - **Persistent signal**: Dedicated log entry.
+- **Trigger**: A previously selected build option becomes unavailable in the current context.
+  - **User-visible response**: The option disappears from the visible Build Options list and no longer affects the next workflow action.
+  - **Persistent signal**: No additional persistent signal required beyond normal persisted state handling.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: In validation testing with representative manifests, 95% of users can identify and set the intended Build Options for the active build context in under 1 minute.
+- **SC-002**: In task-picker and view-header usability testing, 90% of users can choose the correct `Build`, `Clippy`, `Check`, or `Clean` action on the first attempt based on the label shown.
+- **SC-003**: In workflow validation across representative build contexts, 100% of launched `Build`, `Clippy`, and `Check` actions use the effective configuration that was visible to the user at launch time.
+- **SC-004**: In failure-path validation, 100% of blocked or failed workflow actions produce a visible user-facing error and a persistent log or diagnostic record appropriate to the failure.
+
+## Assumptions
+
+- The Configuration Experience slice already provides stable active model, target, and component selection, workspace persistence, and the Configuration tree surface.
+- Manifest-authored build-option flags and states are the only supported source for Build Option behavior in this slice.
+- Users expect `Build`, `Clippy`, and `Check` to honor the same effective configuration, while `Clean` remains context-independent except for workspace support.
+- Successful workflow execution in this slice does not automatically refresh Build Artifacts, IntelliSense state, or other later-slice surfaces.
