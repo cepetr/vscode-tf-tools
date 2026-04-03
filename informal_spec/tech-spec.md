@@ -23,6 +23,8 @@ The extension is organized around a single activation flow that wires together s
 
 The activation layer acts as the composition root. It constructs services, registers commands and providers, subscribes to VS Code events, and coordinates refresh flows.
 
+For the Configuration Experience slice, activation must be early enough that the extension can render a visible missing-manifest or unsupported-workspace state. The extension therefore cannot rely only on manifest-presence activation events because the user still needs the tree view, log command, and warning-state UI when `tf-tools.yaml` is absent.
+
 ## Core Modules
 
 - activation root: command registration, service wiring, event subscriptions
@@ -87,12 +89,15 @@ Excluded-file state tracks file inclusion, scope rules, marker preferences, and 
 
 ## Activation And Lifecycle
 
+For the Configuration Experience slice, the extension should activate on startup so the configuration view provider and status-bar surface are registered before the user opens the activity-bar container in any single-folder workspace.
+
 The activation sequence is:
 
-1. Resolve workspace root and single-root command constraints.
-2. Create persistence and tree-view services.
-3. Resolve manifest path from settings and load the manifest.
-4. Start watching the manifest file.
+1. Register the configuration tree provider and shared commands.
+2. Resolve workspace root and single-root command constraints.
+3. Create persistence services and the status-bar surface.
+4. Resolve manifest path from settings and load the manifest.
+5. Start watching the manifest file.
 5. Register the task provider.
 6. Create IntelliSense and excluded-file services.
 7. Register explorer decorations and editor overlays.
@@ -104,6 +109,8 @@ The activation sequence is:
 13. Register workspace, extension, editor, and configuration change listeners.
 
 Dependencies are passed through constructor arguments and closures. A separate dependency injection framework is not required.
+
+Packaging for distribution should bundle runtime dependencies into the extension entry point so the installed VSIX does not depend on shipping a full `node_modules/` tree. A package smoke check should verify both that the bundled entry point loads with only the `vscode` host API externalized and that the VSIX contains the expected bundle and icon assets.
 
 ## Manifest Loading And Normalization
 
@@ -188,6 +195,8 @@ Important structural elements:
 - row-scoped action buttons for artifact operations
 
 The tree view keeps one shared active configuration object and emits change notifications to listeners. Group open state is tracked so selector and multistate rows behave like an accordion.
+
+Implementation note: accordion-style tree rows must be backed by a real `TreeView` instance and expand/collapse event handling, not only by provider-side child filtering. When one row opens and another closes as part of the same interaction, collapse events may arrive after the new expand event. The implementation therefore keeps one authoritative expanded-group value, ignores stale collapse events for rows that are no longer the active group, and gives open/closed variants distinct tree item identities so the chevron state cannot drift from the rendered children.
 
 Checkbox handling is manual so selection state stays synchronized with the active configuration.
 

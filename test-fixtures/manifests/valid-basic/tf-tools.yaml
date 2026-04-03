@@ -1,0 +1,20 @@
+# Valid basic tf-tools manifest for testing.
+# Provides two models, two targets (one with shortName), and two components.
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+
+components:
+  - id: core
+    name: Core
+  - id: prodtest
+    name: Prodtest

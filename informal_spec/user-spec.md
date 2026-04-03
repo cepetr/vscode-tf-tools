@@ -64,7 +64,7 @@ The user shall be able to select the active model, target, and component from in
 
 ### HR-03 Active Configuration Status Bar
 
-The user shall be able to see the active build configuration in the VS Code status bar. The status-bar text shall use the format `{model-id} | {target-display} | {component-name}`, for example `T2T1 | Hardware | Prodtest`. Selecting the status-bar item shall reveal the extension's configuration view so the user can change the active model, target, or component.
+The user shall be able to see the active build configuration in the VS Code status bar. The status-bar text shall use the format `{model-name} | {target-display} | {component-name}`, for example `Trezor Model T | Hardware | Prodtest`. Selecting the status-bar item shall reveal the extension's configuration view so the user can change the active model, target, or component.
 
 ### HR-04 Manifest-Driven Build Options
 
@@ -108,8 +108,8 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 ### UI-01 Activity Bar Surface
 
-- The extension shall contribute an activity-bar container named `Trezor Firmware Tools`.
-- The extension shall use `tf-tools.png` from the repository root as the extension icon shown in the VS Code extensions view.
+- The extension shall contribute an activity-bar container named `Trezor`.
+- The extension shall use `images/tf-tools-logo.png` as the extension icon shown in the VS Code extensions view.
 - The activity-bar container shall use `images/tf-tools.svg` as its icon.
 - The container shall expose a single view named `Configuration`.
 
@@ -121,23 +121,17 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 ### UI-03 View Title Actions
 
-- The view title bar shall expose `Build` as the primary action.
-- The view title bar shall expose `Debug` beside `Build`.
-- The `Debug` action shall use the title `Debug`.
-- The `Debug` action shall invoke the `Trezor: Debug` command for the active build context shown in the tree.
-- The `Debug` action shall be visible whenever the active build context can be evaluated, even when the action is disabled.
-- The `Debug` action shall be enabled only when exactly one valid debug profile can be resolved for the active build context.
-- When the `Debug` action is disabled, its tooltip shall explain why debugging is unavailable for the current build context.
-- `Clippy`, `Check`, `Clean`, and `Refresh IntelliSense` shall be available from the view-title overflow menu.
-- These actions shall remain available in the Command Palette under `Trezor:`-prefixed command titles.
-- The title-bar actions shall operate on the active configuration shown in the tree.
-- The UI model shall allow additional future actions to be added without redesigning the view structure.
-- Artifact-row actions do not need to appear as standalone Command Palette entries unless explicitly required elsewhere.
+- The Configuration Experience slice shall not expose `Build`, `Debug`, `Clippy`, `Check`, `Clean`, or `Refresh IntelliSense` actions in the view title bar or its overflow menu.
+- These actions are deferred to later feature slices and shall not be contributed until their behavior is implemented.
+- The UI model shall still allow future view-title and overflow actions to be added without redesigning the view structure.
 
 ### UI-04 Build Context Section
 
 - The `Build Context` section shall show three selector rows: `Model`, `Target`, and `Component`.
 - Each selector row shall display the selected value inline.
+- The `Model` selector row shall display the selected model `name` inline.
+- The `Target` selector row shall display `shortName` when present and otherwise the target `name` inline.
+- The `Component` selector row shall display the selected component `name` inline.
 - Each selector row shall be collapsible and shall reveal its available choices as child rows when opened.
 - Only one selector or multistate choice list shall be open at a time.
 - Child choice rows shall use checkbox state to indicate which value is selected.
@@ -183,8 +177,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 ### UI-07 Tree View Icons
 
-- The `Build Context` and `Build Options` top-level sections shall use the VS Code `symbol-folder` theme icon.
-- The `Build Artifacts` top-level section shall use the VS Code `info` theme icon.
+- The `Build Context`, `Build Options`, and `Build Artifacts` top-level sections shall render as plain text group headers without dedicated icons.
 - The `Model` selector row shall use the VS Code `circuit-board` theme icon.
 - The `Target` selector row shall use the VS Code `target` theme icon.
 - The `Component` selector row shall use the VS Code `extensions` theme icon.
@@ -195,7 +188,9 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - The `Map File` row action shall use the VS Code `go-to-file` theme icon.
 - The `Trezor: Flash {model-id}-{component-name}` action shall use the VS Code `zap` theme icon.
 - The `Trezor: Upload {model-id}-{component-name}` action shall use the VS Code `arrow-up` theme icon.
-- Choice rows and checkbox option rows shall rely on checkbox state and shall not require additional dedicated icons.
+- Active choice rows may use the VS Code `check` theme icon.
+- Inactive choice rows shall use an empty spacer icon so choice labels remain aligned without presenting an additional semantic icon.
+- Checkbox option rows shall rely on checkbox state and shall not require additional dedicated icons.
 
 ### UI-08 Notifications And Status Feedback
 
