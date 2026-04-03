@@ -44,7 +44,7 @@ Where the extension needs a short internal identifier, abbreviation, or compact 
 - The `Upload` command shall use a dynamic title in the form `Trezor: Upload {model-id}-{component-name}` and shall invoke `xtask upload <component-id>`.
 - The `Debug` command shall use the title `Trezor: Debug` and shall launch the selected debug configuration for the active build context through the VS Code debug API.
 - IntelliSense state is derived from compile-commands artifacts in `tfTools.artifactsPath` and is refreshed on activation, on configuration changes, after successful builds, on manual refresh, and when relevant extension state changes.
-- Build artifacts shall be resolved from `tfTools.artifactsPath` using the selected model and component together with artifact-type-specific file resolution rules.
+- Build artifacts shall be resolved from the artifact base path `<tfTools.artifactsPath>/<artifact-folder>/`, where `<artifact-folder>` comes from the selected model's required `artifact-folder` manifest field and is interpreted relative to `tfTools.artifactsPath`, and an artifact basename constructed as `<artifact-name><artifact-suffix>`, where `<artifact-name>` comes from the selected component's required `artifact-name` manifest field and `<artifact-suffix>` comes from the selected target's optional `artifact-suffix` manifest field and defaults to an empty string when omitted.
 - Debug configuration selection is driven by manifest-defined debug profiles together with debugger template files loaded from a configurable template path.
 - The extension integrates with Microsoft C/C++ (`ms-vscode.cpptools`) through a custom configuration provider.
 - Files not present in the active compile database can be visually marked in the explorer and in editors when they also match the configured file-pattern and folder-scope rules.
@@ -80,7 +80,7 @@ The user shall be able to run command workflows directly from VS Code. The initi
 
 ### HR-07 IntelliSense Aligned With Active Configuration
 
-The user shall receive C/C++ IntelliSense based on the selected build context. The extension shall resolve the expected compile-commands artifact from `tfTools.artifactsPath` for the active model and component and apply it through the cpptools provider when available. If the expected artifact is missing, the extension shall not fall back to a different artifact or a different active configuration.
+The user shall receive C/C++ IntelliSense based on the selected build context. The extension shall resolve the expected compile-commands artifact from the artifact base path `<tfTools.artifactsPath>/<artifact-folder>/`, where `<artifact-folder>` comes from the selected model's required `artifact-folder` manifest field and is interpreted relative to `tfTools.artifactsPath`, and an artifact basename constructed as `<artifact-name><artifact-suffix>`, where `<artifact-name>` comes from the selected component's required `artifact-name` manifest field and `<artifact-suffix>` comes from the selected target's optional `artifact-suffix` manifest field and defaults to an empty string when omitted. The extension shall apply that artifact through the cpptools provider when available. If the expected artifact is missing, the extension shall not fall back to a different artifact or a different active configuration.
 
 ### HR-08 Manual And Automatic Refresh
 
@@ -162,9 +162,11 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 - The `Build Artifacts` section shall show artifact status rows.
 - It shall include rows labeled `Compile Commands`, `Binary`, and `Map File`, in that order.
-- `Compile Commands` shall resolve its expected path from `<artifacts-root>/<model-id>/<component-id>.cc.json`.
-- `Binary` shall resolve its expected path from `<artifacts-root>/<model-id>/<component-id>.bin`.
-- `Map File` shall resolve its expected path from `<artifacts-root>/<model-id>/<component-id>.map`.
+- The artifact base path shall be constructed as `<artifacts-root>/<artifact-folder>/`, where `<artifact-folder>` comes from the selected model's required `artifact-folder` manifest field and is interpreted relative to `tfTools.artifactsPath`.
+- The artifact basename shall be constructed as `<artifact-name><artifact-suffix>`, where `<artifact-name>` comes from the selected component's required `artifact-name` manifest field and `<artifact-suffix>` comes from the selected target's optional `artifact-suffix` manifest field and defaults to an empty string when omitted.
+- `Compile Commands` shall resolve its expected path from `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`.
+- `Binary` shall resolve its expected path from `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.bin`.
+- `Map File` shall resolve its expected path from `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.map`.
 - Each row shall display the text `valid` or `missing`.
 - Each row tooltip shall show the expected artifact path.
 - When an artifact is missing, its tooltip shall also explain why the artifact is missing.
@@ -294,6 +296,7 @@ Each `models` entry shall be a mapping with:
 
 - `id`: non-empty string; unique within `models`; used in persisted configuration and passed to build commands as the model identifier
 - `name`: non-empty string; label shown in the UI
+- `artifact-folder`: non-empty string; path segment or relative path under `tfTools.artifactsPath` used as the artifact folder for Build Artifacts, IntelliSense resolution, and `${tfTools.artifactPath}`
 
 ### targets
 
@@ -303,6 +306,7 @@ Each `targets` entry shall be a mapping with:
 - `name`: non-empty string; label shown in the UI
 - `shortName`: optional non-empty string; compact label used in the status bar and build-task label when provided
 - `flag`: string or `null`; when set to a string, it is appended to the build command for that target
+- `artifact-suffix`: optional string; when set, it is appended to the selected component id to derive the artifact basename for Build Artifacts and IntelliSense resolution
 
 ### components
 
@@ -310,6 +314,7 @@ Each `components` entry shall be a mapping with:
 
 - `id`: non-empty string; unique within `components`; passed as the positional component argument to the build command
 - `name`: non-empty string; label shown in the UI
+- `artifact-name`: non-empty string; artifact basename stem used for Build Artifacts and IntelliSense resolution before applying the selected target's optional `artifact-suffix`
 - `flashWhen`: optional string expression that determines whether the `Flash` action is available for the active build context
 - `uploadWhen`: optional string expression that determines whether the `Upload` action is available for the active build context
 
@@ -319,7 +324,7 @@ Each `debug` entry shall be a mapping with:
 
 - `template`: non-empty string; the relative path to a template file under `tfTools.debug.templatesPath`
 - `when`: string expression that determines whether the debug profile applies to the active build context
-- `executable`: non-empty string; the primary debug executable filename or relative path under the active model artifact folder
+- `executable`: non-empty string; the primary debug executable filename or relative path under the active model artifact folder selected through that model's `artifact-folder`
 - `priority`: optional integer; higher values take precedence when multiple profiles match the active build context
 - `vars`: optional mapping of additional debug variable names to string values
 
@@ -432,7 +437,7 @@ Debug profile semantics:
   - `${tfTools.target.name}`
   - `${tfTools.executable}`
   - `${tfTools.executablePath}`
-- `${tfTools.artifactPath}` shall resolve to the active model artifact folder, using the form `<tfTools.artifactsPath>/<model-id>`.
+- `${tfTools.artifactPath}` shall resolve to the active model artifact folder, using the form `<tfTools.artifactsPath>/<artifact-folder>`, where `<artifact-folder>` comes from the selected model's required `artifact-folder` field.
 - `${tfTools.executable}` shall resolve to the selected debug profile's `executable` value after tf-tools variable substitution.
 - `${tfTools.executablePath}` shall resolve to the absolute path obtained by combining `${tfTools.artifactPath}` with `${tfTools.executable}` when the executable value is relative, or to the substituted absolute path when the executable value is already absolute.
 - Each entry in `debug.vars` shall be exposed to the selected debugger template as `${tfTools.debug.var:<name>}`.
@@ -513,7 +518,7 @@ Multistate option semantics:
 
 - Array order shall define UI order.
 - The first entries in `models`, `targets`, and `components` shall be used as fallbacks when persisted values are missing or invalid.
-- Build artifacts shall be addressed under `tfTools.artifactsPath` using the layout `<artifacts-root>/<model-id>/<component-id><extension>`.
+- Build artifacts shall be addressed under `tfTools.artifactsPath` using the layout `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix><extension>`, where `<artifact-folder>` comes from the selected model's required `artifact-folder` field, `<artifact-name>` comes from the selected component's required `artifact-name` field, and `<artifact-suffix>` comes from the selected target's optional `artifact-suffix` field and defaults to an empty string when omitted.
 - Group order in the Build Options UI shall follow the first occurrence of each group label in `options`.
 - Duplicate ids within `models`, `targets`, and `components` shall be invalid.
 - Duplicate `flag` values within `options` shall be invalid.
@@ -532,6 +537,7 @@ Multistate option semantics:
 models:
   - id: T3W1
     name: T3W1 (TS7)
+    artifact-folder: ts7
 
 targets:
   - id: hardware
@@ -544,6 +550,7 @@ targets:
 components:
   - id: firmware
     name: Firmware
+    artifact-name: firmware
     flashWhen: not(target(emulator))
     uploadWhen: not(target(emulator))
 
