@@ -1,0 +1,64 @@
+# Manifest fixture: options with when rules that gate visibility by context.
+# Used by US1 tests to verify that unavailable options are hidden but their
+# persisted values are retained and restored when they become available again.
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+
+components:
+  - id: core
+    name: Core
+  - id: prodtest
+    name: Prodtest
+
+buildOptions:
+  # Always visible
+  - label: "Debug Build"
+    flag: "--debug"
+    kind: checkbox
+
+  # Visible only for T2T1 model
+  - label: "Legacy Mode"
+    flag: "--legacy"
+    kind: checkbox
+    when: "model(T2T1)"
+
+  # Visible only for T3W1 model
+  - label: "Next Gen"
+    flag: "--next-gen"
+    kind: checkbox
+    when: "model(T3W1)"
+
+  # Visible only for hardware target
+  - label: "Hardware Perf"
+    flag: "--hw-perf"
+    kind: checkbox
+    when: "target(hw)"
+
+  # Visible only for core component
+  - label: "Core Extra"
+    flag: "--core-extra"
+    kind: checkbox
+    when: "component(core)"
+
+  # Requires both T3W1 model and hw target
+  - label: "T3W1 Hardware Only"
+    flag: "--t3w1-hw"
+    kind: checkbox
+    when: "all(model(T3W1), target(hw))"
+
+  # Visible for either T2T1 or emulator target
+  - label: "Emu or T2T1"
+    flag: "--emu-t2t1"
+    kind: checkbox
+    when: "any(model(T2T1), target(emu))"
