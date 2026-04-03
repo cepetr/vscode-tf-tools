@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
+import * as path from "path";
 import { ManifestState, ManifestStatus } from "./manifest-types";
 import { validateManifest } from "./validate-manifest";
 
@@ -148,17 +149,12 @@ export class ManifestService implements vscode.Disposable {
     if (this._watcher) {
       return;
     }
-    // Watch the exact manifest file for create, change, and delete events
+    // Watch the exact manifest file for create, change, and delete events.
+    // File-change events trigger re-normalization of the active config via
+    // the onDidChangeState → restoreActiveConfig chain in extension.ts (T032).
     const pattern = new vscode.RelativePattern(
-      vscode.Uri.file(
-        this.manifestUri.fsPath.substring(
-          0,
-          this.manifestUri.fsPath.lastIndexOf("/")
-        )
-      ),
-      this.manifestUri.fsPath.substring(
-        this.manifestUri.fsPath.lastIndexOf("/") + 1
-      )
+      vscode.Uri.file(path.dirname(this.manifestUri.fsPath)),
+      path.basename(this.manifestUri.fsPath)
     );
 
     this._watcher = vscode.workspace.createFileSystemWatcher(pattern);
