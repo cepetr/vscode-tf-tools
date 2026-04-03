@@ -74,6 +74,11 @@ src/
 │   ├── active-config.ts
 │   ├── build-options.ts
 │   └── normalize-config.ts
+├── intellisense/
+│   ├── artifact-resolution.ts
+│   ├── cpptools-provider.ts
+│   ├── intellisense-service.ts
+│   └── intellisense-types.ts
 ├── manifest/
 │   ├── manifest-service.ts
 │   ├── manifest-types.ts
