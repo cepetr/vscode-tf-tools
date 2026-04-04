@@ -17,10 +17,10 @@
 
 **Purpose**: Prepare fixtures and shared test helpers for the updated cpptools integration work.
 
-- [ ] T001 Add representative compile-database fixtures with mixed C/C++, relative paths, and duplicate entries under `test-fixtures/workspaces/intellisense-valid/`
-- [ ] T002 Add missing-artifact and wrong-provider workspace scenarios under `test-fixtures/workspaces/intellisense-missing-artifact/` and `test-fixtures/workspaces/intellisense-valid/`
-- [ ] T003 [P] Extend IntelliSense-specific VS Code mocks and helper factories in `src/test/unit/vscode-mock.ts` and `src/test/unit/workflow-test-helpers.ts`
-- [ ] T004 [P] Add cpptools provider test seams and fixture loaders in `src/test/unit/workflow-test-helpers.ts` and `src/test/integration/index.ts`
+- [X] T001 Add representative compile-database fixtures with mixed C/C++, relative paths, and duplicate entries under `test-fixtures/workspaces/intellisense-valid/`
+- [X] T002 Add missing-artifact and wrong-provider workspace scenarios under `test-fixtures/workspaces/intellisense-missing-artifact/` and `test-fixtures/workspaces/intellisense-valid/`
+- [X] T003 [P] Extend IntelliSense-specific VS Code mocks and helper factories in `src/test/unit/vscode-mock.ts` and `src/test/unit/workflow-test-helpers.ts`
+- [X] T004 [P] Add cpptools provider test seams and fixture loaders in `src/test/unit/workflow-test-helpers.ts` and `src/test/integration/index.ts`
 
 ---
 
@@ -30,10 +30,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Define parsed compile-entry, browse snapshot, provider payload, and warning-fix types in `src/intellisense/intellisense-types.ts`
-- [ ] T006 [P] Create compile-database parsing and normalization helpers in `src/intellisense/compile-commands-parser.ts`
-- [ ] T007 [P] Refactor the cpptools boundary to support provider registration and test injection in `src/intellisense/cpptools-provider.ts`
-- [ ] T008 [P] Add shared logging helpers for missing-artifact and provider-warning events in `src/observability/log-channel.ts`
+- [X] T005 Define parsed compile-entry, browse snapshot, provider payload, and warning-fix types in `src/intellisense/intellisense-types.ts`
+- [X] T006 [P] Create compile-database parsing and normalization helpers in `src/intellisense/compile-commands-parser.ts`
+- [X] T007 [P] Refactor the cpptools boundary to support provider registration and test injection in `src/intellisense/cpptools-provider.ts`
+- [X] T008 [P] Add shared logging helpers for missing-artifact and provider-warning events in `src/observability/log-channel.ts`
 
 **Checkpoint**: Parser and provider foundations are ready; user stories can now proceed.
 
@@ -58,7 +58,7 @@
 
 - [ ] T013 [P] [US1] Implement compile-database tokenization, entry indexing, and cpptools field derivation in `src/intellisense/compile-commands-parser.ts`
 - [ ] T014 [P] [US1] Implement cpptools custom configuration provider registration, per-file lookup, and browse snapshot support in `src/intellisense/cpptools-provider.ts`
-- [ ] T015 [US1] Update refresh orchestration to eagerly parse the active `.cc.json`, apply provider state, ignore later duplicate entries, clear stale state, and write missing-artifact log entries in `src/intellisense/intellisense-service.ts`
+- [X] T015 [US1] Update refresh orchestration to eagerly parse the active `.cc.json`, apply provider state, ignore later duplicate entries, clear stale state, and write missing-artifact log entries in `src/intellisense/intellisense-service.ts`
 - [ ] T016 [US1] Wire activation, active-context changes, successful-build refresh, provider-availability changes, manifest-path changes, manifest-content changes, and `tfTools.artifactsPath` refresh through `src/extension.ts` and `src/workspace/settings.ts`
 - [ ] T017 [US1] Preserve exact artifact-resolution semantics for `artifact-folder`, `artifact-name`, and `artifact-suffix` in `src/intellisense/artifact-resolution.ts` and `src/intellisense/intellisense-types.ts`
 
