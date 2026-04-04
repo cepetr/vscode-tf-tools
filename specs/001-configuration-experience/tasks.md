@@ -17,7 +17,7 @@
 
 **Purpose**: Prepare the narrowed bugfix acceptance assets before code changes.
 
-- [ ] T001 Align the narrowed bugfix acceptance notes in `specs/001-configuration-experience/quickstart.md` and `specs/001-configuration-experience/contracts/vscode-contribution-contract.md`
+- [X] T001 Align the narrowed bugfix acceptance notes in `specs/001-configuration-experience/quickstart.md` and `specs/001-configuration-experience/contracts/vscode-contribution-contract.md`
 
 ---
 
@@ -27,7 +27,7 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Define the shared root-section regression expectations in `src/test/unit/ui/configuration-tree.test.ts` and `src/test/integration/configuration-health.integration.test.ts`
+- [X] T002 Define the shared root-section regression expectations in `src/test/unit/ui/configuration-tree.test.ts` and `src/test/integration/configuration-health.integration.test.ts`
 
 **Checkpoint**: Regression target is defined and story work can proceed.
 
@@ -43,13 +43,13 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T003 [P] [US1] Add unit tests for expanded-by-default root section items in `src/test/unit/ui/configuration-tree.test.ts`
-- [ ] T004 [P] [US1] Add integration tests for initially visible root section placeholder and status content in `src/test/integration/configuration-health.integration.test.ts`
+- [X] T003 [P] [US1] Add unit tests for expanded-by-default root section items in `src/test/unit/ui/configuration-tree.test.ts`
+- [X] T004 [P] [US1] Add integration tests for initially visible root section placeholder and status content in `src/test/integration/configuration-health.integration.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] Update root `SectionItem` defaults so `Build Context`, `Build Options`, and `Build Artifacts` all render expanded in `src/ui/configuration-tree.ts`
-- [ ] T006 [US1] Preserve plain-text section headers and existing child rendering while applying the root expansion fix in `src/ui/configuration-tree.ts` and `src/test/unit/ui/configuration-tree.test.ts`
+- [X] T005 [US1] Update root `SectionItem` defaults so `Build Context`, `Build Options`, and `Build Artifacts` all render expanded in `src/ui/configuration-tree.ts`
+- [X] T006 [US1] Preserve plain-text section headers and existing child rendering while applying the root expansion fix in `src/ui/configuration-tree.ts` and `src/test/unit/ui/configuration-tree.test.ts`
 
 **Checkpoint**: User Story 1 should now be fully functional and testable independently.
 
@@ -59,8 +59,8 @@
 
 **Purpose**: Final validation and documentation consistency for the bugfix.
 
-- [ ] T007 Validate the narrowed quickstart scenarios against `src/test/unit/ui/configuration-tree.test.ts`, `src/test/integration/configuration-health.integration.test.ts`, and `specs/001-configuration-experience/quickstart.md`
-- [ ] T008 [P] Review the finished bugfix for scope compliance and remove any cross-slice drift in `src/ui/configuration-tree.ts` and `specs/001-configuration-experience/tasks.md`
+- [X] T007 Validate the narrowed quickstart scenarios against `src/test/unit/ui/configuration-tree.test.ts`, `src/test/integration/configuration-health.integration.test.ts`, and `specs/001-configuration-experience/quickstart.md`
+- [X] T008 [P] Review the finished bugfix for scope compliance and remove any cross-slice drift in `src/ui/configuration-tree.ts` and `specs/001-configuration-experience/tasks.md`
 
 ---
 
