@@ -34,6 +34,10 @@ import {
 } from "./tasks/build-task-provider";
 import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { applyProviderSettingFix } from "./intellisense/cpptools-provider";
+import { ExcludedFilesService } from "./intellisense/excluded-files-service";
+import { ExcludedFilesRefreshCoordinator } from "./intellisense/excluded-files-refresh";
+import { ExcludedFileDecorationsProvider } from "./ui/excluded-file-decorations";
+import { ExcludedFileOverlaysManager } from "./ui/excluded-file-overlays";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
@@ -43,6 +47,10 @@ let _manifestState: ManifestState | undefined;
 let _activeConfig: ActiveConfig | undefined;
 let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 let _intelliSenseService: IntelliSenseService | undefined;
+let _excludedFilesService: ExcludedFilesService | undefined;
+let _excludedFilesRefreshCoordinator: ExcludedFilesRefreshCoordinator | undefined;
+let _excludedFileDecorations: ExcludedFileDecorationsProvider | undefined;
+let _excludedFileOverlays: ExcludedFileOverlaysManager | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
@@ -208,6 +216,44 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
+  // --- Excluded-file visibility services (US1: Explorer badges, US2: editor overlays) ---
+  _excludedFilesService = new ExcludedFilesService();
+  _excludedFilesRefreshCoordinator = new ExcludedFilesRefreshCoordinator(
+    _excludedFilesService,
+    workspaceFolder
+  );
+  _excludedFileDecorations = new ExcludedFileDecorationsProvider();
+  _excludedFileOverlays = new ExcludedFileOverlaysManager();
+  context.subscriptions.push(
+    { dispose: () => { _excludedFilesService?.dispose(); _excludedFilesService = undefined; } },
+    { dispose: () => { _excludedFilesRefreshCoordinator?.dispose(); _excludedFilesRefreshCoordinator = undefined; } },
+    { dispose: () => { _excludedFileDecorations?.dispose(); _excludedFileDecorations = undefined; } },
+    { dispose: () => { _excludedFileOverlays?.dispose(); _excludedFileOverlays = undefined; } },
+    vscode.window.registerFileDecorationProvider(_excludedFileDecorations)
+  );
+
+  // Connect snapshot updates → decoration provider so Explorer badges refresh.
+  context.subscriptions.push(
+    _excludedFilesService.onDidUpdateSnapshot((snapshot) => {
+      _excludedFileDecorations?.handleSnapshot(snapshot);
+      _excludedFileOverlays?.handleSnapshot(snapshot);
+    })
+  );
+
+  // Re-apply overlays whenever new editors become visible.
+  context.subscriptions.push(
+    vscode.window.onDidChangeVisibleTextEditors(() => {
+      _excludedFileOverlays?.applyToVisibleEditors();
+    })
+  );
+
+  // Connect IntelliSense payload changes → excluded-file recomputation.
+  context.subscriptions.push(
+    _intelliSenseService.onDidRefreshPayload((payload) => {
+      _excludedFilesRefreshCoordinator?.handlePayload(payload);
+    })
+  );
+
   // Subscribe to IntelliSense refresh results → update tree view artifact row
   context.subscriptions.push(
     _intelliSenseService.onDidRefresh(([artifact, readiness]) => {
@@ -245,6 +291,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
         _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
         _intelliSenseService?.scheduleRefresh("artifacts-path-change");
+      }
+      if (
+        e.affectsConfiguration("tfTools.excludedFiles.grayInTree", workspaceFolder.uri) ||
+        e.affectsConfiguration("tfTools.excludedFiles.showEditorOverlay", workspaceFolder.uri) ||
+        e.affectsConfiguration("tfTools.excludedFiles.fileNamePatterns", workspaceFolder.uri) ||
+        e.affectsConfiguration("tfTools.excludedFiles.folderGlobs", workspaceFolder.uri)
+      ) {
+        _intelliSenseService?.scheduleRefresh("excluded-files-setting-change");
       }
       if (e.affectsConfiguration("tfTools.manifestPath", workspaceFolder.uri)) {
         // Restart the manifest service with the newly resolved path.
@@ -458,6 +512,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  // Trigger IntelliSense refresh when workspace folders change so excluded-file
+  // candidate paths are re-evaluated against the updated workspace root (US3).
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      _intelliSenseService?.scheduleRefresh("workspace-change");
+    })
+  );
+
   // --- Start manifest service (loads and begins watching) ---
   await _manifestService.start();
 
@@ -478,6 +540,14 @@ export function deactivate(): void {
   _statusBar = undefined;
   _intelliSenseService?.dispose();
   _intelliSenseService = undefined;
+  _excludedFilesService?.dispose();
+  _excludedFilesService = undefined;
+  _excludedFilesRefreshCoordinator?.dispose();
+  _excludedFilesRefreshCoordinator = undefined;
+  _excludedFileDecorations?.dispose();
+  _excludedFileDecorations = undefined;
+  _excludedFileOverlays?.dispose();
+  _excludedFileOverlays = undefined;
   _manifestState = undefined;
   _activeConfig = undefined;
   _resolvedOptions = [];

@@ -97,7 +97,9 @@ export type RefreshTrigger =
   | "manual-refresh"
   | "provider-change"
   | "manifest-change"
-  | "artifacts-path-change";
+  | "artifacts-path-change"
+  | "workspace-change"
+  | "excluded-files-setting-change";
 
 // ---------------------------------------------------------------------------
 // Parsed compile-commands entry

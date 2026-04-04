@@ -1,0 +1,7 @@
+{
+  "tfTools.artifactsPath": "artifacts",
+  "tfTools.excludedFiles.grayInTree": true,
+  "tfTools.excludedFiles.showEditorOverlay": true,
+  "tfTools.excludedFiles.fileNamePatterns": ["*.c"],
+  "tfTools.excludedFiles.folderGlobs": ["core/embed/**", "core/vendor/**"]
+}

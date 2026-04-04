@@ -239,3 +239,82 @@ export function loadCompileCommandsFixture(fixturePath: string): RawCompileEntry
   const raw = fs.readFileSync(fixturePath, "utf-8");
   return JSON.parse(raw) as RawCompileEntry[];
 }
+
+// ---------------------------------------------------------------------------
+// Excluded-file fixture paths
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the absolute path to the root of the excluded-files-scope workspace
+ * fixture used by excluded-file visibility unit tests.
+ */
+export function excludedFilesScopeWorkspaceRoot(): string {
+  return path.resolve(__dirname, "../../../../test-fixtures/workspaces/excluded-files-scope");
+}
+
+/**
+ * Returns the absolute path to the compile-commands artifact inside the
+ * excluded-files-scope workspace fixture.
+ */
+export function excludedFilesScopeArtifactPath(): string {
+  return path.join(
+    excludedFilesScopeWorkspaceRoot(),
+    "artifacts/model-t/compile_commands_core.cc.json"
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Excluded-file settings factories
+// ---------------------------------------------------------------------------
+
+export interface ExcludedFilesSettingsFixture {
+  grayInTree: boolean;
+  showEditorOverlay: boolean;
+  fileNamePatterns: string[];
+  folderGlobs: string[];
+}
+
+/**
+ * Returns a default excluded-file settings fixture matching the contract defaults.
+ * Individual fields can be overridden.
+ */
+export function makeExcludedFilesSettings(
+  overrides: Partial<ExcludedFilesSettingsFixture> = {}
+): ExcludedFilesSettingsFixture {
+  return {
+    grayInTree: true,
+    showEditorOverlay: true,
+    fileNamePatterns: ["*.c"],
+    folderGlobs: ["core/embed/**", "core/vendor/**"],
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Excluded-file snapshot factories
+// ---------------------------------------------------------------------------
+
+export interface ExcludedFilesSnapshotFixture {
+  contextKey: string;
+  artifactPath: string | null;
+  settings: ExcludedFilesSettingsFixture;
+  includedFiles: Set<string>;
+  excludedFiles: Set<string>;
+}
+
+/**
+ * Returns a minimal excluded-files snapshot fixture with no excluded files.
+ * Individual fields can be overridden for specific test scenarios.
+ */
+export function makeExcludedFilesSnapshot(
+  overrides: Partial<ExcludedFilesSnapshotFixture> = {}
+): ExcludedFilesSnapshotFixture {
+  return {
+    contextKey: "T2T1/hw/core",
+    artifactPath: excludedFilesScopeArtifactPath(),
+    settings: makeExcludedFilesSettings(),
+    includedFiles: new Set<string>(),
+    excludedFiles: new Set<string>(),
+    ...overrides,
+  };
+}

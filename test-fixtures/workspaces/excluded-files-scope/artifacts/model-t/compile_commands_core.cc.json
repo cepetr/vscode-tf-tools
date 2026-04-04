@@ -1,0 +1,12 @@
+[
+  {
+    "directory": "/workspace",
+    "command": "arm-none-eabi-gcc -std=c11 -Icore/embed/include -c core/embed/main.c",
+    "file": "core/embed/main.c"
+  },
+  {
+    "directory": "/workspace",
+    "command": "arm-none-eabi-gcc -std=c11 -Icore/embed/include -c core/embed/util.c",
+    "file": "core/embed/util.c"
+  }
+]

@@ -135,6 +135,32 @@
           "default": "core/build-xtask/artifacts",
           "description": "(Trezor) Absolute or workspace-relative path to the directory that contains build artifact sub-folders (e.g. compile-commands files). Defaults to 'core/build-xtask/artifacts'. Clear to disable IntelliSense artifact resolution.",
           "scope": "resource"
+        },
+        "tfTools.excludedFiles.grayInTree": {
+          "type": "boolean",
+          "default": true,
+          "description": "(Trezor) Gray excluded files in the Explorer in addition to showing the exclusion badge.",
+          "scope": "resource"
+        },
+        "tfTools.excludedFiles.showEditorOverlay": {
+          "type": "boolean",
+          "default": true,
+          "description": "(Trezor) Show a first-line warning overlay in editors for files that are excluded from the active build configuration.",
+          "scope": "resource"
+        },
+        "tfTools.excludedFiles.fileNamePatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["*.c"],
+          "description": "(Trezor) Basename-only glob patterns (name + extension) for files eligible to be marked excluded. Case-sensitive. Subpath globbing is not supported. Excluded-file marking is disabled when this list is empty.",
+          "scope": "resource"
+        },
+        "tfTools.excludedFiles.folderGlobs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["core/embed/**", "core/vendor/**"],
+          "description": "(Trezor) Folder glob patterns that scope excluded-file marking. May be absolute paths or paths relative to the workspace root. Use '/' separators. Excluded-file marking is disabled when this list is empty.",
+          "scope": "resource"
         }
       }
     }
@@ -153,6 +179,7 @@
     "package": "vsce package --no-dependencies"
   },
   "dependencies": {
+    "minimatch": "^10.2.5",
     "yaml": "^2.7.1"
   },
   "devDependencies": {

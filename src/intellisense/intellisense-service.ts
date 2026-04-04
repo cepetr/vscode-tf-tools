@@ -3,6 +3,7 @@ import {
   ActiveCompileCommandsArtifact,
   IntelliSenseProviderReadiness,
   IntelliSenseRuntimeState,
+  ProviderPayload,
   RefreshTrigger,
 } from "./intellisense-types";
 import {
@@ -59,6 +60,7 @@ export class IntelliSenseService {
   };
   private _lastArtifact: ActiveCompileCommandsArtifact | null = null;
   private _lastReadiness: IntelliSenseProviderReadiness | null = null;
+  private _lastPayload: ProviderPayload | null = null;
 
   /**
    * Last warning state emitted to guard against duplicate warning messages.
@@ -77,6 +79,18 @@ export class IntelliSenseService {
   readonly onDidRefresh: vscode.Event<
     [ActiveCompileCommandsArtifact | null, IntelliSenseProviderReadiness]
   > = this._onDidRefresh.event;
+
+  private readonly _onDidRefreshPayload = new vscode.EventEmitter<ProviderPayload | null>();
+
+  /**
+   * Emitted after each refresh with the latest parsed `ProviderPayload`, or
+   * `null` when the compile-database payload is unavailable.  Excluded-file
+   * consumers subscribe here to receive the `includedFiles` set (the keys of
+   * `ProviderPayload.entriesByFile`) without taking an additional compile-DB
+   * parsing dependency.
+   */
+  readonly onDidRefreshPayload: vscode.Event<ProviderPayload | null> =
+    this._onDidRefreshPayload.event;
 
   private readonly _adapter: CpptoolsProviderAdapter;
 
@@ -114,6 +128,15 @@ export class IntelliSenseService {
 
   getRuntimeState(): IntelliSenseRuntimeState {
     return this._lastRuntimeState;
+  }
+
+  /**
+   * Returns the latest parsed `ProviderPayload`, or null when the active
+   * compile-database payload is unavailable.  Used by excluded-file consumers
+   * to extract the `includedFiles` set without subscribing to the event.
+   */
+  getLastPayload(): ProviderPayload | null {
+    return this._lastPayload;
   }
 
   // ---------------------------------------------------------------------------
@@ -168,7 +191,9 @@ export class IntelliSenseService {
       // No active context — clear any previously applied state.
       this._clearProviderState();
       this._lastArtifact = null;
+      this._lastPayload = null;
       this._onDidRefresh.fire([null, readiness]);
+      this._onDidRefreshPayload.fire(null);
       return;
     }
 
@@ -188,14 +213,17 @@ export class IntelliSenseService {
     if (artifact.status === "missing") {
       logMissingArtifact(artifact.path || "(unknown)", artifact.contextKey);
       this._clearProviderState();
+      this._lastPayload = null;
     } else if (readiness.warningState === "none") {
       this._applyProviderState(artifact.path, artifact.contextKey);
     } else {
       // Provider not ready even though artifact exists — clear stale state.
       this._clearProviderState();
+      this._lastPayload = null;
     }
 
     this._onDidRefresh.fire([artifact, readiness]);
+    this._onDidRefreshPayload.fire(this._lastPayload);
   }
 
   // ---------------------------------------------------------------------------
@@ -212,10 +240,12 @@ export class IntelliSenseService {
     if (!payload) {
       log(`[IntelliSense] Failed to parse compile-commands: ${artifactPath}`);
       this._clearProviderState();
+      this._lastPayload = null;
       return;
     }
 
     this._adapter.applyPayload(payload);
+    this._lastPayload = payload;
     this._lastRuntimeState = {
       appliedArtifactPath: artifactPath,
       appliedContextKey: contextKey,
@@ -248,6 +278,7 @@ export class IntelliSenseService {
 
   dispose(): void {
     this._onDidRefresh.dispose();
+    this._onDidRefreshPayload.dispose();
     this._adapter.dispose();
     this._pendingRefresh = null;
   }
