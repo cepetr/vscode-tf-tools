@@ -59,15 +59,17 @@ export function resolveWorkflowContext(
   state: ManifestStateLoaded,
   activeConfig: ActiveConfig
 ): WorkflowContext | undefined {
+  const model = state.models.find((m) => m.id === activeConfig.modelId);
   const target = state.targets.find((t) => t.id === activeConfig.targetId);
   const component = state.components.find((c) => c.id === activeConfig.componentId);
 
-  if (!target || !component) {
+  if (!model || !target || !component) {
     return undefined;
   }
 
   return {
     modelId: activeConfig.modelId,
+    modelName: model.name,
     targetId: activeConfig.targetId,
     targetDisplay: target.shortName ?? target.name,
     targetFlag: target.flag ?? null,

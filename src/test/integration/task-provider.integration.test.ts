@@ -23,7 +23,8 @@ import { ManifestStateLoaded } from "../../manifest/manifest-types";
 
 suite("Build Task Provider – task label construction", () => {
   const context = {
-    modelId: "T2T1",
+    modelId: "model-t2t1",
+    modelName: "T2T1",
     targetId: "hw",
     targetDisplay: "HW",
     componentName: "Core",
@@ -32,17 +33,17 @@ suite("Build Task Provider – task label construction", () => {
 
   test("Build task label follows 'Build {model}-{target}-{component}' format", () => {
     const label = buildTaskLabel("Build", context);
-    assert.strictEqual(label, "Build T2T1-HW-Core");
+    assert.strictEqual(label, "Build T2T1 | HW | Core");
   });
 
   test("Clippy task label follows 'Clippy {model}-{target}-{component}' format", () => {
     const label = buildTaskLabel("Clippy", context);
-    assert.strictEqual(label, "Clippy T2T1-HW-Core");
+    assert.strictEqual(label, "Clippy T2T1 | HW | Core");
   });
 
   test("Check task label follows 'Check {model}-{target}-{component}' format", () => {
     const label = buildTaskLabel("Check", context);
-    assert.strictEqual(label, "Check T2T1-HW-Core");
+    assert.strictEqual(label, "Check T2T1 | HW | Core");
   });
 
   test("Clean task label is always 'Clean'", () => {
@@ -99,7 +100,7 @@ suite("Build Task Provider – task failure visibility (T031)", () => {
 
   test("build task defines a shell execution", () => {
     const activeConfig = {
-      modelId: "T2T1",
+      modelId: "model-t2t1",
       targetId: "hw",
       componentId: "core",
       persistedAt: "2026-01-01T00:00:00Z",
@@ -107,7 +108,7 @@ suite("Build Task Provider – task failure visibility (T031)", () => {
     const state: ManifestStateLoaded = {
       status: "loaded",
       manifestUri: vscode.Uri.file("/fake/tf-tools.yaml"),
-      models: [{ kind: "model" as const, id: "T2T1", name: "Model T" }],
+      models: [{ kind: "model" as const, id: "model-t2t1", name: "T2T1" }],
       targets: [{ kind: "target" as const, id: "hw", name: "Hardware", shortName: "HW" }],
       components: [{ kind: "component" as const, id: "core", name: "Core" }],
       buildOptions: [],
@@ -117,6 +118,7 @@ suite("Build Task Provider – task failure visibility (T031)", () => {
     };
     const wfCtx = resolveWorkflowContext(state, activeConfig);
     assert.ok(wfCtx, "expected valid workflow context");
+    assert.strictEqual(wfCtx?.modelName, "T2T1");
 
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {

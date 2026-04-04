@@ -45,9 +45,9 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 ## Tasks
 
 - **Task labels**:
-  - `Build {model-id}-{target-display}-{component-name}`
-  - `Clippy {model-id}-{target-display}-{component-name}`
-  - `Check {model-id}-{target-display}-{component-name}`
+  - `Build {model-name} | {target-display} | {component-name}`
+  - `Clippy {model-name} | {target-display} | {component-name}`
+  - `Check {model-name} | {target-display} | {component-name}`
   - `Clean`
 - **Task availability**:
   - tasks are exposed through standard VS Code build-task entry points

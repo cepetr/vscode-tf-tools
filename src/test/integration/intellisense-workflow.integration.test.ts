@@ -94,9 +94,9 @@ suite("IntelliSenseService – manual refresh trigger (T025)", () => {
     return {
       status: "loaded",
       manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
-      models: [{ kind: "model", id: "T2T1", name: "Trezor Model T", artifactFolder: "model-t" }],
+      models: [{ kind: "model", id: "model-t2t1", name: "T2T1", artifactFolder: "artifacts-t2t1" }],
       targets: [{ kind: "target", id: "hw", name: "Hardware", shortName: "HW" }],
-      components: [{ kind: "component", id: "core", name: "Core", artifactName: "compile_commands_core" }],
+      components: [{ kind: "component", id: "component-core", name: "Core", artifactName: "cc-core" }],
       buildOptions: [],
       hasWorkflowBlockingIssues: false,
       validationIssues: [],
@@ -125,7 +125,7 @@ suite("IntelliSenseService – manual refresh trigger (T025)", () => {
   test("manual refresh after config change produces consistent readiness", async () => {
     const svc = new IntelliSenseService();
     svc.setManifest(makeManifest());
-    svc.setActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.setActiveConfig({ modelId: "model-t2t1", targetId: "hw", componentId: "component-core", persistedAt: new Date().toISOString() });
     svc.setArtifactsRoot(path.join(__dirname, "../../../../test-fixtures/workspaces/intellisense-missing-artifact"));
 
     svc.scheduleRefresh("active-config-change");
@@ -145,7 +145,7 @@ suite("IntelliSenseService – manual refresh trigger (T025)", () => {
   test("manual refresh after artifacts path cleared shows null artifact", async () => {
     const svc = new IntelliSenseService();
     svc.setManifest(makeManifest());
-    svc.setActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.setActiveConfig({ modelId: "model-t2t1", targetId: "hw", componentId: "component-core", persistedAt: new Date().toISOString() });
     svc.setArtifactsRoot(""); // Cleared path
 
     svc.scheduleRefresh("manual-refresh");

@@ -104,9 +104,9 @@ As a firmware developer, I want build actions to derive their arguments from the
 - **FR-011**: The system MUST treat any invalid build-option `when` expression as an actionable manifest validation failure that makes the manifest invalid for Build Workflow.
 - **FR-012**: The system MUST expose `Build`, `Clippy`, `Check`, and `Clean` as user-runnable build workflow actions from the Configuration view.
 - **FR-013**: The system MUST expose `Build`, `Clippy`, `Check`, and `Clean` through standard VS Code task entry points rather than limiting them to custom commands.
-- **FR-014**: The `Build` task label MUST follow the format `Build {model-id}-{target-display}-{component-name}`.
-- **FR-015**: The `Clippy` task label MUST follow the format `Clippy {model-id}-{target-display}-{component-name}`.
-- **FR-016**: The `Check` task label MUST follow the format `Check {model-id}-{target-display}-{component-name}`.
+- **FR-014**: The `Build` task label MUST follow the format `Build {model-name} | {target-display} | {component-name}`.
+- **FR-015**: The `Clippy` task label MUST follow the format `Clippy {model-name} | {target-display} | {component-name}`.
+- **FR-016**: The `Check` task label MUST follow the format `Check {model-name} | {target-display} | {component-name}`.
 - **FR-017**: The `Clean` task label MUST be `Clean`.
 - **FR-018**: The `target-display` portion of workflow task labels MUST use the target short display name when one exists and otherwise MUST use the full target name.
 - **FR-019**: The system MUST derive the effective `Build`, `Clippy`, and `Check` workflow arguments from the active model, target, component, and currently applicable build-option selections. Arguments MUST follow the format `<component-id> -m <model-id> [target-flag] [option-flags]`, where `target-flag` is the manifest-defined target `flag` value (omitted when absent or null).

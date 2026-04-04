@@ -27,6 +27,7 @@ export type WorkflowBlockReason =
 /** Minimal context needed for task label formatting and arg derivation. */
 export interface WorkflowContext {
   readonly modelId: string;
+  readonly modelName: string;
   readonly targetId: string;
   readonly targetDisplay: string;
   readonly componentId: string;
@@ -56,14 +57,14 @@ export const CLEAN_TASK_LABEL = "Clean";
 /**
  * Formats the task label for a Build/Clippy/Check/Clean action.
  *
- * - Build/Clippy/Check: `{kind} {model-id}-{target-display}-{component-name}`
+ * - Build/Clippy/Check: `{kind} {model-name} | {target-display} | {component-name}`
  * - Clean:              `"Clean"` (fixed, no context suffix)
  */
 export function formatTaskLabel(kind: WorkflowKind, ctx: WorkflowContext): string {
   if (kind === "Clean") {
     return CLEAN_TASK_LABEL;
   }
-  return `${kind} ${ctx.modelId}-${ctx.targetDisplay}-${ctx.componentName}`;
+  return `${kind} ${ctx.modelName} | ${ctx.targetDisplay} | ${ctx.componentName}`;
 }
 
 // ---------------------------------------------------------------------------

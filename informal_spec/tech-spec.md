@@ -226,13 +226,13 @@ Task behavior:
 - execution model: `cargo xtask ...` in the configured cargo workspace
 - terminal presentation: shared build terminal with visible output
 
-Task labels for Build, Clippy, and Check use the active model id, target display name, and component name. Clean uses the fixed label `Clean`. Target display name resolves to `shortName` when present and falls back to `name` otherwise.
+Task labels for Build, Clippy, and Check use the active model name, target display name, and component name. Clean uses the fixed label `Clean`. Target display name resolves to `shortName` when present and falls back to `name` otherwise.
 
 Task command mapping:
 
-- `Build {model-id}-{target-display}-{component-name}` executes `cargo xtask build ...`
-- `Clippy {model-id}-{target-display}-{component-name}` executes `cargo xtask clippy ...`
-- `Check {model-id}-{target-display}-{component-name}` executes `cargo xtask check ...`
+- `Build {model-name} | {target-display} | {component-name}` executes `cargo xtask build ...`
+- `Clippy {model-name} | {target-display} | {component-name}` executes `cargo xtask clippy ...`
+- `Check {model-name} | {target-display} | {component-name}` executes `cargo xtask check ...`
 - `Clean` executes `cargo xtask clean`
 
 `Build`, `Clippy`, and `Check` share the same active-configuration-derived arguments. Only the xtask subcommand changes.
