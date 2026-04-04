@@ -97,7 +97,7 @@
 
 - [X] T021 [P] [US3] Publish excluded-file snapshots from the serialized IntelliSense refresh flow in `src/intellisense/intellisense-service.ts` and `src/intellisense/excluded-files-service.ts`
 - [X] T022 [P] [US3] Wire excluded-file refresh to the same serialized IntelliSense refresh rules and triggers, including manual refresh, activation, active-config, successful-build, workspace, manifest, `tfTools.artifactsPath`, and excluded-files setting changes, in `src/extension.ts` and `src/workspace/settings.ts`
-- [ ] T023 [US3] Clear stale Explorer badges and editor overlays when the active compile-database payload changes or becomes unavailable in `src/ui/excluded-file-decorations.ts`, `src/ui/excluded-file-overlays.ts`, and `src/extension.ts`
+- [X] T023 [US3] Clear stale Explorer badges and editor overlays when the active compile-database payload changes or becomes unavailable in `src/ui/excluded-file-decorations.ts`, `src/ui/excluded-file-overlays.ts`, and `src/extension.ts`
 
 **Checkpoint**: All user stories are independently functional and excluded-file visibility stays aligned with the latest active context.
 
