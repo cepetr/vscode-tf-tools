@@ -75,7 +75,7 @@
 ### Implementation for User Story 2
 
 - [X] T016 [P] [US2] Implement the first-line excluded-file overlay manager and hover messaging in `src/ui/excluded-file-overlays.ts`
-- [ ] T017 [ ] [US2] Extend excluded-file snapshot consumption for visible editors in `src/intellisense/excluded-files-service.ts` and `src/ui/excluded-file-overlays.ts`
+- [X] T017 [X] [US2] Extend excluded-file snapshot consumption for visible editors in `src/intellisense/excluded-files-service.ts` and `src/ui/excluded-file-overlays.ts`
 - [ ] T018 [US2] Wire editor overlay lifecycle and `tfTools.excludedFiles.showEditorOverlay` refresh handling in `src/extension.ts`
 
 **Checkpoint**: User Stories 1 and 2 both work independently, and excluded status is visible in the Explorer and editors.
