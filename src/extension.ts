@@ -33,6 +33,7 @@ import {
   TASK_TYPE,
 } from "./tasks/build-task-provider";
 import { IntelliSenseService } from "./intellisense/intellisense-service";
+import { applyProviderSettingFix } from "./intellisense/cpptools-provider";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
@@ -43,6 +44,8 @@ let _activeConfig: ActiveConfig | undefined;
 let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 let _intelliSenseService: IntelliSenseService | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
+/** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
+let _lastShownProviderFixState: string = "none";
 
 // ---------------------------------------------------------------------------
 // Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense slices)
@@ -207,10 +210,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Subscribe to IntelliSense refresh results → update tree view artifact row
   context.subscriptions.push(
-    _intelliSenseService.onDidRefresh(([artifact, _readiness]) => {
+    _intelliSenseService.onDidRefresh(([artifact, readiness]) => {
       const state = _manifestState;
       if (state) {
         _treeProvider?.updateArtifact(artifact);
+      }
+      // Show wrong-provider fix notification once per state entry (FR-005A fix path).
+      if (readiness.warningState === "wrong-provider" && readiness.warningState !== _lastShownProviderFixState) {
+        _lastShownProviderFixState = "wrong-provider";
+        vscode.window.showWarningMessage(
+          readiness.lastWarningMessage ??
+            "IntelliSense: another C/C++ configuration provider is active. Switch to Trezor Firmware Tools?",
+          "Fix"
+        ).then((selection) => {
+          if (selection === "Fix") {
+            applyProviderSettingFix(workspaceFolder, () => {
+              _lastShownProviderFixState = "none";
+              _intelliSenseService?.scheduleRefresh("active-config-change");
+            });
+          }
+        });
+      } else if (readiness.warningState !== "wrong-provider") {
+        _lastShownProviderFixState = "none";
       }
     })
   );

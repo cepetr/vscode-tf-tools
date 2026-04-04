@@ -101,9 +101,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Enforce strict tf-tools provider readiness and implement the workspace-setting fix path in `src/intellisense/cpptools-provider.ts` and `src/extension.ts`
-- [ ] T027 [P] [US3] Extend visible warning and persistent logging behavior for provider failures and recovery in `src/intellisense/intellisense-service.ts` and `src/observability/log-channel.ts`
-- [ ] T028 [US3] Contribute and wire `Refresh IntelliSense` in both required surfaces through `package.json` and `src/extension.ts`
+- [X] T026 [P] [US3] Enforce strict tf-tools provider readiness and implement the workspace-setting fix path in `src/intellisense/cpptools-provider.ts` and `src/extension.ts`
+- [X] T027 [P] [US3] Extend visible warning and persistent logging behavior for provider failures and recovery in `src/intellisense/intellisense-service.ts` and `src/observability/log-channel.ts`
+- [X] T028 [US3] Contribute and wire `Refresh IntelliSense` in both required surfaces through `package.json` and `src/extension.ts`
 
 **Checkpoint**: All user stories are independently functional and the IntelliSense slice is complete without crossing into later slices.
 

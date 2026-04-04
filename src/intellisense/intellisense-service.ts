@@ -141,10 +141,15 @@ export class IntelliSenseService {
     // Emit warning once per state transition; log recovery when returning to ready.
     if (readiness.warningState !== "none") {
       if (readiness.warningState !== this._lastWarnedState) {
-        logProviderWarning(
+        const msg =
           readiness.lastWarningMessage ??
-            "IntelliSense integration is unavailable: see output channel for details."
-        );
+          "IntelliSense integration is unavailable: see output channel for details.";
+        if (readiness.warningState === "wrong-provider") {
+          // Log only — extension.ts surfaces the notification with workspace-setting fix action.
+          log(`[IntelliSense] [WARN] ${msg}`);
+        } else {
+          logProviderWarning(msg);
+        }
         this._lastWarnedState = readiness.warningState;
       }
     } else if (this._lastWarnedState !== "none") {
