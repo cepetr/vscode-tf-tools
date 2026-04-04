@@ -60,7 +60,7 @@
 - [X] T014 [P] [US1] Implement cpptools custom configuration provider registration, per-file lookup, and browse snapshot support in `src/intellisense/cpptools-provider.ts`
 - [X] T015 [US1] Update refresh orchestration to eagerly parse the active `.cc.json`, apply provider state, ignore later duplicate entries, clear stale state, and write missing-artifact log entries in `src/intellisense/intellisense-service.ts`
 - [X] T016 [US1] Wire activation, active-context changes, successful-build refresh, provider-availability changes, manifest-path changes, manifest-content changes, and `tfTools.artifactsPath` refresh through `src/extension.ts` and `src/workspace/settings.ts`
-- [ ] T017 [US1] Preserve exact artifact-resolution semantics for `artifact-folder`, `artifact-name`, and `artifact-suffix` in `src/intellisense/artifact-resolution.ts` and `src/intellisense/intellisense-types.ts`
+- [X] T017 [US1] Preserve exact artifact-resolution semantics for `artifact-folder`, `artifact-name`, and `artifact-suffix` in `src/intellisense/artifact-resolution.ts` and `src/intellisense/intellisense-types.ts`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable.
 
