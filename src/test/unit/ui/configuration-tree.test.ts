@@ -2,6 +2,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import {
   SectionItem,
+  SectionId,
   SelectorChoiceItem,
   SelectorHeaderItem,
   BuildOptionGroupItem,
@@ -11,6 +12,16 @@ import {
   CompileCommandsArtifactItem,
 } from "../../../ui/configuration-tree";
 import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
+
+// ---------------------------------------------------------------------------
+// Regression target: all three root sections must default to Expanded (UI-02)
+// Refs: informal_spec/user-spec.md UI-02, specs/001-configuration-experience/spec.md FR-018
+// ---------------------------------------------------------------------------
+const EXPECTED_EXPANDED_SECTIONS: Array<{ id: SectionId; label: string }> = [
+  { id: "build-context",   label: "Build Context"  },
+  { id: "build-options",   label: "Build Options"  },
+  { id: "build-artifacts", label: "Build Artifacts" },
+];
 
 suite("SectionItem icons", () => {
   test("uses no icon for Build Context", () => {

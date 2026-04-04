@@ -12,6 +12,13 @@ import { ManifestState, ManifestStateLoaded } from "../../manifest/manifest-type
 import { resolveActiveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
 import { checkProviderReadiness } from "../../intellisense/cpptools-provider";
 import { ActiveConfig } from "../../configuration/active-config";
+import { SectionItem, ConfigurationTreeProvider } from "../../ui/configuration-tree";
+
+// ---------------------------------------------------------------------------
+// Regression target: all three root sections must default to Expanded (UI-02)
+// Refs: informal_spec/user-spec.md UI-02, specs/001-configuration-experience/spec.md FR-018
+// ---------------------------------------------------------------------------
+const EXPECTED_ROOT_SECTION_COUNT = 3;
 
 const VALID_MANIFEST = `
 models:
