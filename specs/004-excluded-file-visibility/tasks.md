@@ -90,7 +90,7 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T019 [P] [US3] Add unit tests for excluded-file refresh requests, payload-loss clearing, and latest-state snapshot updates in `src/test/unit/workflow/excluded-files-refresh.test.ts`
+- [X] T019 [P] [US3] Add unit tests for excluded-file refresh requests, payload-loss clearing, and latest-state snapshot updates in `src/test/unit/workflow/excluded-files-refresh.test.ts`
 - [ ] T020 [P] [US3] Add integration tests for active-config refresh, settings-driven refresh, manual refresh reuse, workspace-change refresh, and stale-state clearing in `src/test/integration/excluded-file-refresh.integration.test.ts`
 
 ### Implementation for User Story 3
