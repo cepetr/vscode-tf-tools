@@ -1,0 +1,17 @@
+[
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-gcc -std=c11 -Iembed/include -DTREZOR_MODEL_T -DEMULATOR=1 -Wall -O2 -c embed/main.c",
+    "file": "embed/main.c"
+  },
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-gcc -std=c11 -Iembed/include -DTREZOR_MODEL_T -DEMULATOR=1 -c embed/util.c",
+    "file": "embed/util.c"
+  },
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-g++ -std=c++17 -Iembed/include -DTREZOR_MODEL_T -DEMULATOR=1 -fno-rtti -c embed/crypto/sha256.cpp",
+    "file": "embed/crypto/sha256.cpp"
+  }
+]
