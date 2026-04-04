@@ -6,6 +6,8 @@ Trezor Firmware Tools is a Visual Studio Code extension for working with the `tr
 
 The primary interaction surface is a dedicated activity-bar container with a tree view for selecting build context, inspecting build artifact availability, and launching the most common actions.
 
+In the UI, the tree-view section labeled `Build Selection` is the surface for choosing the active build context: `Model`, `Target`, and `Component`.
+
 Where the extension needs a short internal identifier, abbreviation, or compact label, this specification uses `tf-tools`.
 
 ## Goals
@@ -120,7 +122,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 ### UI-02 Main View Structure
 
 - The `Configuration` view shall be a tree view.
-- The root of the tree shall contain exactly three top-level sections: `Build Context`, `Build Options`, and `Build Artifacts`.
+- The root of the tree shall contain exactly three top-level sections: `Build Selection`, `Build Options`, and `Build Artifacts`.
 - These sections shall remain expanded by default.
 
 ### UI-03 View Title Actions
@@ -129,9 +131,10 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - These actions are deferred to later feature slices and shall not be contributed until their behavior is implemented.
 - The UI model shall still allow future view-title and overflow actions to be added without redesigning the view structure.
 
-### UI-04 Build Context Section
+### UI-04 Build Selection Section
 
-- The `Build Context` section shall show three selector rows: `Model`, `Target`, and `Component`.
+- The `Build Selection` section is the UI label for the active build context selectors.
+- The `Build Selection` section shall show three selector rows: `Model`, `Target`, and `Component`.
 - Each selector row shall display the selected value inline.
 - The `Model` selector row shall display the selected model `name` inline.
 - The `Target` selector row shall display `shortName` when present and otherwise the target `name` inline.
@@ -187,7 +190,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 ### UI-07 Tree View Icons
 
-- The `Build Context`, `Build Options`, and `Build Artifacts` top-level sections shall render as plain text group headers without dedicated icons.
+- The `Build Selection`, `Build Options`, and `Build Artifacts` top-level sections shall render as plain text group headers without dedicated icons.
 - The `Model` selector row shall use the VS Code `circuit-board` theme icon.
 - The `Target` selector row shall use the VS Code `target` theme icon.
 - The `Component` selector row shall use the VS Code `extensions` theme icon.

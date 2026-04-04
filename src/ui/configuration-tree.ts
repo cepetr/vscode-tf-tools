@@ -320,7 +320,7 @@ export class ConfigurationTreeProvider
   getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
     if (!element) {
       return [
-        new SectionItem("build-context", "Build Context"),
+        new SectionItem("build-context", "Build Selection"),
         new SectionItem("build-options", "Build Options"),
         new SectionItem("build-artifacts", "Build Artifacts"),
       ];
@@ -356,7 +356,7 @@ export class ConfigurationTreeProvider
   }
 
   // -------------------------------------------------------------------------
-  // Build Context section children
+  // Build Selection section children
   // -------------------------------------------------------------------------
 
   private _buildContextChildren(): vscode.TreeItem[] {

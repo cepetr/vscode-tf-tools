@@ -2,7 +2,7 @@
 
 ## Goal
 
-Verify that the `Configuration` tree shows `Build Context`, `Build Options`, and `Build Artifacts` expanded by default, with their current-slice placeholder or status content immediately visible.
+Verify that the `Configuration` tree shows `Build Selection`, `Build Options`, and `Build Artifacts` expanded by default, with their current-slice placeholder or status content immediately visible.
 
 ## Prerequisites
 
@@ -14,9 +14,9 @@ Verify that the `Configuration` tree shows `Build Context`, `Build Options`, and
 
 1. Launch the extension in an Extension Development Host against a workspace with a valid manifest.
 2. Open the `Trezor` activity-bar container and the `Configuration` view.
-3. Confirm the root contains exactly three sections: `Build Context`, `Build Options`, and `Build Artifacts`.
+3. Confirm the root contains exactly three sections: `Build Selection`, `Build Options`, and `Build Artifacts`.
 4. Confirm all three sections are already expanded without any manual click.
-5. Confirm `Build Context` shows `Model`, `Target`, and `Component` rows.
+5. Confirm `Build Selection` shows `Model`, `Target`, and `Component` rows.
 6. Confirm `Build Options` shows its current placeholder or slice-appropriate content immediately.
 7. Confirm `Build Artifacts` shows its current placeholder or status content immediately.
 
@@ -24,7 +24,7 @@ Verify that the `Configuration` tree shows `Build Context`, `Build Options`, and
 
 1. Launch against a workspace where the manifest is missing or invalid.
 2. Open the `Configuration` view.
-3. Confirm `Build Context`, `Build Options`, and `Build Artifacts` are still expanded by default.
+3. Confirm `Build Selection`, `Build Options`, and `Build Artifacts` are still expanded by default.
 4. Confirm the warning or placeholder rows inside each section are visible without manually expanding the section.
 
 ## Automated Test Expectations

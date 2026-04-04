@@ -9,13 +9,13 @@ This contract captures the user-visible VS Code surfaces relevant to the root-se
 - **Activity Bar Container**: `Trezor`
 - **Primary View**: `Configuration`
 - **View Model**:
-  - top-level sections are `Build Context`, `Build Options`, and `Build Artifacts`
+  - top-level sections are `Build Selection`, `Build Options`, and `Build Artifacts`
   - all three top-level sections remain expanded by default
-  - only `Build Context` is interactive in this feature
+  - only `Build Selection` is interactive in this feature
   - `Build Options` and `Build Artifacts` show placeholder or warning content only in this slice
   - selector headers show user-facing selected values inline: model `name`, target `shortName` when present otherwise target `name`, and component `name`
 - **Tree View Icons**:
-  - `Build Context`, `Build Options`, and `Build Artifacts` render without dedicated icons
+  - `Build Selection`, `Build Options`, and `Build Artifacts` render without dedicated icons
   - `Model` uses the VS Code `circuit-board` theme icon
   - `Target` uses the VS Code `target` theme icon
   - `Component` uses the VS Code `extensions` theme icon

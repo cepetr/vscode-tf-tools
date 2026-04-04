@@ -40,6 +40,8 @@ As a firmware developer, I want to open the extension and immediately see whethe
 
 As a firmware developer, I want to choose the active model, target, and component from the extension UI so the workspace reflects the build context I am currently working in.
 
+For this slice, the tree-view section label `Build Selection` is the user-facing UI name for the active build context selectors.
+
 **Why this priority**: Once the manifest state is reliable, selection is the core configuration action the extension must support.
 
 **Independent Test**: With a valid manifest, change each selector from the configuration view and confirm the active values update immediately and remain constrained to values defined by the manifest.
@@ -95,10 +97,11 @@ As a firmware developer, I want the chosen configuration to remain visible after
 - **FR-015**: The system MUST fail visibly when the manifest is missing, unreadable, or invalid by combining immediate user feedback with at least one persistent signal.
 - **FR-016**: The configuration view for this feature MUST not expose `Build` or `Debug` actions in the view title bar.
 - **FR-017**: This feature MUST not expose build execution, build-option behavior, `when` handling, build-artifact status evaluation, IntelliSense state, excluded-file markers, flash/upload actions, or debug launch controls.
-- **FR-018**: The configuration tree MUST render `Build Context`, `Build Options`, and `Build Artifacts` as plain-text top-level group headers without dedicated icons, and it MUST use the following VS Code theme icons for selector rows in this slice: `circuit-board` for the `Model` selector, `target` for the `Target` selector, and `extensions` for the `Component` selector.
+- **FR-018**: The configuration tree MUST render `Build Selection`, `Build Options`, and `Build Artifacts` as plain-text top-level group headers without dedicated icons, and it MUST use the following VS Code theme icons for selector rows in this slice: `circuit-board` for the `Model` selector, `target` for the `Target` selector, and `extensions` for the `Component` selector.
 - **FR-019**: Expanded selector choice rows in this slice MUST rely on selection state rather than dedicated semantic inactive icons; the active choice may use a `check` icon, and inactive choices MUST render with an empty spacer icon so choice labels remain aligned.
-- **FR-020**: Build-context selector headers MUST display user-facing selected values inline: model `name`, target `shortName` when present otherwise target `name`, and component `name`.
-- **FR-021**: The `Build Context` selectors MUST behave like an accordion: at most one of `Model`, `Target`, or `Component` may be expanded at a time, and expanding one selector MUST collapse any other selector that is currently open.
+- **FR-020**: In this feature slice, `Build Selection` is the user-facing tree-section label for the active build-context selectors.
+- **FR-021**: Build-context selector headers MUST display user-facing selected values inline: model `name`, target `shortName` when present otherwise target `name`, and component `name`.
+- **FR-022**: The `Build Selection` selectors MUST behave like an accordion: at most one of `Model`, `Target`, or `Component` may be expanded at a time, and expanding one selector MUST collapse any other selector that is currently open.
 
 ### Key Entities *(include if feature involves data)*
 

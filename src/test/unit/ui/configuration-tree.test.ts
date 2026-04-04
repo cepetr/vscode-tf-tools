@@ -18,14 +18,14 @@ import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisens
 // Refs: informal_spec/user-spec.md UI-02, specs/001-configuration-experience/spec.md FR-018
 // ---------------------------------------------------------------------------
 const EXPECTED_EXPANDED_SECTIONS: Array<{ id: SectionId; label: string }> = [
-  { id: "build-context",   label: "Build Context"  },
+  { id: "build-context",   label: "Build Selection"  },
   { id: "build-options",   label: "Build Options"  },
   { id: "build-artifacts", label: "Build Artifacts" },
 ];
 
 suite("SectionItem icons", () => {
-  test("uses no icon for Build Context", () => {
-    const item = new SectionItem("build-context", "Build Context");
+  test("uses no icon for Build Selection", () => {
+    const item = new SectionItem("build-context", "Build Selection");
     assert.strictEqual(item.iconPath, undefined);
   });
 
@@ -334,8 +334,8 @@ suite("SectionItem default expansion (UI-02)", () => {
     });
   });
 
-  test("Build Context section defaults to Expanded", () => {
-    const item = new SectionItem("build-context", "Build Context");
+  test("Build Selection section defaults to Expanded", () => {
+    const item = new SectionItem("build-context", "Build Selection");
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
   });
 

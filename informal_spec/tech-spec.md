@@ -180,7 +180,7 @@ Log-channel design:
 
 The tree view uses a fixed root layout with three sections:
 
-- `Build Context`
+- `Build Selection`
 - `Build Options`
 - `Build Artifacts`
 
