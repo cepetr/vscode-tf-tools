@@ -410,3 +410,117 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Suite: T012 – active-context refresh and stale-state clearing
+// ---------------------------------------------------------------------------
+
+suite("ConfigurationTreeProvider – active-context refresh and stale-state clearing", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  test("switching from valid artifact to null reverts to placeholder (stale-state clearing)", () => {
+    provider.updateArtifact(makeValidArtifact({ contextKey: "T2T1::hw::core" }));
+    provider.updateArtifact(null);
+    const children = getBuildArtifactsChildren(provider);
+    assert.ok(
+      children[0] instanceof PlaceholderItem,
+      "expected PlaceholderItem after null artifact update"
+    );
+  });
+
+  test("switching context shows new artifact status without reusing old path", () => {
+    // Apply valid artifact for first context
+    provider.updateArtifact(
+      makeValidArtifact({
+        path: "/artifacts/model-t/compile_commands_core.cc.json",
+        contextKey: "T2T1::hw::core",
+      })
+    );
+
+    // Context changes to T3W1::hw::core (model switch)
+    provider.updateArtifact(
+      makeValidArtifact({
+        path: "/artifacts/model-t3/compile_commands_core.cc.json",
+        contextKey: "T3W1::hw::core",
+      })
+    );
+
+    const children = getBuildArtifactsChildren(provider);
+    const item = children[0] as CompileCommandsArtifactItem;
+    // The tree must show the new context's path, not the old model-t path
+    assert.ok(
+      String(item.tooltip).includes("model-t3"),
+      `tooltip should reference model-t3 after context switch, got: ${item.tooltip}`
+    );
+    assert.ok(
+      !String(item.tooltip).includes("model-t/compile"),
+      `tooltip must not still reference old model-t path`
+    );
+  });
+
+  test("switching from valid artifact to missing does not retain old valid tooltip", () => {
+    provider.updateArtifact(
+      makeValidArtifact({ path: "/artifacts/model-t/compile_commands_core.cc.json" })
+    );
+    provider.updateArtifact(
+      makeMissingArtifact({ path: "/artifacts/nonexistent/compile_commands_core.cc.json" })
+    );
+    const children = getBuildArtifactsChildren(provider);
+    const item = children[0] as CompileCommandsArtifactItem;
+    assert.strictEqual(item.description, "missing");
+    assert.ok(
+      String(item.tooltip).includes("nonexistent"),
+      `tooltip should show the new missing path, got: ${item.tooltip}`
+    );
+  });
+
+  test("target suffix change: _emu suffix shown in tree after context switch to emu target", () => {
+    // Start with hw artifact (no suffix)
+    provider.updateArtifact(
+      makeValidArtifact({
+        path: "/artifacts/model-t/compile_commands_core.cc.json",
+        contextKey: "T2T1::hw::core",
+      })
+    );
+
+    // Switch to emu target (with _emu suffix)
+    provider.updateArtifact(
+      makeValidArtifact({
+        path: "/artifacts/model-t/compile_commands_core_emu.cc.json",
+        contextKey: "T2T1::emu::core",
+      })
+    );
+
+    const children = getBuildArtifactsChildren(provider);
+    const item = children[0] as CompileCommandsArtifactItem;
+    assert.ok(
+      String(item.tooltip).includes("_emu"),
+      `tooltip should contain _emu suffix after target switch, got: ${item.tooltip}`
+    );
+    assert.ok(
+      !String(item.tooltip).includes("compile_commands_core.cc"),
+      `tooltip must not reference hw path after emu switch`
+    );
+  });
+
+  test("updateArtifact fires onDidChangeTreeData on context switch", (done) => {
+    // Initial state
+    provider.updateArtifact(makeValidArtifact({ contextKey: "T2T1::hw::core" }));
+
+    const sub = provider.onDidChangeTreeData(() => {
+      sub.dispose();
+      done();
+    });
+
+    // Context switch triggers a new updateArtifact
+    provider.updateArtifact(makeValidArtifact({ contextKey: "T3W1::hw::core" }));
+  });
+});
