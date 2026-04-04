@@ -1,0 +1,26 @@
+# Excluded-file visibility manifest fixture: valid configuration with artifact metadata.
+# Mirrors intellisense-valid structure so excluded-file tests can use a real
+# compile-commands artifact while exercising the excluded-files matching rules.
+#
+# Artifact path formula: <artifactsRoot>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifact-folder: model-t
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+    artifact-folder: model-t3
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+    artifact-suffix: _emu
+
+components:
+  - id: core
+    name: Core
+    artifact-name: compile_commands_core

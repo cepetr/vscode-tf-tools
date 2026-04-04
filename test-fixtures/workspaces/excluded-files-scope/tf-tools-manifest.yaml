@@ -1,0 +1,17 @@
+# Excluded-files-scope workspace fixture manifest.
+# Mirrors the excluded-files-valid manifest fixture.
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifact-folder: model-t
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+
+components:
+  - id: core
+    name: Core
+    artifact-name: compile_commands_core
