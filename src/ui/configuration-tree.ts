@@ -17,10 +17,6 @@ export class SectionItem extends vscode.TreeItem {
     this.id = `section:${sectionId}`;
     this.contextValue = sectionId;
     this.tooltip = "";
-    if (sectionId !== "build-context") {
-      // Non-interactive placeholder sections collapse by default
-      this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-    }
   }
 }
 
