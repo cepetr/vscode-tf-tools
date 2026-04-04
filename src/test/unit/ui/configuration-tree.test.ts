@@ -8,7 +8,9 @@ import {
   BuildOptionMultistateHeaderItem,
   BuildOptionCheckboxItem,
   BuildOptionStateItem,
+  CompileCommandsArtifactItem,
 } from "../../../ui/configuration-tree";
+import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
 
 suite("SectionItem icons", () => {
   test("uses no icon for Build Context", () => {
@@ -191,5 +193,114 @@ suite("BuildOptionMultistateHeaderItem tooltip", () => {
   test("tooltip is undefined when description is omitted", () => {
     const item = new BuildOptionMultistateHeaderItem("opt", "Level", "Off", [], false, false);
     assert.strictEqual(item.tooltip, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T020: CompileCommandsArtifactItem rendering
+// ---------------------------------------------------------------------------
+
+function makeValidArtifact(overrides: Partial<ActiveCompileCommandsArtifact> = {}): ActiveCompileCommandsArtifact {
+  return {
+    path: "/build/model-t/compile_commands_core.cc.json",
+    exists: true,
+    status: "valid",
+    contextKey: "T2T1::hw::core",
+    ...overrides,
+  };
+}
+
+function makeMissingArtifact(overrides: Partial<ActiveCompileCommandsArtifact> = {}): ActiveCompileCommandsArtifact {
+  return {
+    path: "/build/model-t/compile_commands_core.cc.json",
+    exists: false,
+    status: "missing",
+    missingReason: "Expected compile-commands artifact not found.",
+    contextKey: "T2T1::hw::core",
+    ...overrides,
+  };
+}
+
+suite("CompileCommandsArtifactItem – label and identity", () => {
+  test("label is 'Compile Commands'", () => {
+    const item = new CompileCommandsArtifactItem(makeValidArtifact());
+    assert.strictEqual(item.label, "Compile Commands");
+  });
+
+  test("id is 'artifact:compile-commands'", () => {
+    const item = new CompileCommandsArtifactItem(makeValidArtifact());
+    assert.strictEqual(item.id, "artifact:compile-commands");
+  });
+
+  test("contextValue is 'artifact-compile-commands'", () => {
+    const item = new CompileCommandsArtifactItem(makeValidArtifact());
+    assert.strictEqual(item.contextValue, "artifact-compile-commands");
+  });
+
+  test("collapsibleState is None", () => {
+    const item = new CompileCommandsArtifactItem(makeValidArtifact());
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.None);
+  });
+});
+
+suite("CompileCommandsArtifactItem – valid artifact", () => {
+  test("description is 'valid'", () => {
+    const item = new CompileCommandsArtifactItem(makeValidArtifact());
+    assert.strictEqual(item.description, "valid");
+  });
+
+  test("icon is 'pass' theme icon", () => {
+    const item = new CompileCommandsArtifactItem(makeValidArtifact());
+    assert.ok(item.iconPath instanceof vscode.ThemeIcon);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
+  });
+
+  test("tooltip includes the artifact path", () => {
+    const artifact = makeValidArtifact({ path: "/build/model-t/compile_commands_core.cc.json" });
+    const item = new CompileCommandsArtifactItem(artifact);
+    assert.ok(
+      String(item.tooltip).includes("/build/model-t/compile_commands_core.cc.json"),
+      `expected tooltip to include path, got: ${item.tooltip}`
+    );
+  });
+});
+
+suite("CompileCommandsArtifactItem – missing artifact", () => {
+  test("description is 'missing'", () => {
+    const item = new CompileCommandsArtifactItem(makeMissingArtifact());
+    assert.strictEqual(item.description, "missing");
+  });
+
+  test("icon is 'error' theme icon", () => {
+    const item = new CompileCommandsArtifactItem(makeMissingArtifact());
+    assert.ok(item.iconPath instanceof vscode.ThemeIcon);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "error");
+  });
+
+  test("tooltip shows missingReason when present", () => {
+    const artifact = makeMissingArtifact({ missingReason: "Build artifact not found." });
+    const item = new CompileCommandsArtifactItem(artifact);
+    assert.ok(
+      String(item.tooltip).includes("Build artifact not found."),
+      `expected tooltip to include missingReason, got: ${item.tooltip}`
+    );
+  });
+
+  test("tooltip falls back to 'Expected: <path>' when missingReason is absent", () => {
+    const artifact: ActiveCompileCommandsArtifact = {
+      path: "/build/model-t/compile_commands_core.cc.json",
+      exists: false,
+      status: "missing",
+      contextKey: "T2T1::hw::core",
+    };
+    const item = new CompileCommandsArtifactItem(artifact);
+    assert.ok(
+      String(item.tooltip).startsWith("Expected:"),
+      `expected 'Expected: ...' fallback tooltip, got: ${item.tooltip}`
+    );
+    assert.ok(
+      String(item.tooltip).includes("/build/model-t/compile_commands_core.cc.json"),
+      `expected path in fallback tooltip, got: ${item.tooltip}`
+    );
   });
 });

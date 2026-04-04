@@ -671,3 +671,114 @@ options:
     assert.deepStrictEqual(result.buildOptions[0].when, { type: "target", id: "hardware" });
   });
 });
+
+// ---------------------------------------------------------------------------
+// IntelliSense artifact field tests (T013)
+// ---------------------------------------------------------------------------
+
+suite("parseManifest — IntelliSense artifact fields", () => {
+  const baseSource = `
+models:
+  - id: T2T1
+    name: Trezor Model T
+    artifact-folder: model-t
+targets:
+  - id: hw
+    name: Hardware
+  - id: emu
+    name: Emulator
+    artifact-suffix: _emu
+components:
+  - id: core
+    name: Core
+    artifact-name: compile_commands_core
+`.trim();
+
+  test("parses artifact-folder from model entries", () => {
+    const result = parseManifest(baseSource);
+    assert.strictEqual(result.issues.length, 0);
+    assert.strictEqual(result.models[0].artifactFolder, "model-t");
+  });
+
+  test("artifact-folder is undefined when absent from model", () => {
+    const source = `
+models:
+  - id: T2T1
+    name: Trezor Model T
+targets:
+  - id: hw
+    name: Hardware
+components:
+  - id: core
+    name: Core
+`.trim();
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.length, 0);
+    assert.strictEqual(result.models[0].artifactFolder, undefined);
+  });
+
+  test("parses artifact-name from component entries", () => {
+    const result = parseManifest(baseSource);
+    assert.strictEqual(result.components[0].artifactName, "compile_commands_core");
+  });
+
+  test("artifact-name is undefined when absent from component", () => {
+    const source = `
+models:
+  - id: T2T1
+    name: Trezor Model T
+targets:
+  - id: hw
+    name: Hardware
+components:
+  - id: core
+    name: Core
+`.trim();
+    const result = parseManifest(source);
+    assert.strictEqual(result.components[0].artifactName, undefined);
+  });
+
+  test("parses artifact-suffix from target entries", () => {
+    const result = parseManifest(baseSource);
+    assert.strictEqual(result.targets[1].artifactSuffix, "_emu");
+  });
+
+  test("artifact-suffix is undefined when absent from target", () => {
+    const result = parseManifest(baseSource);
+    assert.strictEqual(result.targets[0].artifactSuffix, undefined);
+  });
+
+  test("artifact fields do not affect manifest validity — manifest without them is still valid", () => {
+    const source = `
+models:
+  - id: T2T1
+    name: Trezor Model T
+targets:
+  - id: hw
+    name: Hardware
+components:
+  - id: core
+    name: Core
+`.trim();
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.length, 0);
+  });
+
+  test("empty string artifact-folder is treated as absent", () => {
+    const source = `
+models:
+  - id: T2T1
+    name: Trezor Model T
+    artifact-folder: "  "
+targets:
+  - id: hw
+    name: Hardware
+components:
+  - id: core
+    name: Core
+`.trim();
+    const result = parseManifest(source);
+    // Whitespace-only value is treated as absent
+    assert.strictEqual(result.models[0].artifactFolder, undefined);
+  });
+});

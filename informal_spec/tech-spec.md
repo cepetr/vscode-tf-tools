@@ -63,9 +63,9 @@ The active configuration contains:
 
 The manifest model contains:
 
-- `models[]`: `id`, `name`
-- `targets[]`: `id`, `name`, optional `shortName`, `flag`
-- `components[]`: `id`, `name`, optional `flashWhen`, optional `uploadWhen`
+- `models[]`: `id`, `name`, required `artifact-folder`
+- `targets[]`: `id`, `name`, optional `shortName`, optional `artifact-suffix`, `flag`
+- `components[]`: `id`, `name`, required `artifact-name`, optional `flashWhen`, optional `uploadWhen`
 - `options[]`: option metadata with label, command-line flag, type, optional group, optional `when` expression, and optional states
 
 Manifest status has three states:
@@ -292,7 +292,7 @@ Additional variables from the selected manifest `debug.vars` mapping are exposed
 
 Debug variable semantics:
 
-- `${tfTools.artifactPath}` resolves to the active model artifact folder `<tfTools.artifactsPath>/<model-id>`
+- `${tfTools.artifactPath}` resolves to the active model artifact folder `<tfTools.artifactsPath>/<artifact-folder>`, where `artifact-folder` comes from the selected model's required manifest field
 - `${tfTools.executable}` resolves to the selected manifest `debug.executable` value after tf-tools substitution
 - `${tfTools.executablePath}` resolves to the absolute executable path derived from `${tfTools.artifactPath}` and `${tfTools.executable}` when the executable value is relative, or to the already absolute substituted path otherwise
 
@@ -340,9 +340,11 @@ Design:
 
 - provider type: Microsoft C/C++ custom configuration provider
 - provider registration: performed during activation
-- active artifact selection: derived from the configured artifacts root, the selected model id, the selected component id, and the extension associated with the requested artifact type
-- artifact layout: `<artifacts-root>/<model-id>/<component-id><extension>`
-- compile-database example: `<artifacts-root>/<model-id>/<component-id>.cc.json`
+- active artifact selection: derived from the configured artifacts root, the selected model's required `artifact-folder`, the selected component's required `artifact-name`, the selected target's optional `artifact-suffix`, and the extension associated with the requested artifact type
+- artifact base path: `<tfTools.artifactsPath>/<artifact-folder>/`
+- artifact basename: `<artifact-name><artifact-suffix>`, where `artifact-name` comes from the selected component and `artifact-suffix` defaults to an empty string when omitted
+- artifact layout: `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix><extension>`
+- compile-database example: `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`
 
 When refresh runs, the IntelliSense layer:
 
@@ -352,7 +354,7 @@ When refresh runs, the IntelliSense layer:
 4. triggers provider update notifications
 5. updates tree-view artifact state and shows or clears provider-related warnings
 
-If the expected artifact for the active configuration is missing, the resolution logic must not fall back to a different artifact path, component, model, or target.
+If the expected artifact for the active configuration is missing, the resolution logic must not fall back to a different artifact path, artifact-folder, artifact-name, component, target-derived suffix, model, or target.
 
 The provider adapter parses compile database entries into include paths, defines, compiler path, and language standard. File lookup is keyed by normalized resolved file-system paths.
 

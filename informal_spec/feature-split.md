@@ -21,7 +21,9 @@ This feature should not implement Build Artifacts section behavior or artifact-s
 ### 3. IntelliSense Integration
 Compile-commands resolution, cpptools configuration provider integration, provider warnings, and IntelliSense refresh behavior.
 
-This feature is focused on keeping editor assistance aligned with the active build context and failing explicitly when the expected compile database or provider setup is unavailable.
+This feature is focused on keeping editor assistance aligned with the active build context and failing explicitly when the expected compile database or provider setup is unavailable. It includes showing whether the active compile-commands artifact is present, exposing the expected artifact path in the tooltip, and applying the active compile database through the cpptools configuration provider without falling back to a different artifact.
+
+This feature also includes warning behavior for IntelliSense prerequisites: if cpptools is not installed, or if cpptools is installed but not configured to use Trezor Firmware Tools as the active provider, the extension shall log the problem and show a user-facing message.
 
 ### 4. Excluded-File Visibility
 Explorer badges, optional graying, editor overlay, and file-scope/pattern rules.
