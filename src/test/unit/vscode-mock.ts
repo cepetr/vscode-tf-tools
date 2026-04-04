@@ -84,6 +84,13 @@ const window = {
     onDidCollapseElement: () => ({ dispose: () => {} }),
     dispose: () => {},
   }),
+  registerFileDecorationProvider: (_provider: unknown) => ({ dispose: () => {} }),
+  createTextEditorDecorationType: (_options: unknown) => ({
+    key: "stub-decoration-type",
+    dispose: () => {},
+  }),
+  visibleTextEditors: [] as unknown[],
+  onDidChangeVisibleTextEditors: () => ({ dispose: () => {} }),
 };
 
 const workspace = {
@@ -201,6 +208,22 @@ const StatusBarAlignment = { Left: 1, Right: 2 };
 const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3 };
 
 // ---------------------------------------------------------------------------
+// File decoration stubs for excluded-file visibility unit tests
+// ---------------------------------------------------------------------------
+
+class ThemeColor {
+  constructor(public readonly id: string) {}
+}
+
+class FileDecoration {
+  constructor(
+    public readonly badge?: string,
+    public readonly tooltip?: string,
+    public readonly color?: ThemeColor
+  ) {}
+}
+
+// ---------------------------------------------------------------------------
 // Extensions API stub for IntelliSense provider tests
 // ---------------------------------------------------------------------------
 
@@ -226,6 +249,8 @@ module.exports = {
   RelativePattern,
   TreeItem,
   ThemeIcon,
+  ThemeColor,
+  FileDecoration,
   TreeItemCollapsibleState,
   TreeItemCheckboxState,
   StatusBarAlignment,

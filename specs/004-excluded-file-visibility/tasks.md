@@ -19,7 +19,7 @@
 
 - [X] T001 Add the `minimatch` dependency and contribute `tfTools.excludedFiles.grayInTree`, `tfTools.excludedFiles.showEditorOverlay`, `tfTools.excludedFiles.fileNamePatterns`, and `tfTools.excludedFiles.folderGlobs` in `package.json`
 - [X] T002 [P] Add excluded-file manifest and workspace fixtures under `test-fixtures/manifests/excluded-files-valid/` and `test-fixtures/workspaces/excluded-files-scope/`
-- [ ] T003 [P] Extend shared VS Code mocks and workflow test helpers for file decorations, editor decorations, and excluded-file payload fixtures in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
+- [X] T003 [P] Extend shared VS Code mocks and workflow test helpers for file decorations, editor decorations, and excluded-file payload fixtures in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
 
 ---
 
