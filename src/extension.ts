@@ -34,6 +34,9 @@ import {
 } from "./tasks/build-task-provider";
 import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { applyProviderSettingFix } from "./intellisense/cpptools-provider";
+import { ExcludedFilesService } from "./intellisense/excluded-files-service";
+import { ExcludedFileDecorationsProvider } from "./ui/excluded-file-decorations";
+import { readExcludedFilesSettings, ExcludedFilesSettings } from "./workspace/settings";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
@@ -43,6 +46,8 @@ let _manifestState: ManifestState | undefined;
 let _activeConfig: ActiveConfig | undefined;
 let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 let _intelliSenseService: IntelliSenseService | undefined;
+let _excludedFilesService: ExcludedFilesService | undefined;
+let _excludedFileDecorations: ExcludedFileDecorationsProvider | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
@@ -131,6 +136,43 @@ function updateWorkflowBlockedContext(state: ManifestState): void {
   vscode.commands.executeCommand("setContext", "tfTools.workflowBlocked", blocked);
 }
 
+/**
+ * Gathers workspace file candidates for excluded-file recomputation.
+ * For each configured folderGlob, resolves the glob to a workspace-relative
+ * form and calls `vscode.workspace.findFiles` to enumerate matching files.
+ * Returns an empty array immediately when either scope list is empty.
+ */
+async function gatherExcludedFileCandidates(
+  settings: ExcludedFilesSettings,
+  workspaceFolder: vscode.WorkspaceFolder
+): Promise<vscode.Uri[]> {
+  if (settings.fileNamePatterns.length === 0 || settings.folderGlobs.length === 0) {
+    return [];
+  }
+  const wsRoot = workspaceFolder.uri.fsPath.replace(/\\/g, "/").replace(/\/$/, "");
+  const seen = new Set<string>();
+  const results: vscode.Uri[] = [];
+  for (const glob of settings.folderGlobs) {
+    const normalized = glob.replace(/\\/g, "/");
+    // Convert absolute globs to workspace-relative for RelativePattern.
+    const relativeGlob = normalized.startsWith(wsRoot + "/")
+      ? normalized.slice(wsRoot.length + 1)
+      : normalized.startsWith("/")
+        ? normalized.slice(1)
+        : normalized;
+    const found = await vscode.workspace.findFiles(
+      new vscode.RelativePattern(workspaceFolder, relativeGlob)
+    );
+    for (const uri of found) {
+      if (!seen.has(uri.toString())) {
+        seen.add(uri.toString());
+        results.push(uri);
+      }
+    }
+  }
+  return results;
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // --- Scope guard: verify no cross-slice commands are registered (T019) ---
   assertNoUnauthorizedContributions(context);
@@ -208,6 +250,47 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
+  // --- Excluded-file visibility services (US1: Explorer badges, US2: editor overlays) ---
+  _excludedFilesService = new ExcludedFilesService();
+  _excludedFileDecorations = new ExcludedFileDecorationsProvider();
+  context.subscriptions.push(
+    { dispose: () => { _excludedFilesService?.dispose(); _excludedFilesService = undefined; } },
+    { dispose: () => { _excludedFileDecorations?.dispose(); _excludedFileDecorations = undefined; } },
+    vscode.window.registerFileDecorationProvider(_excludedFileDecorations)
+  );
+
+  // Connect snapshot updates → decoration provider so Explorer badges refresh.
+  context.subscriptions.push(
+    _excludedFilesService.onDidUpdateSnapshot((snapshot) => {
+      _excludedFileDecorations?.handleSnapshot(snapshot);
+    })
+  );
+
+  // Connect IntelliSense payload changes → excluded-file recomputation.
+  let _lastExcludedContextKey = "";
+  context.subscriptions.push(
+    _intelliSenseService.onDidRefreshPayload(async (payload) => {
+      const svc = _excludedFilesService;
+      if (!svc) { return; }
+      if (payload === null) {
+        svc.clear(_lastExcludedContextKey);
+        return;
+      }
+      _lastExcludedContextKey = payload.contextKey;
+      const settings = readExcludedFilesSettings(workspaceFolder);
+      const includedFiles = new Set(payload.entriesByFile.keys());
+      const candidateUris = await gatherExcludedFileCandidates(settings, workspaceFolder);
+      svc.recompute(
+        payload.contextKey,
+        payload.artifactPath,
+        includedFiles,
+        settings,
+        workspaceFolder.uri.fsPath,
+        candidateUris
+      );
+    })
+  );
+
   // Subscribe to IntelliSense refresh results → update tree view artifact row
   context.subscriptions.push(
     _intelliSenseService.onDidRefresh(([artifact, readiness]) => {
@@ -245,6 +328,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
         _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
         _intelliSenseService?.scheduleRefresh("artifacts-path-change");
+      }
+      if (
+        e.affectsConfiguration("tfTools.excludedFiles.grayInTree", workspaceFolder.uri) ||
+        e.affectsConfiguration("tfTools.excludedFiles.fileNamePatterns", workspaceFolder.uri) ||
+        e.affectsConfiguration("tfTools.excludedFiles.folderGlobs", workspaceFolder.uri)
+      ) {
+        _intelliSenseService?.scheduleRefresh("excluded-files-setting-change");
       }
       if (e.affectsConfiguration("tfTools.manifestPath", workspaceFolder.uri)) {
         // Restart the manifest service with the newly resolved path.
@@ -478,6 +568,10 @@ export function deactivate(): void {
   _statusBar = undefined;
   _intelliSenseService?.dispose();
   _intelliSenseService = undefined;
+  _excludedFilesService?.dispose();
+  _excludedFilesService = undefined;
+  _excludedFileDecorations?.dispose();
+  _excludedFileDecorations = undefined;
   _manifestState = undefined;
   _activeConfig = undefined;
   _resolvedOptions = [];
