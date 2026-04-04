@@ -199,7 +199,7 @@ export function compileCommandsFixturePath(
 ): string {
   return path.resolve(
     __dirname,
-    "../../../../test-fixtures/workspaces/intellisense-valid/artifacts",
+    "../../../test-fixtures/workspaces/intellisense-valid/artifacts",
     artifactFolder,
     `${artifactName}${artifactSuffix}.cc.json`
   );
