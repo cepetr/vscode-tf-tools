@@ -39,7 +39,29 @@ function stubExtensionMissing(): void {
 }
 
 function stubExtensionInstalled(): void {
-  vscodeMock.extensions.getExtension = (_id: string) => ({ id: "ms-vscode.cpptools" });
+  vscodeMock.extensions.getExtension = (_id: string) => ({
+    id: "ms-vscode.cpptools",
+    exports: {
+      getApi: (_version: number) => ({
+        registerCustomConfigurationProvider() {},
+        notifyReady() {},
+        didChangeCustomConfiguration() {},
+        didChangeCustomBrowseConfiguration() {},
+        dispose() {},
+      }),
+    },
+  });
+}
+
+function stubExtensionInstalledWithUnsupportedApi(): void {
+  vscodeMock.extensions.getExtension = (_id: string) => ({
+    id: "ms-vscode.cpptools",
+    exports: {
+      getApi: () => {
+        throw new RangeError("Invalid version");
+      },
+    },
+  });
 }
 
 function stubConfigurationProvider(value: string | undefined): void {
@@ -96,6 +118,23 @@ suite("checkProviderReadiness – missing-provider", () => {
     assert.ok(
       result.lastWarningMessage?.includes("ms-vscode.cpptools"),
       `expected message to mention 'ms-vscode.cpptools', got: ${result.lastWarningMessage}`
+    );
+  });
+
+  test("warningState is 'missing-provider' when cpptools API does not support v7", () => {
+    stubExtensionInstalledWithUnsupportedApi();
+    stubConfigurationProvider("cepetr.tf-tools");
+    const result = checkProviderReadiness();
+    assert.strictEqual(result.warningState, "missing-provider");
+  });
+
+  test("unsupported cpptools API message mentions supported v7 custom-configuration API", () => {
+    stubExtensionInstalledWithUnsupportedApi();
+    stubConfigurationProvider("cepetr.tf-tools");
+    const result = checkProviderReadiness();
+    assert.ok(
+      result.lastWarningMessage?.includes("v7 custom-configuration API"),
+      `expected unsupported-api message, got: ${result.lastWarningMessage}`
     );
   });
 });

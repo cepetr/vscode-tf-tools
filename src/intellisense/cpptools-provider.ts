@@ -7,6 +7,7 @@ import { IntelliSenseProviderReadiness, ProviderPayload, ProviderSettingFix } fr
 
 const CPPTOOLS_EXTENSION_ID = "ms-vscode.cpptools";
 const TF_TOOLS_PROVIDER_ID = "cepetr.tf-tools";
+const CPPTOOLS_API_VERSION_LATEST = 7;
 
 // ---------------------------------------------------------------------------
 // Minimal cpptools custom configuration provider API types
@@ -39,11 +40,15 @@ export interface CpptoolsWorkspaceBrowseConfiguration {
 
 /** Minimal interface matching the CppToolsApi extension export we consume. */
 export interface CpptoolsApi {
-  registerCustomConfigurationProvider(provider: CpptoolsCustomConfigurationProvider): Thenable<void>;
+  registerCustomConfigurationProvider(provider: CpptoolsCustomConfigurationProvider): void | Thenable<void>;
   notifyReady(provider: CpptoolsCustomConfigurationProvider): void;
   didChangeCustomConfiguration(provider: CpptoolsCustomConfigurationProvider): void;
-  didChangeBrowseConfiguration(provider: CpptoolsCustomConfigurationProvider): void;
+  didChangeCustomBrowseConfiguration(provider: CpptoolsCustomConfigurationProvider): void;
   dispose(): void;
+}
+
+interface CpptoolsExtensionExports {
+  getApi(version: number): CpptoolsApi;
 }
 
 /** Interface tf-tools implements to serve per-file IntelliSense configuration. */
@@ -83,6 +88,17 @@ export function checkProviderReadiness(): IntelliSenseProviderReadiness {
       warningState: "missing-provider",
       lastWarningMessage:
         "IntelliSense integration is unavailable: Microsoft C/C++ extension (ms-vscode.cpptools) is not installed or is disabled.",
+    };
+  }
+
+  const apiState = getCpptoolsApiState(ext.exports);
+  if (apiState === "unsupported") {
+    return {
+      providerInstalled: false,
+      providerConfigured: false,
+      warningState: "missing-provider",
+      lastWarningMessage:
+        "IntelliSense integration is unavailable: installed Microsoft C/C++ extension does not expose the supported v7 custom-configuration API.",
     };
   }
 
@@ -164,14 +180,15 @@ export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvi
 
   private _cpptoolsApi: CpptoolsApi | undefined;
   private _payload: ProviderPayload | undefined;
-  private readonly _apiAccessor: () => CpptoolsApi | undefined;
+  private _activationPromise: Promise<void> | undefined;
+  private readonly _apiAccessor: () => CpptoolsApi | Promise<CpptoolsApi | undefined> | undefined;
 
   /**
    * @param apiAccessor  Optional factory used to get the cpptools API.
    *   Defaults to reading the export from the installed cpptools extension.
    *   Tests can inject a null or stub factory.
    */
-  constructor(apiAccessor?: () => CpptoolsApi | undefined) {
+  constructor(apiAccessor?: () => CpptoolsApi | Promise<CpptoolsApi | undefined> | undefined) {
     this._apiAccessor = apiAccessor ?? defaultApiAccessor;
   }
 
@@ -187,16 +204,39 @@ export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvi
     if (this._cpptoolsApi) {
       return;
     }
-    const api = this._apiAccessor();
-    if (!api) {
-      return;
+    if (this._activationPromise) {
+      return this._activationPromise;
     }
-    try {
-      await api.registerCustomConfigurationProvider(this);
-      this._cpptoolsApi = api;
-    } catch {
-      // cpptools API may not be available in some VS Code versions — ignore.
-    }
+
+    this._activationPromise = (async () => {
+      let api: CpptoolsApi | undefined;
+      try {
+        api = await this._apiAccessor();
+      } catch {
+        return;
+      }
+      if (!api) {
+        return;
+      }
+      try {
+        await api.registerCustomConfigurationProvider(this);
+        this._cpptoolsApi = api;
+
+        // If payload was prepared before registration completed, replay it so
+        // cpptools immediately re-queries the current configuration.
+        if (this._payload) {
+          this._cpptoolsApi.notifyReady(this);
+          this._cpptoolsApi.didChangeCustomConfiguration(this);
+          this._cpptoolsApi.didChangeCustomBrowseConfiguration(this);
+        }
+      } catch {
+        // cpptools API may not be available in some VS Code versions — ignore.
+      } finally {
+        this._activationPromise = undefined;
+      }
+    })();
+
+    return this._activationPromise;
   }
 
   // ---------------------------------------------------------------------------
@@ -211,7 +251,7 @@ export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvi
     if (this._cpptoolsApi) {
       this._cpptoolsApi.notifyReady(this);
       this._cpptoolsApi.didChangeCustomConfiguration(this);
-      this._cpptoolsApi.didChangeBrowseConfiguration(this);
+      this._cpptoolsApi.didChangeCustomBrowseConfiguration(this);
     }
   }
 
@@ -222,7 +262,7 @@ export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvi
     this._payload = undefined;
     if (this._cpptoolsApi) {
       this._cpptoolsApi.didChangeCustomConfiguration(this);
-      this._cpptoolsApi.didChangeBrowseConfiguration(this);
+      this._cpptoolsApi.didChangeCustomBrowseConfiguration(this);
     }
   }
 
@@ -298,9 +338,66 @@ export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvi
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function defaultApiAccessor(): CpptoolsApi | undefined {
-  const ext = vscode.extensions.getExtension<CpptoolsApi>(CPPTOOLS_EXTENSION_ID);
-  return ext?.exports;
+async function defaultApiAccessor(): Promise<CpptoolsApi | undefined> {
+  const ext = vscode.extensions.getExtension<unknown>(CPPTOOLS_EXTENSION_ID);
+  if (!ext) {
+    return undefined;
+  }
+
+  let exportsObject: unknown;
+  if (!ext.isActive) {
+    try {
+      exportsObject = await ext.activate();
+    } catch {
+      return undefined;
+    }
+  } else {
+    exportsObject = ext.exports;
+  }
+
+  if (isCpptoolsExtensionExports(exportsObject)) {
+    try {
+      return exportsObject.getApi(CPPTOOLS_API_VERSION_LATEST);
+    } catch {
+      return undefined;
+    }
+  }
+
+  if (isCpptoolsApi(exportsObject)) {
+    return exportsObject;
+  }
+
+  return undefined;
+}
+
+function isCpptoolsExtensionExports(value: unknown): value is CpptoolsExtensionExports {
+  return !!value && typeof (value as CpptoolsExtensionExports).getApi === "function";
+}
+
+function isCpptoolsApi(value: unknown): value is CpptoolsApi {
+  return (
+    !!value &&
+    typeof (value as CpptoolsApi).registerCustomConfigurationProvider === "function" &&
+    typeof (value as CpptoolsApi).didChangeCustomConfiguration === "function" &&
+    typeof (value as CpptoolsApi).didChangeCustomBrowseConfiguration === "function"
+  );
+}
+
+function getCpptoolsApiState(exportsObject: unknown): "supported" | "unsupported" | "legacy" {
+  if (isCpptoolsExtensionExports(exportsObject)) {
+    try {
+      const api = exportsObject.getApi(CPPTOOLS_API_VERSION_LATEST);
+      return isCpptoolsApi(api) ? "supported" : "unsupported";
+    } catch {
+      return "unsupported";
+    }
+  }
+
+  if (isCpptoolsApi(exportsObject)) {
+    return "legacy";
+  }
+
+  return "unsupported";
 }
 
 /**

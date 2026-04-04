@@ -95,6 +95,77 @@ suite("CpptoolsProviderAdapter – getLastPayload", () => {
 });
 
 // ---------------------------------------------------------------------------
+// activate – registration and late replay
+// ---------------------------------------------------------------------------
+
+suite("CpptoolsProviderAdapter – activate", () => {
+  test("registers the provider when async api accessor resolves", async () => {
+    let registeredProvider: unknown;
+    const api = {
+      registerCustomConfigurationProvider(provider: unknown) {
+        registeredProvider = provider;
+      },
+      notifyReady() {},
+      didChangeCustomConfiguration() {},
+      didChangeCustomBrowseConfiguration() {},
+      dispose() {},
+    };
+
+    const adapter = new CpptoolsProviderAdapter(async () => api);
+    await adapter.activate();
+
+    assert.strictEqual(registeredProvider, adapter);
+  });
+
+  test("replays payload notifications after late registration", async () => {
+    const calls: string[] = [];
+    const api = {
+      registerCustomConfigurationProvider() {
+        calls.push("register");
+      },
+      notifyReady() {
+        calls.push("notifyReady");
+      },
+      didChangeCustomConfiguration() {
+        calls.push("didChangeCustomConfiguration");
+      },
+      didChangeCustomBrowseConfiguration() {
+        calls.push("didChangeCustomBrowseConfiguration");
+      },
+      dispose() {},
+    };
+
+    const adapter = new CpptoolsProviderAdapter(async () => api);
+    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+
+    await adapter.activate();
+
+    assert.deepStrictEqual(calls, [
+      "register",
+      "notifyReady",
+      "didChangeCustomConfiguration",
+      "didChangeCustomBrowseConfiguration",
+    ]);
+  });
+
+  test("returns without registration when api accessor resolves to undefined", async () => {
+    const adapter = new CpptoolsProviderAdapter(async () => undefined);
+    await adapter.activate();
+    assert.strictEqual(adapter.getLastPayload(), undefined);
+  });
+
+  test("does not throw when v7 api acquisition is unsupported", async () => {
+    const adapter = new CpptoolsProviderAdapter(async () => {
+      throw new RangeError("Invalid version");
+    });
+
+    await assert.doesNotReject(async () => {
+      await adapter.activate();
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // canProvideConfiguration
 // ---------------------------------------------------------------------------
 

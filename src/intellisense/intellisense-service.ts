@@ -135,6 +135,10 @@ export class IntelliSenseService {
   private async _doRefresh(trigger: RefreshTrigger): Promise<void> {
     log(`[IntelliSense] Refresh triggered by: ${trigger}`);
 
+    // Ensure the adapter is registered with cpptools. Safe to call multiple times —
+    // the adapter guards against double-registration.
+    void this._adapter.activate();
+
     const readiness = checkProviderReadiness();
     this._lastReadiness = readiness;
 
