@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as path from "path";
 
 /**
  * Returns the manifest path setting for the given workspace folder, resolved
@@ -52,8 +53,68 @@ export function resolveArtifactsPath(
     return "";
   }
   const trimmed = value.trim();
-  if (require("path").isAbsolute(trimmed)) {
+  if (path.isAbsolute(trimmed)) {
     return trimmed;
   }
   return vscode.Uri.joinPath(workspaceFolder.uri, trimmed).fsPath;
+}
+
+// ---------------------------------------------------------------------------
+// Excluded-file visibility settings (feature 004)
+// ---------------------------------------------------------------------------
+
+/**
+ * Normalized excluded-file settings derived from all four resource-scoped
+ * `tfTools.excludedFiles.*` preferences.
+ */
+export interface ExcludedFilesSettings {
+  /** Gray excluded entries in the Explorer tree (in addition to the badge). */
+  readonly grayInTree: boolean;
+  /** Show a first-line warning overlay in open excluded editors. */
+  readonly showEditorOverlay: boolean;
+  /**
+   * Basename-only, case-sensitive glob patterns for eligible filenames.
+   * An empty array disables excluded-file marking for the filename dimension.
+   */
+  readonly fileNamePatterns: ReadonlyArray<string>;
+  /**
+   * Case-sensitive folder glob patterns (absolute or workspace-relative).
+   * An empty array disables excluded-file marking for the folder dimension.
+   */
+  readonly folderGlobs: ReadonlyArray<string>;
+}
+
+/**
+ * Reads the four `tfTools.excludedFiles.*` settings for the given workspace
+ * folder and returns a normalized snapshot. Defaults match the contract:
+ *   grayInTree = true, showEditorOverlay = true,
+ *   fileNamePatterns = ["*.c"], folderGlobs = ["core/embed/**", "core/vendor/**"]
+ */
+export function readExcludedFilesSettings(
+  workspaceFolder: vscode.WorkspaceFolder
+): ExcludedFilesSettings {
+  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
+  return {
+    grayInTree: cfg.get<boolean>("excludedFiles.grayInTree") ?? true,
+    showEditorOverlay: cfg.get<boolean>("excludedFiles.showEditorOverlay") ?? true,
+    fileNamePatterns: cfg.get<string[]>("excludedFiles.fileNamePatterns") ?? ["*.c"],
+    folderGlobs: cfg.get<string[]>("excludedFiles.folderGlobs") ?? ["core/embed/**", "core/vendor/**"],
+  };
+}
+
+/**
+ * Returns true when a configuration change event affects any of the four
+ * excluded-file settings for the given workspace folder.
+ */
+export function excludedFilesSettingsChanged(
+  event: vscode.ConfigurationChangeEvent,
+  workspaceFolder: vscode.WorkspaceFolder
+): boolean {
+  const scope = workspaceFolder.uri;
+  return (
+    event.affectsConfiguration("tfTools.excludedFiles.grayInTree", scope) ||
+    event.affectsConfiguration("tfTools.excludedFiles.showEditorOverlay", scope) ||
+    event.affectsConfiguration("tfTools.excludedFiles.fileNamePatterns", scope) ||
+    event.affectsConfiguration("tfTools.excludedFiles.folderGlobs", scope)
+  );
 }

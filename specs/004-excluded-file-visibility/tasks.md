@@ -29,7 +29,7 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Add excluded-file settings readers and normalized scope helpers in `src/workspace/settings.ts`
+- [X] T004 Add excluded-file settings readers and normalized scope helpers in `src/workspace/settings.ts`
 - [ ] T005 [P] Create the excluded-file matching and snapshot service in `src/intellisense/excluded-files-service.ts`
 - [ ] T006 [P] Extend IntelliSense runtime types and refresh outputs for excluded-file consumers in `src/intellisense/intellisense-types.ts` and `src/intellisense/intellisense-service.ts`
 - [ ] T007 [P] Create shared Explorer and editor adapter scaffolding in `src/ui/excluded-file-decorations.ts` and `src/ui/excluded-file-overlays.ts`
