@@ -145,6 +145,20 @@ suite("checkProviderReadiness – wrong-provider", () => {
       "expected lastWarningMessage to be non-empty"
     );
   });
+
+  test("warningState is 'wrong-provider' when provider setting is undefined", () => {
+    stubExtensionInstalled();
+    stubConfigurationProvider(undefined);
+    const result = checkProviderReadiness();
+    assert.strictEqual(result.warningState, "wrong-provider");
+  });
+
+  test("warningState is 'wrong-provider' when provider setting is empty string", () => {
+    stubExtensionInstalled();
+    stubConfigurationProvider("");
+    const result = checkProviderReadiness();
+    assert.strictEqual(result.warningState, "wrong-provider");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -160,20 +174,6 @@ suite("checkProviderReadiness – ready (none)", () => {
   suiteTeardown(() => {
     vscodeMock.extensions.getExtension = originalGetExtension;
     vscodeMock.workspace.getConfiguration = originalGetConfiguration;
-  });
-
-  test("warningState is 'none' when cpptools is present and provider setting is undefined", () => {
-    stubExtensionInstalled();
-    stubConfigurationProvider(undefined);
-    const result = checkProviderReadiness();
-    assert.strictEqual(result.warningState, "none");
-  });
-
-  test("warningState is 'none' when cpptools is present and provider setting is empty string", () => {
-    stubExtensionInstalled();
-    stubConfigurationProvider("");
-    const result = checkProviderReadiness();
-    assert.strictEqual(result.warningState, "none");
   });
 
   test("warningState is 'none' when provider is set to cepetr.tf-tools", () => {
@@ -199,14 +199,14 @@ suite("checkProviderReadiness – ready (none)", () => {
 
   test("providerConfigured is true when prerequisites are satisfied", () => {
     stubExtensionInstalled();
-    stubConfigurationProvider(undefined);
+    stubConfigurationProvider("cepetr.tf-tools");
     const result = checkProviderReadiness();
     assert.strictEqual(result.providerConfigured, true);
   });
 
   test("lastWarningMessage is undefined when warningState is 'none'", () => {
     stubExtensionInstalled();
-    stubConfigurationProvider(undefined);
+    stubConfigurationProvider("cepetr.tf-tools");
     const result = checkProviderReadiness();
     assert.strictEqual(result.lastWarningMessage, undefined);
   });

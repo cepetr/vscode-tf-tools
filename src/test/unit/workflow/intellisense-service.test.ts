@@ -8,6 +8,7 @@
  *  - scheduleRefresh: does not fall back to a previous artifact when context changes
  *  - scheduleRefresh: emits null artifact when manifest is absent
  *  - Provider readiness: emits correct warning state
+ *  - Latest-refresh-wins serialization
  */
 
 import * as assert from "assert";
@@ -15,6 +16,7 @@ import { IntelliSenseService } from "../../../intellisense/intellisense-service"
 import {
   ActiveCompileCommandsArtifact,
   IntelliSenseProviderReadiness,
+  ProviderPayload,
 } from "../../../intellisense/intellisense-types";
 import { CpptoolsProviderAdapter } from "../../../intellisense/cpptools-provider";
 import { makeIntelliSenseLoadedState } from "../workflow-test-helpers";
@@ -25,22 +27,27 @@ import { ActiveConfig } from "../../../configuration/active-config";
 // ---------------------------------------------------------------------------
 
 class StubAdapter extends CpptoolsProviderAdapter {
-  public applied: string[] = [];
-  public cleared = 0;
-  private _stubApplied: string | null = null;
+  public payloadsApplied: Array<ProviderPayload | undefined> = [];
+  public clearCount = 0;
+  private _lastPayload: ProviderPayload | undefined;
 
-  override async applyCompileCommands(p: string): Promise<void> {
-    this.applied.push(p);
-    this._stubApplied = p;
+  constructor() {
+    // Inject a no-op API accessor so no real cpptools calls happen.
+    super(() => undefined);
   }
 
-  override async clearCompileCommands(): Promise<void> {
-    this.cleared++;
-    this._stubApplied = null;
+  override applyPayload(payload: ProviderPayload): void {
+    this.payloadsApplied.push(payload);
+    this._lastPayload = payload;
   }
 
-  override getLastAppliedPath(): string | null {
-    return this._stubApplied;
+  override clearPayload(): void {
+    this.clearCount++;
+    this._lastPayload = undefined;
+  }
+
+  override getLastPayload(): ProviderPayload | undefined {
+    return this._lastPayload;
   }
 }
 
@@ -57,6 +64,7 @@ function makeConfig(overrides: Partial<ActiveConfig> = {}): ActiveConfig {
     ...overrides,
   };
 }
+
 
 async function awaitRefresh(svc: IntelliSenseService): Promise<[ActiveCompileCommandsArtifact | null, IntelliSenseProviderReadiness]> {
   return new Promise((resolve) => {
@@ -125,13 +133,19 @@ suite("IntelliSenseService — refresh serialization", () => {
 // ---------------------------------------------------------------------------
 
 suite("IntelliSenseService — stale-state clearing", () => {
-  test("calls clearCompileCommands when artifact is missing after a previous apply", async () => {
+  test("calls clearPayload when artifact is missing after a previous apply", async () => {
     const adapter = new StubAdapter();
     const svc = new IntelliSenseService(adapter);
 
-    // Simulate that the adapter had previously applied a path by calling apply first
-    await adapter.applyCompileCommands("/old/compile_commands.cc.json");
-    adapter.applied = []; // reset the tracking array so we only count clears from now
+    // Simulate a previously applied payload in the adapter.
+    const fakePayload = {
+      artifactPath: "/old/compile_commands.cc.json",
+      contextKey: "T2T1::hw::core",
+      entriesByFile: new Map(),
+      browseSnapshot: { browsePaths: [], compilerPath: undefined, compilerArgs: [] },
+    };
+    adapter.applyPayload(fakePayload);
+    adapter.payloadsApplied = []; // reset tracking
 
     svc.setManifest(makeIntelliSenseLoadedState());
     svc.setActiveConfig(makeConfig());
@@ -141,11 +155,11 @@ suite("IntelliSenseService — stale-state clearing", () => {
     svc.scheduleRefresh("active-config-change");
     await p;
 
-    assert.ok(adapter.cleared > 0, "expected clearCompileCommands to be called at least once");
+    assert.ok(adapter.clearCount > 0, "expected clearPayload to be called at least once");
     svc.dispose();
   });
 
-  test("does not apply compile-commands when artifact is missing", async () => {
+  test("does not apply payload when artifact is missing", async () => {
     const adapter = new StubAdapter();
     const svc = new IntelliSenseService(adapter);
     svc.setManifest(makeIntelliSenseLoadedState());
@@ -156,11 +170,11 @@ suite("IntelliSenseService — stale-state clearing", () => {
     svc.scheduleRefresh("activation");
     await p;
 
-    assert.strictEqual(adapter.applied.length, 0, "should not apply compile-commands when artifact is missing");
+    assert.strictEqual(adapter.payloadsApplied.length, 0, "should not apply payload when artifact is missing");
     svc.dispose();
   });
 
-  test("does not apply compile-commands when provider readiness has a warning", async () => {
+  test("does not apply payload when provider readiness has a warning", async () => {
     // Provider readiness warning appears when cpptools is absent (which is true in unit-test env)
     const adapter = new StubAdapter();
     const svc = new IntelliSenseService(adapter);
@@ -174,7 +188,7 @@ suite("IntelliSenseService — stale-state clearing", () => {
 
     // In unit-test env cpptools is absent → provider warning expected
     assert.notStrictEqual(readiness.warningState, "none");
-    assert.strictEqual(adapter.applied.length, 0);
+    assert.strictEqual(adapter.payloadsApplied.length, 0);
     svc.dispose();
   });
 

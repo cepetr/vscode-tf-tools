@@ -97,3 +97,37 @@ export function logManifestState(state: ManifestState): void {
 export function logWorkflowFailure(kind: string, message: string): void {
   log(`[ERROR] Workflow ${kind} blocked/failed: ${message}`);
 }
+
+// ---------------------------------------------------------------------------
+// IntelliSense event logging (FR-003, FR-005)
+// ---------------------------------------------------------------------------
+
+/**
+ * Writes a persistent log entry when the expected compile-commands artifact
+ * is absent for the active configuration. Does NOT show a popup notification —
+ * the tree row communicates missing state to the user.
+ */
+export function logMissingArtifact(expectedPath: string, contextKey: string): void {
+  log(
+    `[IntelliSense] Compile-commands artifact missing for context ${contextKey}: expected at ${expectedPath}`
+  );
+}
+
+/**
+ * Writes a persistent log entry for a provider warning condition (missing or
+ * wrong provider). Also shows a visible VS Code warning notification so the
+ * condition is not silent (FR-005A).
+ */
+export function logProviderWarning(message: string): void {
+  log(`[IntelliSense] [WARN] ${message}`);
+  vscode.window.showWarningMessage(message);
+}
+
+/**
+ * Writes a persistent log entry when provider prerequisites are recovered after
+ * a previous warning state. Does NOT show a notification — recovery is silent.
+ */
+export function logProviderRecovery(): void {
+  log("[IntelliSense] Provider prerequisites satisfied. IntelliSense is now active.");
+}
+
