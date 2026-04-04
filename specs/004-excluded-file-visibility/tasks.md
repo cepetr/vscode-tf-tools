@@ -56,7 +56,6 @@
 - [ ] T010 [P] [US1] Implement basename-only, case-sensitive excluded-file matching and normalized snapshot generation in `src/intellisense/excluded-files-service.ts`
 - [ ] T011 [P] [US1] Implement Explorer `FileDecorationProvider` badge, tooltip, and optional gray color behavior in `src/ui/excluded-file-decorations.ts`
 - [ ] T012 [US1] Register Explorer excluded-file decorations and connect `tfTools.excludedFiles.grayInTree`, `tfTools.excludedFiles.fileNamePatterns`, and `tfTools.excludedFiles.folderGlobs` to refresh handling in `src/extension.ts`
-- [ ] T013 [US1] Publish excluded-file settings defaults and scope semantics through `package.json` and `src/workspace/settings.ts`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable from the Explorer.
 
@@ -76,7 +75,7 @@
 ### Implementation for User Story 2
 
 - [ ] T016 [P] [US2] Implement the first-line excluded-file overlay manager and hover messaging in `src/ui/excluded-file-overlays.ts`
-- [ ] T017 [P] [US2] Extend excluded-file snapshot consumption for visible editors in `src/intellisense/excluded-files-service.ts` and `src/ui/excluded-file-overlays.ts`
+- [ ] T017 [ ] [US2] Extend excluded-file snapshot consumption for visible editors in `src/intellisense/excluded-files-service.ts` and `src/ui/excluded-file-overlays.ts`
 - [ ] T018 [US2] Wire editor overlay lifecycle and `tfTools.excludedFiles.showEditorOverlay` refresh handling in `src/extension.ts`
 
 **Checkpoint**: User Stories 1 and 2 both work independently, and excluded status is visible in the Explorer and editors.
@@ -97,7 +96,7 @@
 ### Implementation for User Story 3
 
 - [ ] T021 [P] [US3] Publish excluded-file snapshots from the serialized IntelliSense refresh flow in `src/intellisense/intellisense-service.ts` and `src/intellisense/excluded-files-service.ts`
-- [ ] T022 [P] [US3] Add activation, active-config, successful-build, workspace, manifest, `tfTools.artifactsPath`, and excluded-files setting triggers to excluded-file refresh wiring in `src/extension.ts` and `src/workspace/settings.ts`
+- [ ] T022 [P] [US3] Wire excluded-file refresh to the same serialized IntelliSense refresh rules and triggers, including manual refresh, activation, active-config, successful-build, workspace, manifest, `tfTools.artifactsPath`, and excluded-files setting changes, in `src/extension.ts` and `src/workspace/settings.ts`
 - [ ] T023 [US3] Clear stale Explorer badges and editor overlays when the active compile-database payload changes or becomes unavailable in `src/ui/excluded-file-decorations.ts`, `src/ui/excluded-file-overlays.ts`, and `src/extension.ts`
 
 **Checkpoint**: All user stories are independently functional and excluded-file visibility stays aligned with the latest active context.
