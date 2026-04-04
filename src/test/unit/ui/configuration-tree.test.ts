@@ -315,3 +315,37 @@ suite("CompileCommandsArtifactItem – missing artifact", () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// T003: SectionItem default expansion (UI-02)
+// All three root sections must default to vscode.TreeItemCollapsibleState.Expanded.
+// These tests MUST FAIL before T005 removes the collapsing override.
+// ---------------------------------------------------------------------------
+
+suite("SectionItem default expansion (UI-02)", () => {
+  EXPECTED_EXPANDED_SECTIONS.forEach(({ id, label }) => {
+    test(`${id} root section defaults to Expanded`, () => {
+      const item = new SectionItem(id, label);
+      assert.strictEqual(
+        item.collapsibleState,
+        vscode.TreeItemCollapsibleState.Expanded,
+        `Expected SectionItem(${id}) to have collapsibleState Expanded`
+      );
+    });
+  });
+
+  test("Build Context section defaults to Expanded", () => {
+    const item = new SectionItem("build-context", "Build Context");
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+  });
+
+  test("Build Options section defaults to Expanded", () => {
+    const item = new SectionItem("build-options", "Build Options");
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+  });
+
+  test("Build Artifacts section defaults to Expanded", () => {
+    const item = new SectionItem("build-artifacts", "Build Artifacts");
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+  });
+});
