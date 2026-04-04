@@ -18,6 +18,12 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Path Reference Rule
+
+When referencing files inside the current workspace in generated artifacts or
+user-facing output, use workspace-relative paths. Use absolute filesystem paths
+only for tool inputs or for references outside the workspace.
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before planning)**:
@@ -153,5 +159,5 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Key rules
 
-- Use absolute paths
+- Use workspace-relative paths in plans, reports, and other generated artifacts for repository files
 - ERROR on gate failures or unresolved clarifications

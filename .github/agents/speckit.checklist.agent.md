@@ -31,10 +31,16 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Path Reference Rule
+
+When referencing files inside the current workspace in generated artifacts or
+user-facing output, use workspace-relative paths. Use absolute filesystem paths
+only for tool inputs or for references outside the workspace.
+
 ## Execution Steps
 
 1. **Setup**: Run `.specify/scripts/bash/check-prerequisites.sh --json` from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS list.
-   - All file paths must be absolute.
+   - Use returned filesystem paths for internal tool execution only; any path written into generated content must be workspace-relative.
    - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 2. **Clarify intent (dynamic)**: Derive up to THREE initial contextual clarifying questions (no pre-baked catalog). They MUST:

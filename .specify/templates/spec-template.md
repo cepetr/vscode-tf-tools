@@ -5,6 +5,8 @@
 **Status**: Draft
 **Input**: User description: "$ARGUMENTS"
 
+**File Reference Rule**: Use workspace-relative paths for any repository file references written into this specification.
+
 ## Informal Spec Alignment *(mandatory)*
 
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`

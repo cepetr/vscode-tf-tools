@@ -1,6 +1,6 @@
 ---
 description: Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec.
-handoffs: 
+handoffs:
   - label: Build Technical Plan
     agent: speckit.plan
     prompt: Create a plan for the spec. I am building with...
@@ -13,6 +13,12 @@ $ARGUMENTS
 ```
 
 You **MUST** consider the user input before proceeding (if not empty).
+
+## Path Reference Rule
+
+When referencing files inside the current workspace in generated artifacts or
+user-facing output, use workspace-relative paths. Use absolute filesystem paths
+only for tool inputs or for references outside the workspace.
 
 ## Outline
 

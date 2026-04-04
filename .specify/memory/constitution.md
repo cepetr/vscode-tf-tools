@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-Version change: 1.2.0 -> 1.3.0
+Version change: 1.3.0 -> 1.4.0
 Modified principles:
 - None (core principle titles unchanged; Delivery Workflow materially expanded)
 Added sections:
@@ -12,11 +12,15 @@ Templates requiring updates:
 - ✅ .specify/templates/spec-template.md
 - ✅ .specify/templates/plan-template.md
 - ✅ .specify/templates/tasks-template.md
+- ✅ .github/agents/speckit.checklist.agent.md
+- ✅ .github/agents/speckit.clarify.agent.md
 - ✅ .github/agents/speckit.constitution.agent.md
 - ✅ .github/agents/speckit.specify.agent.md
 - ✅ .github/agents/speckit.plan.agent.md
 - ✅ .github/agents/speckit.tasks.agent.md
 - ✅ .github/agents/speckit.implement.agent.md
+- ✅ .github/agents/speckit.analyze.agent.md
+- ✅ .github/agents/speckit.taskstoissues.agent.md
 Follow-up TODOs:
 - None
 -->
@@ -115,6 +119,10 @@ concise code and justified complexity keep it maintainable.
 - Each task list and implementation run MUST include explicit coverage for
 	critical informal-spec details through dedicated test tasks, validation tasks,
 	or both.
+- Agents and generated artifacts MUST use workspace-relative paths whenever they
+	reference files inside the current workspace. Absolute filesystem paths MAY be
+	used only for tool execution, script parsing, or references outside the
+	workspace.
 - When an automated agent executes `tasks.md`, it MUST complete exactly one task
 	at a time, mark that task complete in `tasks.md`, and create one descriptive
 	git commit before starting the next task. Grouping multiple tasks into a
@@ -137,4 +145,4 @@ requirements, and PATCH for clarifications that do not change project obligation
 Compliance review is required for every plan, task list, and pull request that
 changes behavior, tooling, or development workflow.
 
-**Version**: 1.3.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-03
+**Version**: 1.4.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-04
