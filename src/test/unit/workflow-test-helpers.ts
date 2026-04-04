@@ -179,3 +179,42 @@ export function makeIntelliSenseLoadedState(
     ...overrides,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Compile-commands fixture paths
+//
+// Used by parser and provider unit tests to locate test fixtures on disk.
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the absolute path to the compile-commands fixture file for the
+ * given model, component, and optional suffix.
+ * Mirrors the artifact-path formula used by `deriveArtifactPath`.
+ */
+export function compileCommandsFixturePath(
+  artifactFolder: string,
+  artifactName: string,
+  artifactSuffix: string = ""
+): string {
+  return path.resolve(
+    __dirname,
+    "../../../../test-fixtures/workspaces/intellisense-valid/artifacts",
+    artifactFolder,
+    `${artifactName}${artifactSuffix}.cc.json`
+  );
+}
+
+/** Shorthand for the primary T2T1/core/hw compile-commands fixture. */
+export function primaryCoreFixturePath(): string {
+  return compileCommandsFixturePath("model-t", "compile_commands_core");
+}
+
+/** Shorthand for the T2T1/core/emu (suffixed) fixture. */
+export function emuCoreFixturePath(): string {
+  return compileCommandsFixturePath("model-t", "compile_commands_core", "_emu");
+}
+
+/** Shorthand for the T2T1/prodtest/hw compile-commands fixture. */
+export function prodtestFixturePath(): string {
+  return compileCommandsFixturePath("model-t", "compile_commands_prodtest");
+}

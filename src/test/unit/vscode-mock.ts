@@ -90,6 +90,7 @@ const workspace = {
   workspaceFolders: undefined,
   getConfiguration: () => ({
     get: () => undefined,
+    update: () => Promise.resolve(),
   }),
   createFileSystemWatcher: () => ({
     onDidCreate: () => ({ dispose: () => {} }),
@@ -97,6 +98,7 @@ const workspace = {
     onDidDelete: () => ({ dispose: () => {} }),
     dispose: () => {},
   }),
+  onDidChangeConfiguration: () => ({ dispose: () => {} }),
 };
 
 const commands = {
@@ -196,6 +198,7 @@ class ThemeIcon {
 const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 };
 const TreeItemCheckboxState = { Unchecked: 0, Checked: 1 };
 const StatusBarAlignment = { Left: 1, Right: 2 };
+const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3 };
 
 // ---------------------------------------------------------------------------
 // Extensions API stub for IntelliSense provider tests
@@ -226,6 +229,7 @@ module.exports = {
   TreeItemCollapsibleState,
   TreeItemCheckboxState,
   StatusBarAlignment,
+  ConfigurationTarget,
   TaskScope,
   TaskRevealKind,
   TaskPanelKind,
