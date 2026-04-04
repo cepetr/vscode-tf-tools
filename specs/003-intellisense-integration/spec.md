@@ -10,7 +10,7 @@
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
 - **Selected Slice**: `3. IntelliSense Integration`
 - **Scope Guard**: This feature includes resolving the active compile-commands artifact, showing compile-commands artifact presence and expected-path tooltip in the `Build Artifacts` section, registering and updating the cpptools custom configuration provider, warning when IntelliSense prerequisites are unavailable or misconfigured, and refreshing IntelliSense state when the active context or relevant workspace state changes. This feature excludes excluded-file explorer badges, optional tree graying, editor overlays, file-scope and pattern rules, Binary and Map File artifact behavior, Flash/Upload actions, and Debug launch.
-- **Critical Informal Details**: IntelliSense must always follow the active model, target, and component rather than silently reusing another compile database; the expected compile-commands artifact path is derived from the artifact base path `<tfTools.artifactsPath>/<artifact-folder>/`, where `<artifact-folder>` comes from the selected model's required manifest field and is interpreted relative to `tfTools.artifactsPath`, and an artifact basename constructed as `<artifact-name><artifact-suffix>`, where `<artifact-name>` comes from the selected component's required manifest field and the selected target's optional `artifact-suffix` defaults to an empty string when omitted; the user must be able to see whether the active compile-commands artifact is present and where it is expected; IntelliSense refresh runs on activation, configuration changes, successful builds, explicit refresh, and relevant workspace/settings/provider changes; cpptools is the only supported IntelliSense provider; missing provider support or an inactive tf-tools provider configuration must produce both a visible user message and a persistent log entry.
+- **Critical Informal Details**: IntelliSense must always follow the active model, target, and component rather than silently reusing another compile database; the expected compile-commands artifact path is derived from the artifact base path `<tfTools.artifactsPath>/<artifact-folder>/`, where `<artifact-folder>` comes from the selected model's required manifest field and is interpreted relative to `tfTools.artifactsPath`, and an artifact basename constructed as `<artifact-name><artifact-suffix>`, where `<artifact-name>` comes from the selected component's required manifest field and the selected target's optional `artifact-suffix` defaults to an empty string when omitted; the provider must eagerly parse the active `.cc.json` database on refresh and translate entries into cpptools per-file configurations rather than only recording the database path; the user must be able to see whether the active compile-commands artifact is present and where it is expected; IntelliSense refresh runs on activation, configuration changes, successful builds, explicit refresh, and relevant workspace/settings/provider changes; cpptools is the only supported IntelliSense provider; missing provider support or an inactive tf-tools provider configuration must produce both a visible user message and a persistent log entry.
 
 ## Clarifications
 
@@ -34,6 +34,7 @@ As a firmware developer, I want C/C++ editor assistance to track my currently se
 1. **Given** a valid active configuration whose expected compile-commands artifact exists, **When** the extension activates or the active model, target, or component changes, **Then** IntelliSense updates using the compile database for that exact active configuration.
 2. **Given** the expected compile-commands artifact for the active configuration is missing, **When** IntelliSense refresh runs, **Then** the extension clears any previously applied compile-commands configuration for another context and does not apply a compile database from a different model, component, or stale location.
 3. **Given** the active configuration changes twice in sequence, **When** refresh completes, **Then** the final IntelliSense state matches the most recently selected active configuration.
+4. **Given** the active compile database contains `.c` files and `.cpp`-family files, **When** the provider serves configurations to cpptools, **Then** each file uses the language mode inferred from its own compile entry instead of one global language mode for the whole database.
 
 ---
 
@@ -82,6 +83,9 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 - cpptools becomes installed, removed, enabled, or disabled after the extension has already activated.
 - cpptools is installed but workspace settings still point to a different active configuration provider.
 - A successful build completes but does not produce the expected compile-commands artifact for the active configuration.
+- A compile database entry uses relative include paths, forced-include paths, or a relative compiler executable path relative to the entry `directory` field.
+- The compile database contains both C and C++ translation units with different `-std=` flags.
+- The compile database unexpectedly contains more than one entry for the same source file.
 
 ## Requirements *(mandatory)*
 
@@ -91,6 +95,14 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 - **FR-002**: The system MUST treat the resolved compile-commands artifact for the active configuration as the only valid IntelliSense source for that configuration and MUST NOT fall back to a different artifact path, model, target-derived suffix, component, or previously applied IntelliSense state.
 - **FR-002A**: When the expected compile-commands artifact for the active configuration is missing, the system MUST clear any previously applied compile-commands configuration instead of leaving stale IntelliSense data active.
 - **FR-003**: The system MUST register and maintain IntelliSense integration through the Microsoft C/C++ custom configuration provider model.
+- **FR-003A**: When the expected compile-commands artifact exists, the system MUST eagerly parse the active compile database during refresh and build an in-memory index keyed by normalized absolute source-file path before notifying cpptools that configurations changed.
+- **FR-003B**: The system MUST translate each indexed compile-database entry into a cpptools `SourceFileConfiguration` whose target URI is the entry's source file and whose fields are derived from that entry rather than from global workspace defaults.
+- **FR-003C**: For each compile-database entry, the system MUST preserve the full ordered flag set from the compile command after the compiler executable token, except that the source-file token is represented by the configuration target URI instead of remaining in `compilerArgs` or `compilerFragments`.
+- **FR-003D**: The system MUST populate `includePath`, `defines`, `forcedInclude`, `compilerPath`, and `standard` from each compile entry and MUST preserve remaining flags in `compilerArgs` or `compilerFragments` so cpptools receives the same semantic compile context as the active `.cc.json` entry.
+- **FR-003E**: When a compile-database entry contains relative include paths, forced-include paths, output paths, source paths, or a relative compiler executable path, the system MUST resolve them relative to that entry's `directory` field using normal compile-commands semantics.
+- **FR-003F**: The system MUST infer C versus C++ language mode per compile entry. An explicit `-std=` flag with a C-family value (`c*`, `gnu*` without `++`) MUST select C mode; an explicit `-std=` flag with a C++-family value (`c++*`, `gnu++*`) MUST select C++ mode; otherwise the system MUST fall back to the source-file extension and then to the compiler frontend name (`g++`, `clang++`, `c++` imply C++).
+- **FR-003G**: If the compile database contains more than one entry for the same normalized absolute source file path, the system MUST use the first entry, ignore later duplicates for IntelliSense purposes, and write a persistent log entry describing the duplicate.
+- **FR-003H**: The system MUST return a cpptools browse configuration built from the eagerly parsed active compile database, with `browsePath` equal to the de-duplicated union of resolved include paths across all indexed entries, `compilerPath` taken from the first indexed entry that provides one, and `compilerArgs` taken from that same entry after normalization.
 - **FR-004**: The system MUST update IntelliSense state when refresh is triggered by extension activation, active configuration changes, successful build completion, explicit refresh, provider-availability changes, manifest-path changes, manifest-content changes, and `tfTools.artifactsPath` changes.
 - **FR-005**: The system MUST expose a user-invokable `Refresh IntelliSense` action once this slice is implemented.
 - **FR-005A**: The `Refresh IntelliSense` action MUST be available from both the Configuration view title or overflow menu and the Command Palette.
@@ -112,13 +124,15 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 ### Key Entities *(include if feature involves data)*
 
 - **Active Compile-Commands Artifact**: The expected compile database for the currently selected model, target, and component, including the model-derived artifact folder, the component-derived artifact basename stem, the target-derived suffix, its resolved path, and whether it is present.
+- **Parsed Compile-Commands Entry**: One eagerly parsed source-file record from the active compile database, including normalized file path, entry directory, compiler executable, ordered argument list, resolved include paths, defines, forced-include paths, inferred language family, and inferred standard.
 - **IntelliSense Provider Readiness**: The current ability of the extension to supply editor assistance for the active configuration, including provider availability, provider selection state, and warning state.
+- **Browse Configuration Snapshot**: The workspace-level cpptools browse configuration derived from the active compile database, including de-duplicated browse paths and representative compiler metadata from the first indexed entry.
 - **IntelliSense Refresh Trigger**: A user or workspace event that requires the extension to recompute the active compile-commands artifact status and reapply IntelliSense state.
 
 ## Operational Constraints *(mandatory)*
 
 - Supported host/version: VS Code 1.110+.
-- Source of truth inputs: `tfTools.artifactsPath`, the active model/target/component selection already managed by earlier slices, the selected model's required `artifact-folder` manifest field, the selected component's required `artifact-name` manifest field, the selected target's optional `artifact-suffix` manifest field, the manifest path and content when they affect active configuration normalization, workspace folder state, extension/provider availability, and the active compile-commands artifact on disk.
+- Source of truth inputs: `tfTools.artifactsPath`, the active model/target/component selection already managed by earlier slices, the selected model's required `artifact-folder` manifest field, the selected component's required `artifact-name` manifest field, the selected target's optional `artifact-suffix` manifest field, the manifest path and content when they affect active configuration normalization, workspace folder state, extension/provider availability, the active compile-commands artifact on disk, and each compile-database entry's `directory`, source file, compiler executable, and ordered arguments.
 - Workspace assumptions: Single-root workspace only.
 - Compatibility exclusions: Alternate C/C++ providers, multi-root-specific behavior, excluded-file visibility, Binary and Map File artifact behavior, Flash/Upload actions, and Debug launch are out of scope.
 
@@ -136,6 +150,9 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 - **Trigger**: A refresh trigger occurs after IntelliSense was previously aligned to another active configuration.
   - **User-visible response**: IntelliSense and the `Compile Commands` row update to the current active configuration instead of remaining on stale state.
   - **Persistent signal**: No additional persistent signal required when refresh succeeds normally.
+- **Trigger**: The compile database contains duplicate entries for the same source file.
+  - **User-visible response**: IntelliSense uses the first entry for that file and does not merge conflicting entries.
+  - **Persistent signal**: Dedicated log entry naming the duplicated file and ignored entries.
 
 ## Success Criteria *(mandatory)*
 
@@ -151,5 +168,6 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 - The Configuration Experience slice already provides the Configuration view, Build Artifacts section container, active build-context persistence, and the output channel used for persistent logging.
 - The Build Workflow slice already provides successful-build completion events that later slices can react to.
 - The active compile-commands artifact uses the path pattern `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`, where `artifact-folder` comes from the selected model, `artifact-name` comes from the selected component, and `artifact-suffix` is empty when the selected target omits it.
+- The active compile-commands artifact follows normal compile-commands semantics: entries may use either absolute paths or paths relative to the entry `directory`, and the current firmware `.cc.json` files primarily use absolute paths.
 - When the active compile-commands artifact is missing, clearing the previously applied compile-commands configuration is acceptable and preferred over retaining stale IntelliSense data.
 - Only Microsoft C/C++ (`ms-vscode.cpptools`) is supported for IntelliSense integration in this product.

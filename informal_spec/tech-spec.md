@@ -345,18 +345,40 @@ Design:
 - artifact basename: `<artifact-name><artifact-suffix>`, where `artifact-name` comes from the selected component and `artifact-suffix` defaults to an empty string when omitted
 - artifact layout: `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix><extension>`
 - compile-database example: `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`
+- parsing model: eager parse of the active compile database during refresh, before cpptools notification
+- entry identity: normalized absolute source-file path; duplicate entries for one file use the first entry and log later duplicates
 
 When refresh runs, the IntelliSense layer:
 
 1. derives the expected artifact path
 2. checks whether the artifact exists
-3. loads the compile database into the provider adapter
-4. triggers provider update notifications
-5. updates tree-view artifact state and shows or clears provider-related warnings
+3. eagerly parses the compile database into an in-memory index and browse snapshot
+4. loads the parsed result into the provider adapter
+5. triggers provider update notifications
+6. updates tree-view artifact state and shows or clears provider-related warnings
 
 If the expected artifact for the active configuration is missing, the resolution logic must not fall back to a different artifact path, artifact-folder, artifact-name, component, target-derived suffix, model, or target.
 
-The provider adapter parses compile database entries into include paths, defines, compiler path, and language standard. File lookup is keyed by normalized resolved file-system paths.
+The provider adapter parses compile database entries into include paths, defines, forced-include paths, compiler path, compiler arguments, and language standard. File lookup is keyed by normalized resolved file-system paths.
+
+Translation rules:
+
+- the provider accepts compile-database entries using `arguments[]` directly; if `command` is used instead, it is shell-tokenized before further processing
+- all paths are preserved as absolute when already absolute
+- relative source, include, forced-include, output, and compiler paths are resolved relative to the entry `directory` field
+- all flags after the compiler executable token are preserved in order for cpptools translation, except the source-file token, which is represented by the target source URI instead of remaining in compiler arguments
+- `includePath` is populated from include-search flags such as `-I`, `-isystem`, `-iquote`, and their joined-token forms
+- `defines` is populated from `-D` flags and `forcedInclude` from forced-include flags such as `-include` and `-imacros`
+- unclassified flags remain in `compilerArgs` or `compilerFragments` so cpptools receives the full compile context instead of a lossy subset
+- language family is inferred per entry from `-std=` first; `c*` and `gnu*` without `++` mean C, while `c++*` and `gnu++*` mean C++
+- when no `-std=` flag is present, the provider falls back to the source-file extension and then to the compiler frontend name such as `g++`, `clang++`, or `c++`
+
+Browse configuration rules:
+
+- browse configuration is built eagerly from the active compile-database index
+- `browsePath` is the de-duplicated union of resolved include paths across all indexed entries
+- `compilerPath` comes from the first indexed entry that provides one
+- `compilerArgs` comes from that same representative entry after normalization so cpptools can recover system defaults for browse-time indexing
 
 ## Build Artifacts Actions
 

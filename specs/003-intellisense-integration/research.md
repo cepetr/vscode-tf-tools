@@ -47,3 +47,12 @@
 - **Alternatives considered**:
   - Let each trigger update IntelliSense independently: rejected because concurrent refreshes would make stale-state clearing and final-state correctness hard to reason about.
   - Poll the filesystem for compile-commands changes: rejected because it is unnecessary for the specified trigger set and adds background complexity.
+
+## Decision 7: Translate the active compile database eagerly into cpptools file and browse configurations
+
+- **Decision**: Eagerly parse the active `.cc.json` file during refresh, index entries by normalized absolute source-file path, translate each entry into a cpptools `SourceFileConfiguration`, and build a browse snapshot whose `browsePath` is the de-duplicated union of include paths across the active database.
+- **Rationale**: The cpptools custom configuration provider API consumes per-file configurations, not a compile-database path. Eager parsing keeps refresh behavior deterministic, makes duplicate detection explicit, and ensures `.c` and `.cpp` files can each retain their own inferred language mode and standards.
+- **Alternatives considered**:
+  - Pass only the compile-database path to cpptools: rejected because the custom provider API does not consume a raw compile-database path and would leave IntelliSense effectively unconfigured.
+  - Parse entries lazily on file request: rejected because the product already centers refresh around active-context changes and because eager parsing simplifies duplicate detection, tree-state synchronization, and browse-configuration generation.
+  - Merge duplicate entries for the same file: rejected because the compile database should not contain duplicates and merging would create non-obvious precedence rules; first-entry-wins with logging is deterministic and simple.

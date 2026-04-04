@@ -50,6 +50,12 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
   - Microsoft C/C++ (`ms-vscode.cpptools`) only
 - **Provider contract**:
   - tf-tools registers and maintains a custom configuration provider for cpptools
+  - tf-tools eagerly parses the active `.cc.json` database before notifying cpptools about configuration changes
+  - tf-tools serves cpptools per-file `SourceFileConfiguration` objects keyed by normalized absolute source-file path
+  - tf-tools infers C versus C++ language mode per compile entry from `-std=` first, then file extension, then compiler frontend name
+  - tf-tools preserves the active compile-entry flags for cpptools translation after the compiler executable token, resolving relative paths against the entry `directory`
+  - if duplicate compile-database entries exist for one file, tf-tools uses the first and logs the conflict
+  - tf-tools returns a browse configuration whose `browsePath` is the de-duplicated union of include paths from the active compile database and whose representative compiler metadata comes from the first indexed entry
   - if cpptools is unavailable, the user receives a visible warning and the condition is logged persistently
   - if cpptools is installed but tf-tools is not the active provider, the user receives a visible warning and the condition is logged persistently
   - when provider prerequisites become valid again, stale warning state clears on the next refresh
