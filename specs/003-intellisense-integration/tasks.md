@@ -74,14 +74,14 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T018 [P] [US2] Extend tree-view unit tests for compile-commands status and tooltip wording in `src/test/unit/ui/configuration-tree.test.ts`
-- [ ] T019 [P] [US2] Extend integration coverage for compile-commands row recomputation across model, component, target, manifest-content, manifest-path, and `tfTools.artifactsPath` changes in `src/test/integration/configuration-health.integration.test.ts`
+- [X] T018 [P] [US2] Extend tree-view unit tests for compile-commands status and tooltip wording in `src/test/unit/ui/configuration-tree.test.ts`
+- [X] T019 [P] [US2] Extend integration coverage for compile-commands row recomputation across model, component, target, manifest-content, manifest-path, and `tfTools.artifactsPath` changes in `src/test/integration/configuration-health.integration.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Publish resolved compile-commands artifact state from the IntelliSense service into the UI update path in `src/intellisense/intellisense-service.ts` and `src/extension.ts`
-- [ ] T021 [US2] Update the `Compile Commands` tree item to show the expected path and missing explanation exactly as specified in `src/ui/configuration-tree.ts`
-- [ ] T022 [US2] Recompute and refresh `Build Artifacts` compile-commands state on active-context and settings changes in `src/extension.ts` and `src/ui/configuration-tree.ts`
+- [X] T020 [P] [US2] Publish resolved compile-commands artifact state from the IntelliSense service into the UI update path in `src/intellisense/intellisense-service.ts` and `src/extension.ts`
+- [X] T021 [US2] Update the `Compile Commands` tree item to show the expected path and missing explanation exactly as specified in `src/ui/configuration-tree.ts`
+- [X] T022 [US2] Recompute and refresh `Build Artifacts` compile-commands state on active-context and settings changes in `src/extension.ts` and `src/ui/configuration-tree.ts`
 
 **Checkpoint**: User Stories 1 and 2 work independently, and compile-commands availability is visible and testable from the tree view.
 
