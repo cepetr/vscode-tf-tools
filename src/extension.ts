@@ -270,6 +270,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  // --- Provider-change refresh — re-evaluate readiness when extensions change (FR-005B, T031) ---
+  context.subscriptions.push(
+    vscode.extensions.onDidChange(() => {
+      _intelliSenseService?.scheduleRefresh("provider-change");
+    })
+  );
+
   // --- Build-context selector commands (T026+T031) ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.selectModel", async (modelId: string) => {

@@ -204,6 +204,7 @@ const StatusBarAlignment = { Left: 1, Right: 2 };
 const extensions = {
   getExtension: (_extensionId: string) => undefined as unknown | undefined,
   all: [] as unknown[],
+  onDidChange: () => ({ dispose: () => {} }),
 };
 
 module.exports = {

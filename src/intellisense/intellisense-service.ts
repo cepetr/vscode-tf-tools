@@ -53,6 +53,12 @@ export class IntelliSenseService {
   private _lastArtifact: ActiveCompileCommandsArtifact | null = null;
   private _lastReadiness: IntelliSenseProviderReadiness | null = null;
 
+  /**
+   * Last warning state emitted to guard against duplicate warning messages.
+   * Warnings are logged once per state transition (FR-005B).
+   */
+  private _lastWarnedState: string = "none";
+
   /** Pending refresh promise for serialization. */
   private _pendingRefresh: Promise<void> | null = null;
 
@@ -122,17 +128,18 @@ export class IntelliSenseService {
     this._lastReadiness = readiness;
 
     if (readiness.warningState !== "none") {
-      if (readiness.warningState === "missing-provider") {
+      // Emit warning once per state transition (FR-005B).
+      if (readiness.warningState !== this._lastWarnedState) {
         logWarning(
           readiness.lastWarningMessage ??
-            "IntelliSense integration is unavailable: Microsoft C/C++ extension (ms-vscode.cpptools) is not installed."
+            "IntelliSense integration is unavailable: see output channel for details."
         );
-      } else if (readiness.warningState === "wrong-provider") {
-        logWarning(
-          readiness.lastWarningMessage ??
-            "IntelliSense integration unavailable: the workspace is not configured to use Trezor Firmware Tools as the C/C++ configuration provider."
-        );
+        this._lastWarnedState = readiness.warningState;
       }
+    } else if (this._lastWarnedState !== "none") {
+      // Transitioning from a warning state back to ready — log recovery.
+      log("[IntelliSense] Provider prerequisites satisfied. IntelliSense is now active.");
+      this._lastWarnedState = "none";
     }
 
     const manifest = this._manifest;
