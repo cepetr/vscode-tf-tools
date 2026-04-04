@@ -113,9 +113,9 @@
 
 **Purpose**: Final validation, regression coverage, and scope review across the completed slice.
 
-- [ ] T029 [P] Expand regression coverage for mixed-language compile databases and target suffix changes in `src/test/unit/workflow/compile-commands-parser.test.ts` and `src/test/integration/configuration-health.integration.test.ts`
-- [ ] T030 [P] Review command and menu contributions for cross-slice drift in `package.json` and `src/extension.ts`
-- [ ] T031 Validate end-to-end IntelliSense scenarios from `specs/003-intellisense-integration/quickstart.md`
+- [X] T029 [P] Expand regression coverage for mixed-language compile databases and target suffix changes in `src/test/unit/workflow/compile-commands-parser.test.ts` and `src/test/integration/configuration-health.integration.test.ts`
+- [X] T030 [P] Review command and menu contributions for cross-slice drift in `package.json` and `src/extension.ts`
+- [X] T031 Validate end-to-end IntelliSense scenarios from `specs/003-intellisense-integration/quickstart.md`
 
 ---
 

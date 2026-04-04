@@ -578,3 +578,111 @@ suite("IntelliSenseService – provider warning flows (T024)", () => {
     assert.strictEqual(secondReadiness.warningState, firstReadiness.warningState);
   });
 });
+
+
+// ---------------------------------------------------------------------------
+// T029/T031: IntelliSenseService – artifacts-path change regression
+// ---------------------------------------------------------------------------
+
+suite("IntelliSenseService – artifacts-path change regression (T029/T031)", () => {
+  function drainRefresh(ms = 80): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function makeManifest(): ManifestStateLoaded {
+    return {
+      status: "loaded",
+      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      models: [{ kind: "model", id: "T2T1", name: "Trezor Model T", artifactFolder: "model-t" }],
+      targets: [
+        { kind: "target", id: "hw", name: "Hardware", shortName: "HW" },
+        { kind: "target", id: "emu", name: "Emulator", shortName: "EMU", artifactSuffix: "_emu" },
+      ],
+      components: [{ kind: "component", id: "core", name: "Core", artifactName: "compile_commands_core" }],
+      buildOptions: [],
+      hasWorkflowBlockingIssues: false,
+      validationIssues: [],
+      loadedAt: new Date(),
+    };
+  }
+
+  test("changing artifactsRoot changes lastArtifact path after refresh", async () => {
+    const svc = new IntelliSenseService();
+    svc.setManifest(makeManifest());
+    svc.setActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+
+    // First root: directory that does not contain artifact
+    svc.setArtifactsRoot("/old-root");
+    svc.scheduleRefresh("artifacts-path-change");
+    await drainRefresh();
+    const artifactWithOldRoot = svc.getLastArtifact();
+    assert.ok(artifactWithOldRoot !== null, "expected artifact result");
+    assert.ok(
+      artifactWithOldRoot!.path.includes("old-root") || artifactWithOldRoot!.status === "missing",
+      "artifact should reflect old-root path or be missing"
+    );
+
+    // Change root: confirms recomputation
+    svc.setArtifactsRoot("/new-root");
+    svc.scheduleRefresh("artifacts-path-change");
+    await drainRefresh();
+    const artifactWithNewRoot = svc.getLastArtifact();
+    assert.ok(artifactWithNewRoot !== null, "expected artifact result after root change");
+    assert.ok(
+      artifactWithNewRoot!.path.includes("new-root") || artifactWithNewRoot!.status === "missing",
+      "artifact should reflect new-root path after change"
+    );
+    assert.notStrictEqual(artifactWithNewRoot!.path, artifactWithOldRoot!.path, "path should change after root change");
+  });
+
+  test("switching target from hw to emu changes artifact contextKey", async () => {
+    const svc = new IntelliSenseService();
+    svc.setManifest(makeManifest());
+    svc.setArtifactsRoot("/artifacts");
+
+    svc.setActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.scheduleRefresh("active-config-change");
+    await drainRefresh();
+    const hwArtifact = svc.getLastArtifact();
+
+    svc.setActiveConfig({ modelId: "T2T1", targetId: "emu", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.scheduleRefresh("active-config-change");
+    await drainRefresh();
+    const emuArtifact = svc.getLastArtifact();
+
+    assert.ok(hwArtifact !== null && emuArtifact !== null, "both artifacts should be non-null");
+    assert.notStrictEqual(hwArtifact!.contextKey, emuArtifact!.contextKey, "context keys should differ after target change");
+    assert.ok(hwArtifact!.contextKey.includes("hw"), "hw contextKey should contain hw");
+    assert.ok(emuArtifact!.contextKey.includes("emu"), "emu contextKey should contain emu");
+  });
+
+  test("artifact path contains _emu suffix for emu target", async () => {
+    const svc = new IntelliSenseService();
+    svc.setManifest(makeManifest());
+    svc.setArtifactsRoot("/artifacts");
+    svc.setActiveConfig({ modelId: "T2T1", targetId: "emu", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.scheduleRefresh("active-config-change");
+    await drainRefresh();
+    const artifact = svc.getLastArtifact();
+    assert.ok(artifact !== null);
+    assert.ok(
+      artifact!.path.includes("_emu"),
+      `expected artifact path to contain '_emu' for emu target, got: ${artifact!.path}`
+    );
+  });
+
+  test("artifact path for hw target does not contain _emu suffix", async () => {
+    const svc = new IntelliSenseService();
+    svc.setManifest(makeManifest());
+    svc.setArtifactsRoot("/artifacts");
+    svc.setActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.scheduleRefresh("active-config-change");
+    await drainRefresh();
+    const artifact = svc.getLastArtifact();
+    assert.ok(artifact !== null);
+    assert.ok(
+      !artifact!.path.includes("_emu"),
+      `expected artifact path for hw target to NOT contain '_emu', got: ${artifact!.path}`
+    );
+  });
+});

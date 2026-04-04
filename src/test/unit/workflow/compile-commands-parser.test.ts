@@ -464,3 +464,84 @@ suite("tokenizeCommandString", () => {
     assert.deepStrictEqual(tokens, ["gcc"]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T029: Regression – mixed-language compile database
+// ---------------------------------------------------------------------------
+
+suite("parseCompileCommandsFile – mixed-language regression (T029)", () => {
+  const os = require("os") as typeof import("os");
+  const fsSync = require("fs") as typeof import("fs");
+
+  function writeTmpDb(entries: object[]): string {
+    const tmpPath = path.join(os.tmpdir(), `mixed-lang-${Date.now()}.cc.json`);
+    fsSync.writeFileSync(tmpPath, JSON.stringify(entries), "utf-8");
+    return tmpPath;
+  }
+
+  test("C file gets 'c' language family in mixed database", () => {
+    const db = [
+      { directory: "/ws", file: "/ws/main.c", command: "arm-none-eabi-gcc -DBOARD=1 -c /ws/main.c" },
+      { directory: "/ws", file: "/ws/crypto.cpp", command: "arm-none-eabi-g++ -std=c++17 -c /ws/crypto.cpp" },
+    ];
+    const dbPath = writeTmpDb(db);
+    const result = parseCompileCommandsFile(dbPath, "T2T1::hw::core");
+    const cEntry = result?.entriesByFile.get("/ws/main.c");
+    assert.strictEqual(cEntry?.languageFamily, "c");
+  });
+
+  test("C++ file gets 'cpp' language family in mixed database", () => {
+    const db = [
+      { directory: "/ws", file: "/ws/main.c", command: "arm-none-eabi-gcc -DBOARD=1 -c /ws/main.c" },
+      { directory: "/ws", file: "/ws/crypto.cpp", command: "arm-none-eabi-g++ -std=c++17 -c /ws/crypto.cpp" },
+    ];
+    const dbPath = writeTmpDb(db);
+    const result = parseCompileCommandsFile(dbPath, "T2T1::hw::core");
+    const cppEntry = result?.entriesByFile.get("/ws/crypto.cpp");
+    assert.strictEqual(cppEntry?.languageFamily, "cpp");
+  });
+
+  test("both C and C++ entries are present and have independent defines", () => {
+    const db = [
+      { directory: "/ws", file: "/ws/main.c", command: "gcc -DPLATFORM=HW -c /ws/main.c" },
+      { directory: "/ws", file: "/ws/utils.cpp", command: "g++ -DCXX_FEATURE=1 -c /ws/utils.cpp" },
+    ];
+    const dbPath = writeTmpDb(db);
+    const result = parseCompileCommandsFile(dbPath, "ctx");
+    assert.strictEqual(result?.entriesByFile.size, 2);
+    const cEntry = result?.entriesByFile.get("/ws/main.c");
+    const cppEntry = result?.entriesByFile.get("/ws/utils.cpp");
+    assert.ok(cEntry?.defines.includes("PLATFORM=HW"), "C entry should have PLATFORM=HW");
+    assert.ok(cppEntry?.defines.includes("CXX_FEATURE=1"), "C++ entry should have CXX_FEATURE=1");
+    assert.ok(!cEntry?.defines.includes("CXX_FEATURE=1"), "C entry must not have C++ defines");
+  });
+
+  test("C entry with explicit -std=c11 in mixed database keeps c language family", () => {
+    const db = [
+      { directory: "/ws", file: "/ws/compat.cpp", command: "g++ -std=c11 -c /ws/compat.cpp" },
+    ];
+    const dbPath = writeTmpDb(db);
+    const result = parseCompileCommandsFile(dbPath, "ctx");
+    // -std takes priority over extension
+    const entry = result?.entriesByFile.get("/ws/compat.cpp");
+    assert.strictEqual(entry?.languageFamily, "c", "-std=c11 should win over .cpp extension");
+  });
+
+  test("real primary core fixture for hw target has files with differing language families", () => {
+    const fixturePath = primaryCoreFixturePath();
+    const result = parseCompileCommandsFile(fixturePath, "T2T1::hw::core");
+    const cEntry = result?.entriesByFile.get("/workspace/core/embed/main.c");
+    const cppEntry = result?.entriesByFile.get("/workspace/core/embed/crypto/sha256.cpp");
+    assert.strictEqual(cEntry?.languageFamily, "c");
+    assert.strictEqual(cppEntry?.languageFamily, "cpp");
+  });
+
+  test("emu fixture context key encodes _emu target suffix semantics", () => {
+    const fixturePath = emuCoreFixturePath();
+    const result = parseCompileCommandsFile(fixturePath, "T2T1::emu::core");
+    assert.strictEqual(result?.contextKey, "T2T1::emu::core");
+    // Emu fixture adds EMULATOR=1
+    const mainEntry = result?.entriesByFile.get("/workspace/core/embed/main.c");
+    assert.ok(mainEntry?.defines.includes("EMULATOR=1"), "emu entries should have EMULATOR=1");
+  });
+});
