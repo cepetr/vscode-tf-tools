@@ -14,6 +14,14 @@
 - **Scope Guard**: This feature includes showing excluded-file state in the explorer and editors, applying optional explorer graying and optional editor overlays, honoring excluded-file file-name and folder-scope settings, and refreshing those surfaces when the active configuration or excluded-file inputs change. This feature consumes compile-database inclusion data already produced by the IntelliSense slice. It excludes new compile-commands resolution, cpptools provider behavior, compile-database parsing rules, compile-commands artifact status UI, build/clippy/check/clean actions, Flash/Upload actions, Debug launch, and any new manifest-validation or artifact-resolution rules.
 - **Critical Informal Details**: Excluded-file visibility must use inclusion data from the active compile database for the currently selected build context; a file is marked only when it is outside the active compile database and also matches the configured file-name and folder-scope rules; the explorer must show an exclusion cross badge and may gray entries only when the corresponding preference is enabled; open editors may show a first-line warning overlay only when the corresponding preference is enabled; the tooltip and overlay text must explain that the file is not included in the active build configuration; excluded-file state refreshes on activation, configuration changes, successful builds, explicit refresh, workspace changes, manifest changes, artifact-path changes, and excluded-file setting changes; stale excluded-file markers must not remain after the active context or inclusion data changes.
 
+## Clarifications
+
+### Session 2026-04-04
+
+- Q: How should excluded-file scope behave when `fileNamePatterns` or `folderGlobs` is empty? → A: Treat an empty list as disabling excluded-file marking for that dimension, so no files are marked until that list is populated again.
+- Q: How should filename and folder matching work? → A: `fileNamePatterns` matches basename only, using name plus extension with no subpath globbing; matching is case-sensitive; `folderGlobs` may be absolute or relative to the VS Code workspace root.
+- Q: How should path separators work in glob matching? → A: Use `/` separators in configured patterns and normalize candidate paths to `/` before matching.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - See Excluded Files In The Explorer (Priority: P1)
@@ -29,8 +37,9 @@ As a firmware developer, I want files outside the active build configuration to 
 1. **Given** a file is outside the active compile database and matches the configured file-name and folder-scope rules, **When** the explorer renders that file, **Then** the file shows an exclusion cross badge.
 2. **Given** a file is present in the active compile database, **When** the explorer renders that file, **Then** the file does not show an excluded-file badge.
 3. **Given** a file is outside the active compile database but does not match the configured file-name patterns or folder globs, **When** the explorer renders that file, **Then** the file does not show excluded-file markers.
-4. **Given** `tfTools.excludedFiles.grayInTree` is enabled and a file is marked as excluded, **When** the explorer renders that file, **Then** the file appears grayed in addition to showing the exclusion badge.
-5. **Given** `tfTools.excludedFiles.grayInTree` is disabled and a file is marked as excluded, **When** the explorer renders that file, **Then** the file keeps normal tree coloring while still showing the exclusion badge.
+4. **Given** a file's basename matches a configured `fileNamePatterns` entry but only its parent path would match a pattern containing subpath segments, **When** excluded-file scope is evaluated, **Then** the file-name pattern match uses basename only and ignores subpath globbing.
+5. **Given** `tfTools.excludedFiles.grayInTree` is enabled and a file is marked as excluded, **When** the explorer renders that file, **Then** the file appears grayed in addition to showing the exclusion badge.
+6. **Given** `tfTools.excludedFiles.grayInTree` is disabled and a file is marked as excluded, **When** the explorer renders that file, **Then** the file keeps normal tree coloring while still showing the exclusion badge.
 
 ---
 
@@ -70,6 +79,11 @@ As a firmware developer, I want excluded-file markers to update automatically wh
 
 - A file matches the configured file-name patterns but falls outside every configured folder glob.
 - A file falls under a configured folder glob but does not match any configured file-name pattern.
+- `tfTools.excludedFiles.fileNamePatterns` or `tfTools.excludedFiles.folderGlobs` is empty.
+- A `fileNamePatterns` entry includes path segments even though only basename matching is supported.
+- A `folderGlobs` entry is expressed as an absolute path in one workspace and as a workspace-relative path in another.
+- Two paths differ only by letter case.
+- A path originates from a platform that uses `\` separators.
 - The user disables explorer graying or editor overlays while excluded markers are already visible.
 - The active configuration changes from one compile database to another where the same file moves from excluded to included, or from included to excluded.
 - The active compile-database input becomes unavailable after markers were previously shown.
@@ -82,6 +96,12 @@ As a firmware developer, I want excluded-file markers to update automatically wh
 
 - **FR-001**: The system MUST determine excluded-file visibility from the active compile-database inclusion data for the currently selected build configuration.
 - **FR-002**: The system MUST mark a file as excluded only when all of the following are true: the file is not included in the active compile database, the file matches at least one configured file-name pattern from `tfTools.excludedFiles.fileNamePatterns`, and the file matches at least one configured folder glob from `tfTools.excludedFiles.folderGlobs`.
+- **FR-002A**: If `tfTools.excludedFiles.fileNamePatterns` is empty, or if `tfTools.excludedFiles.folderGlobs` is empty, the system MUST treat that empty list as disabling excluded-file marking for that dimension and MUST NOT mark any files excluded until the list is populated again.
+- **FR-002B**: The system MUST evaluate `tfTools.excludedFiles.fileNamePatterns` against the file basename only, including name and extension, and MUST NOT support subpath globbing in `fileNamePatterns`.
+- **FR-002C**: The system MUST evaluate excluded-file matching case-sensitively.
+- **FR-002D**: The system MUST allow `tfTools.excludedFiles.folderGlobs` entries to be expressed either as absolute paths or as paths relative to the VS Code workspace root.
+- **FR-002E**: The system MUST interpret configured `fileNamePatterns` and `folderGlobs` using `/` as the path separator in glob patterns.
+- **FR-002F**: Before evaluating excluded-file matching, the system MUST normalize candidate file paths to use `/` separators.
 - **FR-003**: The system MUST show an exclusion cross badge in the explorer for every file that meets the excluded-file conditions.
 - **FR-004**: When `tfTools.excludedFiles.grayInTree` is enabled, the system MUST gray excluded files in the explorer in addition to showing the exclusion badge.
 - **FR-005**: When `tfTools.excludedFiles.grayInTree` is disabled, the system MUST continue to show the exclusion badge for excluded files without applying grayed explorer styling.
@@ -117,6 +137,15 @@ As a firmware developer, I want excluded-file markers to update automatically wh
 - **Trigger**: A file is outside the active compile database but falls outside the configured marker scope.
   - **User-visible response**: No excluded-file badge, graying, or overlay is shown for that file.
   - **Persistent signal**: No persistent signal required.
+- **Trigger**: `tfTools.excludedFiles.fileNamePatterns` or `tfTools.excludedFiles.folderGlobs` is empty.
+  - **User-visible response**: No files are marked excluded until the emptied list is populated again.
+  - **Persistent signal**: No persistent signal required.
+- **Trigger**: A `fileNamePatterns` entry relies on subpath globbing rather than basename matching.
+  - **User-visible response**: The entry does not widen matching beyond basename comparison, so files are marked only when their basename itself matches.
+  - **Persistent signal**: No persistent signal required.
+- **Trigger**: A candidate path originates from a platform that uses `\` separators.
+  - **User-visible response**: Excluded-file matching behaves the same as on `/`-separator platforms because candidate paths are normalized before evaluation.
+  - **Persistent signal**: No persistent signal required.
 - **Trigger**: An excluded-file visibility setting changes while markers are already visible.
   - **User-visible response**: Explorer and editor surfaces update to match the new preference or scope rules without requiring a restart.
   - **Persistent signal**: No persistent signal required.
@@ -138,3 +167,6 @@ As a firmware developer, I want excluded-file markers to update automatically wh
 - The existing refresh flow can trigger excluded-file recomputation after activation, successful builds, configuration changes, manifest changes, workspace changes, and explicit refresh.
 - Resource-scoped excluded-file settings already exist with defaults defined in the informal spec, including `grayInTree` and `showEditorOverlay` defaulting to `true`, `fileNamePatterns` including `*.c`, and `folderGlobs` including the firmware source folders.
 - If active compile-database inclusion data is unavailable, clearing stale excluded-file state is preferable to presenting warnings based on an older build context.
+- Empty excluded-file scope lists are treated as an intentional configuration that disables excluded-file marking until the user provides at least one value in each required list.
+- Users may configure `folderGlobs` using either absolute paths or workspace-relative paths, but `fileNamePatterns` are intended only for basename matching.
+- Glob patterns are written with `/` separators even on platforms whose native filesystem separator is `\`.
