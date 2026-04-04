@@ -36,6 +36,7 @@ import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { applyProviderSettingFix } from "./intellisense/cpptools-provider";
 import { ExcludedFilesService } from "./intellisense/excluded-files-service";
 import { ExcludedFileDecorationsProvider } from "./ui/excluded-file-decorations";
+import { ExcludedFileOverlaysManager } from "./ui/excluded-file-overlays";
 import { readExcludedFilesSettings, ExcludedFilesSettings } from "./workspace/settings";
 
 let _manifestService: ManifestService | undefined;
@@ -48,6 +49,7 @@ let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 let _intelliSenseService: IntelliSenseService | undefined;
 let _excludedFilesService: ExcludedFilesService | undefined;
 let _excludedFileDecorations: ExcludedFileDecorationsProvider | undefined;
+let _excludedFileOverlays: ExcludedFileOverlaysManager | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
@@ -253,9 +255,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Excluded-file visibility services (US1: Explorer badges, US2: editor overlays) ---
   _excludedFilesService = new ExcludedFilesService();
   _excludedFileDecorations = new ExcludedFileDecorationsProvider();
+  _excludedFileOverlays = new ExcludedFileOverlaysManager();
   context.subscriptions.push(
     { dispose: () => { _excludedFilesService?.dispose(); _excludedFilesService = undefined; } },
     { dispose: () => { _excludedFileDecorations?.dispose(); _excludedFileDecorations = undefined; } },
+    { dispose: () => { _excludedFileOverlays?.dispose(); _excludedFileOverlays = undefined; } },
     vscode.window.registerFileDecorationProvider(_excludedFileDecorations)
   );
 
@@ -263,6 +267,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     _excludedFilesService.onDidUpdateSnapshot((snapshot) => {
       _excludedFileDecorations?.handleSnapshot(snapshot);
+      _excludedFileOverlays?.handleSnapshot(snapshot);
+    })
+  );
+
+  // Re-apply overlays whenever new editors become visible.
+  context.subscriptions.push(
+    vscode.window.onDidChangeVisibleTextEditors(() => {
+      _excludedFileOverlays?.applyToVisibleEditors();
     })
   );
 
@@ -331,6 +343,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       if (
         e.affectsConfiguration("tfTools.excludedFiles.grayInTree", workspaceFolder.uri) ||
+        e.affectsConfiguration("tfTools.excludedFiles.showEditorOverlay", workspaceFolder.uri) ||
         e.affectsConfiguration("tfTools.excludedFiles.fileNamePatterns", workspaceFolder.uri) ||
         e.affectsConfiguration("tfTools.excludedFiles.folderGlobs", workspaceFolder.uri)
       ) {
@@ -572,6 +585,8 @@ export function deactivate(): void {
   _excludedFilesService = undefined;
   _excludedFileDecorations?.dispose();
   _excludedFileDecorations = undefined;
+  _excludedFileOverlays?.dispose();
+  _excludedFileOverlays = undefined;
   _manifestState = undefined;
   _activeConfig = undefined;
   _resolvedOptions = [];
