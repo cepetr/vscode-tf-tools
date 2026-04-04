@@ -69,7 +69,7 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T014 [P] [US2] Add unit tests for editor overlay state selection and clearing behavior in `src/test/unit/ui/excluded-file-overlays.test.ts`
+- [X] T014 [P] [US2] Add unit tests for editor overlay state selection and clearing behavior in `src/test/unit/ui/excluded-file-overlays.test.ts`
 - [ ] T015 [P] [US2] Extend integration coverage for first-line overlay rendering, hover text, and `tfTools.excludedFiles.showEditorOverlay` toggling in `src/test/integration/excluded-file-visibility.integration.test.ts`
 
 ### Implementation for User Story 2
