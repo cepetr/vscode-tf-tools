@@ -99,6 +99,96 @@ export type RefreshTrigger =
   | "manifest-change"
   | "artifacts-path-change";
 
+// ---------------------------------------------------------------------------
+// Parsed compile-commands entry
+// ---------------------------------------------------------------------------
+
+/**
+ * One source-file record parsed eagerly from the active compile database.
+ * Used as the indexed unit for per-file cpptools configuration delivery.
+ */
+export interface ParsedCompileEntry {
+  /** Normalized absolute source-file path — deduplication key for provider lookup. */
+  readonly filePath: string;
+  /** Normalized absolute entry working directory. */
+  readonly directory: string;
+  /** Resolved compiler executable path or name (first token of the command). */
+  readonly compilerPath: string;
+  /** Ordered flagged compile arguments after the compiler token and source file. */
+  readonly arguments: ReadonlyArray<string>;
+  /** Resolved include-search paths in declaration order (from -I flags). */
+  readonly includePaths: ReadonlyArray<string>;
+  /** Preprocessor definitions collected from -D flags. */
+  readonly defines: ReadonlyArray<string>;
+  /** Resolved forced-include paths from -include flags. */
+  readonly forcedIncludes: ReadonlyArray<string>;
+  /** Inferred language family for this entry. */
+  readonly languageFamily: "c" | "cpp";
+  /**
+   * Inferred language standard, e.g. "c11" or "c++17",
+   * or undefined when no -std= flag is present.
+   */
+  readonly standard: string | undefined;
+  /** Original zero-based position in the compile database for first-entry-wins tie-breaking. */
+  readonly rawIndex: number;
+}
+
+// ---------------------------------------------------------------------------
+// Browse configuration snapshot
+// ---------------------------------------------------------------------------
+
+/**
+ * Workspace-level cpptools browse configuration derived from the eagerly
+ * parsed compile-database index.
+ */
+export interface BrowseConfigurationSnapshot {
+  /** De-duplicated union of resolved include paths across indexed entries, in first-seen order. */
+  readonly browsePaths: ReadonlyArray<string>;
+  /**
+   * Compiler path from the first indexed entry that provides one.
+   * Used as the representative compiler for browse mode.
+   */
+  readonly compilerPath: string | undefined;
+  /** Normalized compiler arguments from the same representative entry. */
+  readonly compilerArgs: ReadonlyArray<string>;
+}
+
+// ---------------------------------------------------------------------------
+// Provider payload
+// ---------------------------------------------------------------------------
+
+/**
+ * Complete parsed state ready to be applied to the cpptools provider.
+ * Carries the indexed entries and browse snapshot derived from one refresh cycle.
+ */
+export interface ProviderPayload {
+  /** Normalized absolute path of the source compile-commands file. */
+  readonly artifactPath: string;
+  /** Active-configuration context key that produced this payload. */
+  readonly contextKey: string;
+  /** Indexed entries keyed by normalized absolute filePath. */
+  readonly entriesByFile: ReadonlyMap<string, ParsedCompileEntry>;
+  /** Workspace browse configuration derived from all indexed entries. */
+  readonly browseSnapshot: BrowseConfigurationSnapshot;
+}
+
+// ---------------------------------------------------------------------------
+// Provider workspace-setting fix payload
+// ---------------------------------------------------------------------------
+
+/**
+ * Parameters for the one-step workspace-setting fix applied when cpptools
+ * is installed but another provider is configured.
+ */
+export interface ProviderSettingFix {
+  /** Configuration section to update (C_Cpp). */
+  readonly section: string;
+  /** Setting key within the section (default.configurationProvider). */
+  readonly key: string;
+  /** Correct value to write (cepetr.tf-tools). */
+  readonly correctValue: string;
+}
+
 /** One event that requires IntelliSense recomputation. */
 export interface IntelliSenseRefreshRequest {
   /** What caused the refresh. */

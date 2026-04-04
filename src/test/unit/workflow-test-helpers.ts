@@ -6,6 +6,7 @@
  */
 
 import * as path from "path";
+import * as fs from "fs";
 import * as vscode from "vscode";
 import {
   ManifestStateLoaded,
@@ -217,4 +218,24 @@ export function emuCoreFixturePath(): string {
 /** Shorthand for the T2T1/prodtest/hw compile-commands fixture. */
 export function prodtestFixturePath(): string {
   return compileCommandsFixturePath("model-t", "compile_commands_prodtest");
+}
+
+// ---------------------------------------------------------------------------
+// Compile-commands JSON fixture loader
+//
+// Reads the raw JSON array from a compile-commands fixture file and returns
+// it parsed. Tests can use this to verify parser output against the same data.
+// ---------------------------------------------------------------------------
+
+export type RawCompileEntry = {
+  directory: string;
+  command?: string;
+  arguments?: string[];
+  file: string;
+};
+
+/** Loads and parses a compile-commands JSON file at the given path. */
+export function loadCompileCommandsFixture(fixturePath: string): RawCompileEntry[] {
+  const raw = fs.readFileSync(fixturePath, "utf-8");
+  return JSON.parse(raw) as RawCompileEntry[];
 }
