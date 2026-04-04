@@ -38,7 +38,7 @@
 <!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
 
 [SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, workspace-relative file references in generated artifacts, reconciliation against informal specs, etc. -->
+<!-- Example: Code review requirements, testing gates, deployment approval process, workspace-relative file references in generated artifacts, task-prefixed implementation commits, reconciliation against informal specs, etc. -->
 
 ## Governance
 <!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->

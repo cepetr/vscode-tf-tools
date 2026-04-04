@@ -253,5 +253,8 @@ With multiple developers:
 - Verify tests fail before implementing
 - Complete and commit one task at a time; do not batch multiple tasks into a
   single commit
+- Implementation-phase commit subjects should use `T001: concise description`
+  and only use interval prefixes such as `T002-T003:` for explicitly approved
+  multi-task commits
 - Stop at any checkpoint to validate story independently
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence

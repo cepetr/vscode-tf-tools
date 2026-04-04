@@ -156,7 +156,11 @@ only for tool inputs or for references outside the workspace.
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Per-task completion discipline**: After each finished task, update
      `tasks.md` to mark it as `[X]`, validate the change, and create one
-     descriptive git commit before proceeding
+     descriptive git commit before proceeding. The commit subject MUST start
+     with the completed task ID, a colon, and a concise summary, for example
+     `T001: add manifest validation`. If the user explicitly authorizes a
+     multi-task exception, the commit subject MUST use an inclusive interval
+     such as `T002-T003: align task fixtures`.
    - **Validation checkpoints**: Verify each phase completion before proceeding
   - **Critical detail checkpoints**: Verify the implementation still matches the concrete informal-spec details called out in spec.md and plan.md before marking a task complete
 
