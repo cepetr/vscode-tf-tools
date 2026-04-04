@@ -561,6 +561,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  // Trigger IntelliSense refresh when workspace folders change so excluded-file
+  // candidate paths are re-evaluated against the updated workspace root (US3).
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      _intelliSenseService?.scheduleRefresh("workspace-change");
+    })
+  );
+
   // --- Start manifest service (loads and begins watching) ---
   await _manifestService.start();
 
