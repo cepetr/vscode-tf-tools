@@ -53,8 +53,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [P] [US1] Implement basename-only, case-sensitive excluded-file matching and normalized snapshot generation in `src/intellisense/excluded-files-service.ts`
-- [ ] T011 [P] [US1] Implement Explorer `FileDecorationProvider` badge, tooltip, and optional gray color behavior in `src/ui/excluded-file-decorations.ts`
+- [X] T010 [P] [US1] Implement basename-only, case-sensitive excluded-file matching and normalized snapshot generation in `src/intellisense/excluded-files-service.ts`
+- [X] T011 [P] [US1] Implement Explorer `FileDecorationProvider` badge, tooltip, and optional gray color behavior in `src/ui/excluded-file-decorations.ts`
 - [ ] T012 [US1] Register Explorer excluded-file decorations and connect `tfTools.excludedFiles.grayInTree`, `tfTools.excludedFiles.fileNamePatterns`, and `tfTools.excludedFiles.folderGlobs` to refresh handling in `src/extension.ts`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable from the Explorer.
