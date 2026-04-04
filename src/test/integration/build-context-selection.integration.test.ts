@@ -259,3 +259,154 @@ suite("ConfigurationTreeProvider – normalization integration", () => {
     assert.strictEqual(componentHeader.description, "Core");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Suite: IntelliSense artifact state in Build Artifacts section (T014)
+// ---------------------------------------------------------------------------
+
+import {
+  CompileCommandsArtifactItem,
+  PlaceholderItem,
+} from "../../ui/configuration-tree";
+import { ActiveCompileCommandsArtifact } from "../../intellisense/intellisense-types";
+
+function getBuildArtifactsChildren(
+  provider: ConfigurationTreeProvider
+): vscode.TreeItem[] {
+  const top = provider.getChildren() as vscode.TreeItem[];
+  const artifactsSection = top.find(
+    (item) => item instanceof SectionItem && (item as SectionItem).sectionId === "build-artifacts"
+  ) as SectionItem;
+  assert.ok(artifactsSection, "build-artifacts section not found");
+  return provider.getChildren(artifactsSection) as vscode.TreeItem[];
+}
+
+function makeMissingArtifact(
+  overrides: Partial<ActiveCompileCommandsArtifact> = {}
+): ActiveCompileCommandsArtifact {
+  return {
+    path: "/workspace/build/model-t/compile_commands_core.cc.json",
+    exists: false,
+    status: "missing",
+    missingReason: "Expected compile-commands artifact not found.",
+    contextKey: "T2T1::hw::core",
+    ...overrides,
+  };
+}
+
+function makeValidArtifact(
+  overrides: Partial<ActiveCompileCommandsArtifact> = {}
+): ActiveCompileCommandsArtifact {
+  return {
+    path: "/workspace/build/model-t/compile_commands_core.cc.json",
+    exists: true,
+    status: "valid",
+    contextKey: "T2T1::hw::core",
+    ...overrides,
+  };
+}
+
+suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  test("shows placeholder when no artifact has been resolved yet", () => {
+    const children = getBuildArtifactsChildren(provider);
+    assert.ok(children[0] instanceof PlaceholderItem, "expected PlaceholderItem before any artifact update");
+  });
+
+  test("shows CompileCommandsArtifactItem after updateArtifact with valid artifact", () => {
+    provider.updateArtifact(makeValidArtifact());
+    const children = getBuildArtifactsChildren(provider);
+    assert.strictEqual(children.length, 1);
+    assert.ok(children[0] instanceof CompileCommandsArtifactItem, "expected CompileCommandsArtifactItem");
+    const item = children[0] as CompileCommandsArtifactItem;
+    assert.strictEqual(item.description, "valid");
+  });
+
+  test("shows CompileCommandsArtifactItem with missing status after updateArtifact", () => {
+    provider.updateArtifact(makeMissingArtifact());
+    const children = getBuildArtifactsChildren(provider);
+    assert.strictEqual(children.length, 1);
+    assert.ok(children[0] instanceof CompileCommandsArtifactItem);
+    const item = children[0] as CompileCommandsArtifactItem;
+    assert.strictEqual(item.description, "missing");
+  });
+
+  test("tooltip for valid artifact includes the expected path", () => {
+    const artifact = makeValidArtifact({ path: "/build/model-t/compile_commands_core.cc.json" });
+    provider.updateArtifact(artifact);
+    const children = getBuildArtifactsChildren(provider);
+    const item = children[0] as CompileCommandsArtifactItem;
+    assert.ok(
+      String(item.tooltip).includes("/build/model-t/compile_commands_core.cc.json"),
+      `tooltip should include path, got: ${item.tooltip}`
+    );
+  });
+
+  test("tooltip for missing artifact includes the missing reason", () => {
+    const artifact = makeMissingArtifact({ missingReason: "Artifact not found at expected path." });
+    provider.updateArtifact(artifact);
+    const children = getBuildArtifactsChildren(provider);
+    const item = children[0] as CompileCommandsArtifactItem;
+    assert.ok(
+      String(item.tooltip).includes("Artifact not found"),
+      `tooltip should include missing reason, got: ${item.tooltip}`
+    );
+  });
+
+  test("updateArtifact fires tree data change event", (done) => {
+    const sub = provider.onDidChangeTreeData(() => {
+      sub.dispose();
+      done();
+    });
+    provider.updateArtifact(makeValidArtifact());
+  });
+
+  test("switching from valid to null artifact reverts to placeholder", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateArtifact(null);
+    const children = getBuildArtifactsChildren(provider);
+    assert.ok(children[0] instanceof PlaceholderItem, "expected placeholder after null artifact update");
+  });
+
+  test("compile-commands artifact path uses artifact-folder, not model id", () => {
+    // The artifact path should be constructed from artifact-folder, not from the model id.
+    const artifact = makeValidArtifact({
+      path: "/artifacts/model-t/compile_commands_core.cc.json",
+      contextKey: "T2T1::hw::core",
+    });
+    provider.updateArtifact(artifact);
+    const children = getBuildArtifactsChildren(provider);
+    const item = children[0] as CompileCommandsArtifactItem;
+    assert.ok(
+      String(item.tooltip).includes("model-t"),
+      `path should contain artifact-folder 'model-t', not model id`
+    );
+    assert.ok(
+      !String(item.tooltip).includes("T2T1"),
+      `path should not contain model id 'T2T1'`
+    );
+  });
+
+  test("artifact suffix is reflected in the compile-commands path", () => {
+    const artifact = makeValidArtifact({
+      path: "/artifacts/model-t/compile_commands_core_emu.cc.json",
+      contextKey: "T2T1::emu::core",
+    });
+    provider.updateArtifact(artifact);
+    const children = getBuildArtifactsChildren(provider);
+    const item = children[0] as CompileCommandsArtifactItem;
+    assert.ok(
+      String(item.tooltip).includes("compile_commands_core_emu"),
+      `path should contain artifact basename with suffix, got: ${item.tooltip}`
+    );
+  });
+});

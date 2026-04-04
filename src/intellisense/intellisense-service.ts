@@ -197,7 +197,7 @@ export class IntelliSenseService {
   private async _clearProviderState(): Promise<void> {
     if (
       this._lastRuntimeState.providerState === "inactive" &&
-      this._lastRuntimeState.appliedArtifactPath === null
+      this._adapter.getLastAppliedPath() === null
     ) {
       // Nothing was ever applied — nothing to clear.
       return;
