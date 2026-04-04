@@ -251,10 +251,12 @@ With multiple developers:
 - State the selected informal-spec slice at the top of the file and reject scope drift into other slices
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing
-- Complete and commit one task at a time; do not batch multiple tasks into a
-  single commit
+- Complete one task at a time. Create automatic commits only after the task is
+  verified and marked complete in `tasks.md`. Do not batch multiple tasks into
+  a single commit unless an approved exception explicitly allows it
 - Implementation-phase commit subjects should use `T001: concise description`
-  and only use interval prefixes such as `T002-T003:` for explicitly approved
-  multi-task commits
+  for single-task commits, `T002-T003:` for explicitly approved contiguous
+  multi-task commits, `T001,T007,T009:` for explicitly approved non-contiguous
+  multi-task commits, and mixed forms such as `T001,T003-T006:` when approved
 - Stop at any checkpoint to validate story independently
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence

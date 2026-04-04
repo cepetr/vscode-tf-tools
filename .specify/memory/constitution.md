@@ -1,19 +1,17 @@
 <!--
 Sync Impact Report
-Version change: 1.4.0 -> 1.5.0
+Version change: 1.5.1 -> 1.5.2
 Modified principles:
-- None (core principle titles unchanged; Delivery Workflow materially expanded)
+- None (core principle titles unchanged; Delivery Workflow commit timing and exception rules clarified)
 Added sections:
 - None
 Removed sections:
 - None
 Templates requiring updates:
 - ✅ .specify/templates/constitution-template.md
-- ✅ .specify/templates/spec-template.md
-- ✅ .specify/templates/plan-template.md
 - ✅ .specify/templates/tasks-template.md
 - ✅ .github/agents/speckit.implement.agent.md
-- ✅ .github/agents/speckit.tasks.agent.md
+- ✅ .specify/templates/commands/*.md not present in this repository
 Follow-up TODOs:
 - None
 -->
@@ -117,13 +115,17 @@ concise code and justified complexity keep it maintainable.
 	used only for tool execution, script parsing, or references outside the
 	workspace.
 - When an automated agent executes `tasks.md`, it MUST complete exactly one task
-	at a time, mark that task complete in `tasks.md`, and create one descriptive
-	git commit before starting the next task. Grouping multiple tasks into a
-	single commit is prohibited unless this constitution is amended. Implementation
-	phase commit subjects MUST start with the task identifier followed by a colon
-	and a concise description, for example `T001: add manifest validation`. If an
-	approved exception spans multiple tasks in one commit, the subject MUST use an
-	inclusive interval prefix such as `T002-T003: align task fixtures`.
+	at a time. Automatic commits MUST be created only after the completed task has
+	been verified, including required tests or validation steps, and after
+	`tasks.md` has been updated to mark that task finished. The default rule is
+	one task per commit; grouping multiple tasks into a single commit is prohibited
+	unless an approved exception explicitly allows it. Implementation-phase commit
+	subjects MUST begin with task identifiers followed by a colon and a concise
+	description. A single-task commit MUST use `T001:`. An approved contiguous
+	multi-task exception MUST use an inclusive interval such as `T003-T006:`. An
+	approved non-contiguous multi-task exception MUST use a comma-separated list
+	such as `T001,T007,T009:`. Approved mixed exceptions MAY combine both forms,
+	for example `T001,T003-T006:`.
 - Before a task is marked complete, self-review MUST compare the changed code
 	against the selected informal-spec slice and confirm that the critical
 	details were implemented as specified, not merely approximated.
@@ -142,4 +144,4 @@ requirements, and PATCH for clarifications that do not change project obligation
 Compliance review is required for every plan, task list, and pull request that
 changes behavior, tooling, or development workflow.
 
-**Version**: 1.5.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-04
+**Version**: 1.5.2 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-04
