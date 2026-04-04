@@ -6,6 +6,7 @@
  */
 
 import * as path from "path";
+import * as fs from "fs";
 import * as vscode from "vscode";
 import {
   ManifestStateLoaded,
@@ -178,4 +179,63 @@ export function makeIntelliSenseLoadedState(
     loadedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Compile-commands fixture paths
+//
+// Used by parser and provider unit tests to locate test fixtures on disk.
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the absolute path to the compile-commands fixture file for the
+ * given model, component, and optional suffix.
+ * Mirrors the artifact-path formula used by `deriveArtifactPath`.
+ */
+export function compileCommandsFixturePath(
+  artifactFolder: string,
+  artifactName: string,
+  artifactSuffix: string = ""
+): string {
+  return path.resolve(
+    __dirname,
+    "../../../test-fixtures/workspaces/intellisense-valid/artifacts",
+    artifactFolder,
+    `${artifactName}${artifactSuffix}.cc.json`
+  );
+}
+
+/** Shorthand for the primary T2T1/core/hw compile-commands fixture. */
+export function primaryCoreFixturePath(): string {
+  return compileCommandsFixturePath("model-t", "compile_commands_core");
+}
+
+/** Shorthand for the T2T1/core/emu (suffixed) fixture. */
+export function emuCoreFixturePath(): string {
+  return compileCommandsFixturePath("model-t", "compile_commands_core", "_emu");
+}
+
+/** Shorthand for the T2T1/prodtest/hw compile-commands fixture. */
+export function prodtestFixturePath(): string {
+  return compileCommandsFixturePath("model-t", "compile_commands_prodtest");
+}
+
+// ---------------------------------------------------------------------------
+// Compile-commands JSON fixture loader
+//
+// Reads the raw JSON array from a compile-commands fixture file and returns
+// it parsed. Tests can use this to verify parser output against the same data.
+// ---------------------------------------------------------------------------
+
+export type RawCompileEntry = {
+  directory: string;
+  command?: string;
+  arguments?: string[];
+  file: string;
+};
+
+/** Loads and parses a compile-commands JSON file at the given path. */
+export function loadCompileCommandsFixture(fixturePath: string): RawCompileEntry[] {
+  const raw = fs.readFileSync(fixturePath, "utf-8");
+  return JSON.parse(raw) as RawCompileEntry[];
 }

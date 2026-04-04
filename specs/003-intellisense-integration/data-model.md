@@ -34,6 +34,39 @@
   - `status = valid` only when the exact expected path exists
   - a different compile database elsewhere under the artifacts root does not affect this entity
 
+## Parsed Compile-Commands Entry
+
+- **Purpose**: Represents one source-file record parsed eagerly from the active compile database for cpptools provider use.
+- **Fields**:
+  - `filePath`: normalized absolute source-file path
+  - `directory`: normalized absolute entry working directory
+  - `compilerPath`: resolved compiler executable path or executable name
+  - `arguments`: ordered normalized compile arguments after tokenization
+  - `includePath[]`: resolved include-search paths in declaration order
+  - `defines[]`: preprocessor definitions collected from `-D` flags
+  - `forcedInclude[]`: resolved forced-include paths
+  - `languageFamily`: `c` or `cpp`
+  - `standard`: inferred language standard when present
+  - `rawIndex`: original position in the compile database for first-entry-wins tie-breaking
+- **Validation rules**:
+  - `filePath` is the deduplication key for provider lookup
+  - when duplicate `filePath` values occur, the lowest `rawIndex` wins and later entries are ignored for IntelliSense purposes
+  - relative paths are resolved against `directory`
+
+## Browse Configuration Snapshot
+
+- **Purpose**: Represents the workspace-level cpptools browse configuration derived from the eagerly parsed compile-database index.
+- **Fields**:
+  - `browsePath[]`: de-duplicated union of resolved include paths across indexed entries
+  - `compilerPath`: compiler path from the first indexed entry that provides one
+  - `compilerArgs[]`: normalized compiler arguments from the same representative entry
+- **Relationships**:
+  - derived from `Parsed Compile-Commands Entry`
+  - returned by the cpptools provider browse-configuration callback
+- **Validation rules**:
+  - `browsePath[]` preserves first-seen order while removing duplicates
+  - representative compiler metadata comes from the first indexed entry so browse configuration is deterministic
+
 ## IntelliSense Provider Readiness
 
 - **Purpose**: Represents whether the extension can currently provide IntelliSense through cpptools.

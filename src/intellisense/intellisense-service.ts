@@ -11,9 +11,15 @@ import {
   makeContextKey,
 } from "./artifact-resolution";
 import { checkProviderReadiness, CpptoolsProviderAdapter } from "./cpptools-provider";
+import { parseCompileCommandsFile } from "./compile-commands-parser";
 import { ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
-import { log, logWarning } from "../observability/log-channel";
+import {
+  log,
+  logMissingArtifact,
+  logProviderWarning,
+  logProviderRecovery,
+} from "../observability/log-channel";
 
 // ---------------------------------------------------------------------------
 // Callbacks
@@ -35,6 +41,7 @@ export type IntelliSenseRefreshCallback = (
  * Responsibilities:
  *  - Serialize refresh requests so concurrent triggers collapse to the latest.
  *  - Resolve the active compile-commands artifact (no fallback).
+ *  - Eagerly parse the active `.cc.json` before applying provider state.
  *  - Check provider readiness and emit persistent warnings via the log channel.
  *  - Apply or clear IntelliSense configuration through the cpptools adapter.
  *  - Publish updated artifact and readiness state to registered callbacks.
@@ -59,7 +66,7 @@ export class IntelliSenseService {
    */
   private _lastWarnedState: string = "none";
 
-  /** Pending refresh promise for serialization. */
+  /** Pending refresh promise for serialization (latest-refresh-wins). */
   private _pendingRefresh: Promise<void> | null = null;
 
   private readonly _onDidRefresh = new vscode.EventEmitter<
@@ -105,15 +112,19 @@ export class IntelliSenseService {
     return this._lastReadiness;
   }
 
+  getRuntimeState(): IntelliSenseRuntimeState {
+    return this._lastRuntimeState;
+  }
+
   // ---------------------------------------------------------------------------
   // Refresh
   // ---------------------------------------------------------------------------
 
   /**
    * Schedules an IntelliSense refresh. Concurrent calls are serialized;
-   * if a refresh is already in progress, the next one starts immediately
-   * after the current one completes. This ensures the final state always
-   * reflects the latest active configuration (FR-004).
+   * each refresh starts immediately after the previous one completes.
+   * This ensures the final state always reflects the latest active
+   * configuration (FR-004, latest-refresh-wins).
    */
   scheduleRefresh(trigger: RefreshTrigger): void {
     this._pendingRefresh = (this._pendingRefresh ?? Promise.resolve()).then(
@@ -124,21 +135,29 @@ export class IntelliSenseService {
   private async _doRefresh(trigger: RefreshTrigger): Promise<void> {
     log(`[IntelliSense] Refresh triggered by: ${trigger}`);
 
+    // Ensure the adapter is registered with cpptools. Safe to call multiple times —
+    // the adapter guards against double-registration.
+    void this._adapter.activate();
+
     const readiness = checkProviderReadiness();
     this._lastReadiness = readiness;
 
+    // Emit warning once per state transition; log recovery when returning to ready.
     if (readiness.warningState !== "none") {
-      // Emit warning once per state transition (FR-005B).
       if (readiness.warningState !== this._lastWarnedState) {
-        logWarning(
+        const msg =
           readiness.lastWarningMessage ??
-            "IntelliSense integration is unavailable: see output channel for details."
-        );
+          "IntelliSense integration is unavailable: see output channel for details.";
+        if (readiness.warningState === "wrong-provider") {
+          // Log only — extension.ts surfaces the notification with workspace-setting fix action.
+          log(`[IntelliSense] [WARN] ${msg}`);
+        } else {
+          logProviderWarning(msg);
+        }
         this._lastWarnedState = readiness.warningState;
       }
     } else if (this._lastWarnedState !== "none") {
-      // Transitioning from a warning state back to ready — log recovery.
-      log("[IntelliSense] Provider prerequisites satisfied. IntelliSense is now active.");
+      logProviderRecovery();
       this._lastWarnedState = "none";
     }
 
@@ -147,7 +166,7 @@ export class IntelliSenseService {
 
     if (!manifest || !config) {
       // No active context — clear any previously applied state.
-      await this._clearProviderState();
+      this._clearProviderState();
       this._lastArtifact = null;
       this._onDidRefresh.fire([null, readiness]);
       return;
@@ -167,13 +186,13 @@ export class IntelliSenseService {
     this._lastArtifact = artifact;
 
     if (artifact.status === "missing") {
-      log(`[IntelliSense] Compile-commands artifact missing: ${artifact.missingReason}`);
-      await this._clearProviderState();
+      logMissingArtifact(artifact.path || "(unknown)", artifact.contextKey);
+      this._clearProviderState();
     } else if (readiness.warningState === "none") {
-      await this._applyProviderState(artifact.path, artifact.contextKey);
+      this._applyProviderState(artifact.path, artifact.contextKey);
     } else {
       // Provider not ready even though artifact exists — clear stale state.
-      await this._clearProviderState();
+      this._clearProviderState();
     }
 
     this._onDidRefresh.fire([artifact, readiness]);
@@ -183,44 +202,48 @@ export class IntelliSenseService {
   // Provider state management
   // ---------------------------------------------------------------------------
 
-  private async _applyProviderState(
+  private _applyProviderState(
     artifactPath: string,
     contextKey: string
-  ): Promise<void> {
-    try {
-      await this._adapter.applyCompileCommands(artifactPath);
-      this._lastRuntimeState = {
-        appliedArtifactPath: artifactPath,
-        appliedContextKey: contextKey,
-        clearedAt: null,
-        providerState: "applied",
-      };
-      log(`[IntelliSense] Applied compile-commands: ${artifactPath}`);
-    } catch (err) {
-      log(`[IntelliSense] Failed to apply compile-commands: ${err}`);
+  ): void {
+    // Eagerly parse the active compile database before applying provider state.
+    const payload = parseCompileCommandsFile(artifactPath, contextKey);
+
+    if (!payload) {
+      log(`[IntelliSense] Failed to parse compile-commands: ${artifactPath}`);
+      this._clearProviderState();
+      return;
     }
+
+    this._adapter.applyPayload(payload);
+    this._lastRuntimeState = {
+      appliedArtifactPath: artifactPath,
+      appliedContextKey: contextKey,
+      clearedAt: null,
+      providerState: "applied",
+    };
+    log(
+      `[IntelliSense] Applied compile-commands: ${artifactPath} ` +
+      `(${payload.entriesByFile.size} entries)`
+    );
   }
 
-  private async _clearProviderState(): Promise<void> {
+  private _clearProviderState(): void {
     if (
       this._lastRuntimeState.providerState === "inactive" &&
-      this._adapter.getLastAppliedPath() === null
+      this._adapter.getLastPayload() === undefined
     ) {
       // Nothing was ever applied — nothing to clear.
       return;
     }
-    try {
-      await this._adapter.clearCompileCommands();
-      this._lastRuntimeState = {
-        appliedArtifactPath: null,
-        appliedContextKey: null,
-        clearedAt: new Date(),
-        providerState: "cleared",
-      };
-      log("[IntelliSense] Cleared stale compile-commands configuration.");
-    } catch (err) {
-      log(`[IntelliSense] Failed to clear compile-commands: ${err}`);
-    }
+    this._adapter.clearPayload();
+    this._lastRuntimeState = {
+      appliedArtifactPath: null,
+      appliedContextKey: null,
+      clearedAt: new Date(),
+      providerState: "cleared",
+    };
+    log("[IntelliSense] Cleared stale compile-commands configuration.");
   }
 
   dispose(): void {
@@ -240,3 +263,5 @@ function buildMissingReasonNoInputs(artifactsRoot: string): string {
   }
   return "Cannot resolve the compile-commands artifact: check manifest artifact-folder and artifact-name fields.";
 }
+
+

@@ -9,6 +9,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-04
 - Manifest file for artifact metadata and provider-facing context, workspace state for active model/target/component selection, VS Code resource-scoped settings for manifest and artifacts paths plus provider selection state, and output channel logging for runtime failure reporting (003-intellisense-integration)
 - TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing tree-view implementation in `src/ui/configuration-tree.ts`, Mocha test runner, `@vscode/test-electron` integration harness already present in the repository (001-configuration-experience)
 - No storage changes; this fix affects only derived tree item state (001-configuration-experience)
+- TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml` parser-backed manifest model, Node.js `fs` and `path` APIs, cpptools custom configuration provider API exposed by `ms-vscode.cpptools`, Mocha test runner, `@vscode/test-electron` integration harness (003-intellisense-integration)
+- Workspace state for active model, target, and component selection; resource-scoped VS Code settings for `tfTools.artifactsPath` and `C_Cpp.default.configurationProvider`; manifest file fields for `artifact-folder`, `artifact-name`, and `artifact-suffix`; output-channel logs for persistent warning and duplicate-entry reporting (003-intellisense-integration)
 
 - TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, `yaml` for range-aware manifest parsing, Node.js filesystem APIs, Mocha test runner, `@vscode/test-electron` for integration tests (001-configuration-experience)
 
@@ -28,9 +30,9 @@ npm test && npm run lint
 TypeScript 5.x targeting VS Code 1.110+ desktop extension host: Follow standard conventions
 
 ## Recent Changes
+- 003-intellisense-integration: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml` parser-backed manifest model, Node.js `fs` and `path` APIs, cpptools custom configuration provider API exposed by `ms-vscode.cpptools`, Mocha test runner, `@vscode/test-electron` integration harness
 - 001-configuration-experience: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing tree-view implementation in `src/ui/configuration-tree.ts`, Mocha test runner, `@vscode/test-electron` integration harness already present in the repository
 - 001-configuration-experience: Added [VS Code Extension API, existing extension libraries, and feature-specific packages]
-- 003-intellisense-integration: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml` parser for range-aware manifest parsing, Node.js `fs`/`path` APIs, existing diagnostics and output-channel helpers, Mocha test runner, `@vscode/test-electron` for integration tests
 
 
 <!-- MANUAL ADDITIONS START -->

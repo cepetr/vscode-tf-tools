@@ -1,0 +1,32 @@
+[
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-gcc -std=c11 -Iembed/include -Iembed/trezorhal/stm32f4/include -DTREZOR_MODEL_T -DCONFIDENTIAL= -Wall -O2 -c embed/main.c",
+    "file": "embed/main.c"
+  },
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-gcc -std=c11 -Iembed/include -DTREZOR_MODEL_T -Wall -O2 -c embed/util.c",
+    "file": "embed/util.c"
+  },
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-g++ -std=c++17 -Iembed/include -Iembed/vendor/nanopb -DTREZOR_MODEL_T -fno-rtti -fno-exceptions -c embed/crypto/sha256.cpp",
+    "file": "embed/crypto/sha256.cpp"
+  },
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-g++ -std=c++17 -Iembed/include -DTREZOR_MODEL_T -fno-rtti -c embed/crypto/rsa.cpp",
+    "file": "embed/crypto/rsa.cpp"
+  },
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-gcc -std=c11 -Iembed/include -DTREZOR_MODEL_T -c embed/io/usb.c",
+    "file": "embed/io/usb.c"
+  },
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-gcc -std=c11 -Iembed/include -DTREZOR_MODEL_T -DDUPLICATE_ENTRY -c embed/main.c",
+    "file": "embed/main.c"
+  }
+]

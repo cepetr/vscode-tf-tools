@@ -1,30 +1,30 @@
 # Implementation Plan: IntelliSense Integration
 
-**Branch**: `003-intellisense-integration` | **Date**: 2026-04-03 | **Spec**: `specs/003-intellisense-integration/spec.md`
+**Branch**: `003-intellisense-integration` | **Date**: 2026-04-04 | **Spec**: `specs/003-intellisense-integration/spec.md`
 **Input**: Feature specification from `specs/003-intellisense-integration/spec.md`
 
 ## Summary
 
-Deliver the third user-visible slice for Trezor Firmware Tools: resolve the active compile-commands artifact from `tfTools.artifactsPath` plus manifest-driven `artifact-folder`, `artifact-name`, and optional `artifact-suffix`, surface that artifact's presence and expected path in the `Build Artifacts` section, integrate with Microsoft C/C++ through a tf-tools custom configuration provider, warn explicitly when provider prerequisites are missing or misconfigured, and refresh IntelliSense deterministically on activation, context changes, successful builds, explicit refresh, and relevant workspace/provider changes. The implementation will extend manifest typing and validation for IntelliSense-specific artifact fields, add a focused IntelliSense service plus cpptools adapter, update the configuration tree and package contributions with a `Refresh IntelliSense` action, and add unit plus integration coverage for artifact resolution, stale-state clearing, provider warnings, refresh triggers, and UI status behavior.
+Bring the IntelliSense slice from scaffolded artifact-path tracking to a real cpptools custom configuration provider implementation. The codebase already resolves the active compile-commands path, shows the `Compile Commands` row, serializes refreshes, and contributes `Trezor: Refresh IntelliSense`; the remaining work is to eagerly parse the active `.cc.json` file, translate entries into cpptools per-file and browse configurations, clear stale provider state when the exact artifact is missing, require the tf-tools provider to be explicitly selected, offer a workspace-setting fix for wrong-provider cases, and add focused unit and integration coverage around entry parsing, translation, provider registration, and failure visibility.
 
 ## Informal Spec Alignment
 
 **Selected Slice**: `3. IntelliSense Integration`
 **Source Anchor**: `Compile-commands resolution, cpptools configuration provider integration, provider warnings, and IntelliSense refresh behavior.`
-**Scope Guard**: This plan includes compile-commands artifact resolution for the active configuration, `Build Artifacts` compile-commands row state and tooltip behavior, cpptools custom-configuration-provider registration and refresh, explicit provider warnings and logging, and the manual `Refresh IntelliSense` surface in both the Configuration view title/overflow and the Command Palette. It explicitly excludes excluded-file explorer badges and overlays, Binary and Map File artifact behavior, Flash/Upload actions, Debug launch, alternate C/C++ providers, and any multi-root workspace behavior.
-**Critical Informal Details**: IntelliSense must always follow the active model, target, and component with no artifact fallback; compile-commands resolution must use `<tfTools.artifactsPath>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`, where `artifact-folder` comes from the selected model, `artifact-name` comes from the selected component, `artifact-suffix` comes from the selected target and defaults to an empty string, and `tfTools.artifactsPath` defaults to `core/build-xtask/artifacts` (resolved relative to the workspace root); missing compile-commands artifacts must show `missing` plus expected-path tooltip but no popup; missing or misconfigured provider prerequisites must produce both visible warnings and persistent log entries; when the expected compile database is missing, previously applied IntelliSense configuration must be cleared rather than left stale; and refresh triggers are limited to activation, active-context changes, successful builds, explicit refresh, relevant settings changes, manifest changes, and provider availability changes.
+**Scope Guard**: This plan includes compile-commands artifact resolution, `Compile Commands` row state and tooltip behavior, cpptools custom configuration provider registration and refresh, compile-database parsing and translation, missing-provider and wrong-provider warnings, the workspace-setting fix for wrong-provider cases, and refresh triggers tied to activation, configuration, manifest, build, and provider changes. It explicitly excludes excluded-file explorer badges and overlays, Binary and Map File behavior, Flash and Upload actions, Debug launch, alternate C/C++ providers, and any multi-root behavior.
+**Critical Informal Details**: IntelliSense must use only the exact active model, target, and component artifact derived from `artifact-folder`, `artifact-name`, and `artifact-suffix`; no fallback artifact or stale provider state is allowed; the provider must eagerly parse the active `.cc.json` file during refresh, normalize entry-relative paths against each entry `directory`, preserve ordered compile flags after the compiler executable token, infer C versus C++ mode per entry from `-std=` first and file/compiler cues second, use first-entry-wins for duplicate source files, expose a `Compile Commands` row tooltip showing the expected path and missing explanation, keep `Trezor: Refresh IntelliSense` available from both the Configuration view title or overflow and the Command Palette, and treat Microsoft C/C++ as the only supported provider; refresh wiring must explicitly cover provider-availability changes, manifest-path changes, manifest-content changes, activation, explicit refresh, successful builds, active-context changes, and `tfTools.artifactsPath` changes; when another configuration provider is active show a visible warning that also offers a workspace-setting fix to switch `C_Cpp.default.configurationProvider` to `cepetr.tf-tools`.
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5.x targeting VS Code 1.110+ desktop extension host
-**Primary Dependencies**: VS Code Extension API, existing `yaml` parser for range-aware manifest parsing, Node.js `fs`/`path` APIs, existing diagnostics and output-channel helpers, Mocha test runner, `@vscode/test-electron` for integration tests
-**Storage**: Manifest file for artifact metadata and provider-facing context, workspace state for active model/target/component selection, VS Code resource-scoped settings for manifest and artifacts paths plus provider selection state, and output channel logging for runtime failure reporting
-**Testing**: Unit tests for manifest IntelliSense-field validation, artifact-path resolution, provider-readiness evaluation, stale-state clearing, and tree artifact-row rendering; integration tests for view-title and Command Palette command availability, compile-commands row updates, refresh triggers, provider warning flows, and no-fallback behavior across active-context changes
-**Target Platform**: VS Code 1.110+ desktop extension host
+**Primary Dependencies**: VS Code Extension API, existing `yaml` parser-backed manifest model, Node.js `fs` and `path` APIs, cpptools custom configuration provider API exposed by `ms-vscode.cpptools`, Mocha test runner, `@vscode/test-electron` integration harness
+**Storage**: Workspace state for active model, target, and component selection; resource-scoped VS Code settings for `tfTools.artifactsPath`, `tfTools.manifestPath`, and `C_Cpp.default.configurationProvider`; manifest file fields for `artifact-folder`, `artifact-name`, and `artifact-suffix`; output-channel logs for persistent warning and missing-artifact reporting
+**Testing**: Unit tests for artifact resolution, compile-database parsing, flag translation, language inference, duplicate handling, provider readiness evaluation, provider-setting fix flow, latest-refresh-wins serialization, and service refresh behavior; integration tests for tree-row state, manual refresh surfaces, missing-artifact clearing, provider warnings, provider-availability changes, manifest-path changes, and active-context path changes
+**Target Platform**: VS Code 1.110+ desktop extension host on single-root workspaces
 **Project Type**: Single-package VS Code extension
-**Performance Goals**: IntelliSense refresh and compile-commands row recomputation should complete without perceptible UI lag for one local workspace and should settle within the spec target of 5 seconds for activation, configuration change, successful build, and manual refresh paths
-**Constraints**: Single-root workspace only, manifest/settings are authoritative, no silent fallback to alternate artifacts or stale IntelliSense state, cpptools is the only supported provider, failures must be visible through notifications and output-channel logging, and the implementation should stay small enough to fit within the existing activation composition pattern
-**Scale/Scope**: One workspace, one active build context, one compile-commands artifact for IntelliSense, one `Build Artifacts` row added to the existing tree view, and one provider integration path through Microsoft C/C++
+**Performance Goals**: Refresh should complete without perceptible UI lag for representative firmware compile databases, and eager parsing must stay bounded to the single active `.cc.json` file rather than scanning the artifact root
+**Constraints**: Single-root workspace only, manifest and settings remain authoritative, no silent fallback to another artifact or provider, warnings and missing-artifact conditions must be visible through notifications and logs, preserve current Build Workflow behavior, and keep provider-facing abstractions small and testable
+**Scale/Scope**: One extension package, one active compile database per workspace, one cpptools provider registration, one Configuration tree surface, and targeted fixture coverage for representative C and C++ compile entries
 
 ## Constitution Check
 
@@ -40,12 +40,14 @@ Deliver the third user-visible slice for Trezor Firmware Tools: resolve the acti
 
 ## Critical Detail Reconciliation
 
-- Enforce manifest-driven artifact resolution in `src/manifest/manifest-types.ts`, `src/manifest/validate-manifest.ts`, and a new IntelliSense resolution module so `artifact-folder`, `artifact-name`, and `artifact-suffix` replace any implicit model-id/component-id artifact naming; validate with unit tests and fixture manifests that cover missing fields and suffix changes.
-- Keep `Build Artifacts` limited to the `Compile Commands` row in `src/ui/configuration-tree.ts`, with `valid`/`missing` status plus expected-path tooltip, and verify with unit tests for row rendering and an integration test that switches active model, component, target, and `tfTools.artifactsPath`.
-- Register `Refresh IntelliSense` in both the Configuration view title/overflow and the Command Palette through `package.json` plus `src/extension.ts`, enforced by integration tests that verify both contribution surfaces remain available.
-- Prevent stale IntelliSense state by clearing any previously applied compile-commands configuration when the expected artifact is missing in a new `src/intellisense/` service layer, enforced by unit tests for refresh behavior and integration tests that remove or relocate the active artifact after it was previously valid.
-- Surface provider-prerequisite failures through `src/observability/log-channel.ts` and user notifications from the IntelliSense service, enforced by integration tests that simulate missing cpptools and wrong active provider configuration.
-- Keep later-slice boundaries intact by leaving Binary and Map File behavior, excluded-file visibility, Flash/Upload, and Debug absent from the implementation plan and from the contract and test matrix.
+- Replace the current cpptools stub in `src/intellisense/cpptools-provider.ts` with a real custom configuration provider boundary, enforced by new unit tests for provider registration, per-file lookups, browse configuration, and wrong-provider workspace-fix behavior.
+- Keep refresh orchestration in `src/intellisense/intellisense-service.ts` but extend it to parse and index the active compile database before notifying cpptools, enforced by unit tests that confirm latest-refresh-wins behavior across serialized refreshes and missing-artifact clearing.
+- Add a focused compile-database parsing and translation module under `src/intellisense/` for tokenization, path normalization, flag preservation, standard detection, and duplicate handling, enforced by new unit tests using mixed C and C++ `.cc.json` fixtures plus duplicate-entry cases.
+- Preserve exact artifact resolution semantics in `src/intellisense/artifact-resolution.ts` and `src/workspace/settings.ts`, enforced by existing artifact-resolution tests plus integration coverage for model, component, target-suffix, and `tfTools.artifactsPath` changes.
+- Wire provider-availability changes and manifest-path changes explicitly through `src/extension.ts` and `src/workspace/settings.ts`, enforced by integration tests that verify those triggers recompute IntelliSense state for the active configuration.
+- Keep the `Compile Commands` row behavior in `src/ui/configuration-tree.ts` aligned with the active expected path and missing explanation only, enforced by existing tree-item tests plus a tooltip regression for the refreshed missing-artifact wording.
+- Surface wrong-provider warnings as both a visible notification and a persistent log entry, and add a one-step workspace-setting fix in `src/extension.ts` or the provider adapter path, enforced by unit tests around configuration writes and an integration test that verifies the fix updates `C_Cpp.default.configurationProvider` for the workspace.
+- Preserve slice boundaries by leaving excluded-file visibility, Binary and Map File actions, Flash and Upload, and Debug code untouched, enforced by scope review in tasks and by not changing unrelated tree sections or command contributions.
 
 ## Project Structure
 
@@ -68,51 +70,49 @@ specs/003-intellisense-integration/
 package.json
 src/
 ├── extension.ts
-├── commands/
-│   └── build-workflow.ts
-├── configuration/
-│   ├── active-config.ts
-│   ├── build-options.ts
-│   └── normalize-config.ts
 ├── intellisense/
 │   ├── artifact-resolution.ts
 │   ├── cpptools-provider.ts
 │   ├── intellisense-service.ts
 │   └── intellisense-types.ts
-├── manifest/
-│   ├── manifest-service.ts
-│   ├── manifest-types.ts
-│   └── validate-manifest.ts
+├── ui/
+│   └── configuration-tree.ts
 ├── observability/
 │   ├── diagnostics.ts
 │   └── log-channel.ts
-├── tasks/
-│   └── build-task-provider.ts
-├── ui/
-│   ├── configuration-tree.ts
-│   └── status-bar.ts
 ├── workspace/
-│   ├── settings.ts
-│   └── workspace-guard.ts
+│   └── settings.ts
 └── test/
-    ├── integration/
-    └── unit/
+
+src/test/
+├── integration/
+│   ├── build-context-selection.integration.test.ts
+│   └── configuration-health.integration.test.ts
+└── unit/
+  ├── workflow/
+  │   ├── intellisense-artifact-resolution.test.ts
+  │   ├── intellisense-provider-readiness.test.ts
+  │   └── intellisense-service.test.ts
+  └── workflow-test-helpers.ts
 
 test-fixtures/
 ├── manifests/
+│   └── intellisense-valid/
 └── workspaces/
+  ├── intellisense-missing-artifact/
+  └── intellisense-valid/
 ```
 
-**Structure Decision**: Keep the current single-package extension layout and add one focused IntelliSense area rather than a broader architecture rewrite. Manifest field extensions remain under `src/manifest/`, settings changes remain under `src/workspace/`, the existing tree provider remains the only UI composition surface, and new IntelliSense behavior should be implemented as a small service/adapter pair under `src/intellisense/` wired from `src/extension.ts`. Tests stay split between focused unit coverage and VS Code integration coverage under the existing `src/test/` layout.
+**Structure Decision**: Keep the existing `src/intellisense/` split and add the missing compile-database parsing and translation logic beside the service and adapter rather than inside `src/extension.ts` or `src/ui/configuration-tree.ts`. `src/extension.ts` remains the composition root that wires refresh triggers and command surfaces, `src/intellisense/intellisense-service.ts` remains the serialized coordinator, `src/intellisense/cpptools-provider.ts` becomes the cpptools boundary, and test coverage stays concentrated in `src/test/unit/workflow/` plus a small number of integration flows. This is the smallest structure that can satisfy the updated cpptools requirements without leaking provider concerns into unrelated UI or workflow modules.
 
 ## Post-Design Constitution Check
 
 - [x] Host compatibility remains limited to a TypeScript VS Code extension for VS Code 1.110+.
-- [x] Design remains within the IntelliSense Integration slice; excluded-file visibility, Binary and Map File behavior, Flash/Upload, Debug launch, alternate providers, and multi-root behavior remain deferred.
-- [x] Manifest data and settings remain the only authority for artifact resolution and provider refresh inputs.
-- [x] The design defines both unit and integration tests before implementation.
-- [x] Failure handling includes notifications for provider readiness issues, output-channel logging for runtime failures, and explicit non-popup artifact-missing UI state in the tree.
-- [x] No complexity exception is required; one focused IntelliSense service plus one provider adapter is sufficient.
+- [x] Design remains within the IntelliSense Integration slice; excluded-file visibility, Binary and Map File behavior, Flash and Upload, Debug launch, alternate providers, and multi-root support stay out of scope.
+- [x] Manifest and settings remain the only authority for artifact resolution and provider selection behavior.
+- [x] The design defines both unit and integration tests before implementation, including cpptools translation and failure-path regressions that are currently missing.
+- [x] Failure handling includes visible notifications for provider issues, output-channel logs for provider and missing-artifact conditions, and tree-row state for missing artifacts without extra popups.
+- [x] No complexity exception is required; one parser or translator module plus the existing service and adapter split is sufficient.
 
 ## Complexity Tracking
 

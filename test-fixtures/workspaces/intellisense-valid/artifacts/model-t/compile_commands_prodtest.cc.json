@@ -1,0 +1,12 @@
+[
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-gcc -std=c11 -Iembed/include -DTREZOR_MODEL_T -DPRODTEST -Wall -O2 -c embed/prodtest/main.c",
+    "file": "embed/prodtest/main.c"
+  },
+  {
+    "directory": "/workspace/core",
+    "command": "arm-none-eabi-gcc -std=c11 -Iembed/include -DTREZOR_MODEL_T -DPRODTEST -c embed/prodtest/prodtest.c",
+    "file": "embed/prodtest/prodtest.c"
+  }
+]

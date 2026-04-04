@@ -1,0 +1,24 @@
+# IntelliSense manifest fixture: valid structure but the expected artifacts
+# will not exist on disk. Used to test the "missing" compile-commands state
+# and stale-state clearing behavior.
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifact-folder: model-t
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+    artifact-folder: model-t3
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+
+components:
+  - id: core
+    name: Core
+    artifact-name: compile_commands_core
+  - id: prodtest
+    name: Prodtest
+    artifact-name: compile_commands_prodtest

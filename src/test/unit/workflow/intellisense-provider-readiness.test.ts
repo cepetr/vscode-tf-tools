@@ -10,7 +10,12 @@
  */
 
 import * as assert from "assert";
-import { checkProviderReadiness } from "../../../intellisense/cpptools-provider";
+import * as vscode from "vscode";
+import {
+  checkProviderReadiness,
+  applyProviderSettingFix,
+  PROVIDER_SETTING_FIX,
+} from "../../../intellisense/cpptools-provider";
 
 // ---------------------------------------------------------------------------
 // Access the vscode mock so we can control extension and configuration state
@@ -34,7 +39,29 @@ function stubExtensionMissing(): void {
 }
 
 function stubExtensionInstalled(): void {
-  vscodeMock.extensions.getExtension = (_id: string) => ({ id: "ms-vscode.cpptools" });
+  vscodeMock.extensions.getExtension = (_id: string) => ({
+    id: "ms-vscode.cpptools",
+    exports: {
+      getApi: (_version: number) => ({
+        registerCustomConfigurationProvider() {},
+        notifyReady() {},
+        didChangeCustomConfiguration() {},
+        didChangeCustomBrowseConfiguration() {},
+        dispose() {},
+      }),
+    },
+  });
+}
+
+function stubExtensionInstalledWithUnsupportedApi(): void {
+  vscodeMock.extensions.getExtension = (_id: string) => ({
+    id: "ms-vscode.cpptools",
+    exports: {
+      getApi: () => {
+        throw new RangeError("Invalid version");
+      },
+    },
+  });
 }
 
 function stubConfigurationProvider(value: string | undefined): void {
@@ -93,6 +120,23 @@ suite("checkProviderReadiness – missing-provider", () => {
       `expected message to mention 'ms-vscode.cpptools', got: ${result.lastWarningMessage}`
     );
   });
+
+  test("warningState is 'missing-provider' when cpptools API does not support v7", () => {
+    stubExtensionInstalledWithUnsupportedApi();
+    stubConfigurationProvider("cepetr.tf-tools");
+    const result = checkProviderReadiness();
+    assert.strictEqual(result.warningState, "missing-provider");
+  });
+
+  test("unsupported cpptools API message mentions supported v7 custom-configuration API", () => {
+    stubExtensionInstalledWithUnsupportedApi();
+    stubConfigurationProvider("cepetr.tf-tools");
+    const result = checkProviderReadiness();
+    assert.ok(
+      result.lastWarningMessage?.includes("v7 custom-configuration API"),
+      `expected unsupported-api message, got: ${result.lastWarningMessage}`
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -145,6 +189,20 @@ suite("checkProviderReadiness – wrong-provider", () => {
       "expected lastWarningMessage to be non-empty"
     );
   });
+
+  test("warningState is 'wrong-provider' when provider setting is undefined", () => {
+    stubExtensionInstalled();
+    stubConfigurationProvider(undefined);
+    const result = checkProviderReadiness();
+    assert.strictEqual(result.warningState, "wrong-provider");
+  });
+
+  test("warningState is 'wrong-provider' when provider setting is empty string", () => {
+    stubExtensionInstalled();
+    stubConfigurationProvider("");
+    const result = checkProviderReadiness();
+    assert.strictEqual(result.warningState, "wrong-provider");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -160,20 +218,6 @@ suite("checkProviderReadiness – ready (none)", () => {
   suiteTeardown(() => {
     vscodeMock.extensions.getExtension = originalGetExtension;
     vscodeMock.workspace.getConfiguration = originalGetConfiguration;
-  });
-
-  test("warningState is 'none' when cpptools is present and provider setting is undefined", () => {
-    stubExtensionInstalled();
-    stubConfigurationProvider(undefined);
-    const result = checkProviderReadiness();
-    assert.strictEqual(result.warningState, "none");
-  });
-
-  test("warningState is 'none' when cpptools is present and provider setting is empty string", () => {
-    stubExtensionInstalled();
-    stubConfigurationProvider("");
-    const result = checkProviderReadiness();
-    assert.strictEqual(result.warningState, "none");
   });
 
   test("warningState is 'none' when provider is set to cepetr.tf-tools", () => {
@@ -199,15 +243,101 @@ suite("checkProviderReadiness – ready (none)", () => {
 
   test("providerConfigured is true when prerequisites are satisfied", () => {
     stubExtensionInstalled();
-    stubConfigurationProvider(undefined);
+    stubConfigurationProvider("cepetr.tf-tools");
     const result = checkProviderReadiness();
     assert.strictEqual(result.providerConfigured, true);
   });
 
   test("lastWarningMessage is undefined when warningState is 'none'", () => {
     stubExtensionInstalled();
-    stubConfigurationProvider(undefined);
+    stubConfigurationProvider("cepetr.tf-tools");
     const result = checkProviderReadiness();
     assert.strictEqual(result.lastWarningMessage, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: applyProviderSettingFix – workspace-setting write behaviour
+// ---------------------------------------------------------------------------
+
+suite("applyProviderSettingFix", () => {
+  // Capture calls made to cfg.update
+  interface UpdateCall {
+    section: string;
+    key: string;
+    value: unknown;
+    target: number;
+  }
+
+  let updateCalls: UpdateCall[];
+  let getConfigSectionArg: string | undefined;
+  let originalGetConfiguration: GetConfigurationFn;
+
+  const fakeFolder: vscode.WorkspaceFolder = {
+    uri: vscodeMock.Uri.file("/workspace"),
+    name: "test-ws",
+    index: 0,
+  };
+
+  suiteSetup(() => {
+    originalGetConfiguration = vscodeMock.workspace.getConfiguration as GetConfigurationFn;
+  });
+
+  suiteTeardown(() => {
+    vscodeMock.workspace.getConfiguration = originalGetConfiguration;
+  });
+
+  setup(() => {
+    updateCalls = [];
+    getConfigSectionArg = undefined;
+    vscodeMock.workspace.getConfiguration = (section?: string) => {
+      getConfigSectionArg = section;
+      return {
+        get: () => undefined,
+        update: async (key: string, value: unknown, target: unknown) => {
+          updateCalls.push({ section: section ?? "", key, value, target: target as number });
+          return Promise.resolve();
+        },
+      };
+    };
+  });
+
+  test("calls getConfiguration with 'C_Cpp' section", async () => {
+    await applyProviderSettingFix(fakeFolder, () => {});
+    assert.strictEqual(getConfigSectionArg, "C_Cpp");
+  });
+
+  test("updates PROVIDER_SETTING_FIX.key to PROVIDER_SETTING_FIX.correctValue", async () => {
+    await applyProviderSettingFix(fakeFolder, () => {});
+    assert.ok(updateCalls.length > 0, "expected at least one update call");
+    const call = updateCalls[0];
+    assert.strictEqual(call.key, PROVIDER_SETTING_FIX.key);
+    assert.strictEqual(call.value, PROVIDER_SETTING_FIX.correctValue);
+  });
+
+  test("uses WorkspaceFolder configuration scope (target = 3)", async () => {
+    await applyProviderSettingFix(fakeFolder, () => {});
+    assert.strictEqual(updateCalls[0].target, vscodeMock.ConfigurationTarget.WorkspaceFolder);
+  });
+
+  test("invokes onFixed callback after the update", async () => {
+    let fixedCalled = false;
+    await applyProviderSettingFix(fakeFolder, () => {
+      fixedCalled = true;
+    });
+    assert.strictEqual(fixedCalled, true);
+  });
+
+  test("invokes onFixed only once per call", async () => {
+    let callCount = 0;
+    await applyProviderSettingFix(fakeFolder, () => {
+      callCount++;
+    });
+    assert.strictEqual(callCount, 1);
+  });
+
+  test("produces exactly one update call per invocation", async () => {
+    await applyProviderSettingFix(fakeFolder, () => {});
+    assert.strictEqual(updateCalls.length, 1);
   });
 });

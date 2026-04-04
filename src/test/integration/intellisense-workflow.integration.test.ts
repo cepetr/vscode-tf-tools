@@ -1,0 +1,161 @@
+/**
+ * Integration tests for the `Refresh IntelliSense` command contribution and execution (T025).
+ * Runs inside the VS Code extension host via @vscode/test-electron.
+ *
+ * Covers:
+ *  - The `tfTools.refreshIntelliSense` command is registered after extension activation
+ *  - Invoking the command resolves without throwing
+ *  - IntelliSenseService scheduleRefresh via the "manual" trigger works end-to-end
+ */
+
+import * as assert from "assert";
+import * as vscode from "vscode";
+import * as path from "path";
+import { IntelliSenseService } from "../../intellisense/intellisense-service";
+import { ManifestStateLoaded } from "../../manifest/manifest-types";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Waits for the pending refresh chain to drain. */
+function drainRefresh(ms = 80): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Ensure the tf-tools extension is activated before running command tests. */
+async function activateExtension(): Promise<boolean> {
+  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  if (!ext) {
+    return false;
+  }
+  if (!ext.isActive) {
+    await ext.activate();
+  }
+  return ext.isActive;
+}
+
+// ---------------------------------------------------------------------------
+// Suite: tfTools.refreshIntelliSense command
+// ---------------------------------------------------------------------------
+
+suite("tfTools.refreshIntelliSense – command registration and execution (T025)", () => {
+  test("extension cepetr.tf-tools is available in development host", async () => {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    assert.ok(ext, "expected cepetr.tf-tools extension to be available in the test host");
+  });
+
+  test("extension activates without error", async () => {
+    const activated = await activateExtension();
+    assert.strictEqual(activated, true, "expected extension to activate");
+  });
+
+  test("tfTools.refreshIntelliSense is registered as a VS Code command", async () => {
+    await activateExtension();
+    const cmds = await vscode.commands.getCommands(/* filterInternal */ false);
+    assert.ok(
+      cmds.includes("tfTools.refreshIntelliSense"),
+      "expected 'tfTools.refreshIntelliSense' to be registered in VS Code commands"
+    );
+  });
+
+  test("executing tfTools.refreshIntelliSense resolves without throwing", async () => {
+    await activateExtension();
+    let threw = false;
+    try {
+      await vscode.commands.executeCommand("tfTools.refreshIntelliSense");
+    } catch {
+      threw = true;
+    }
+    assert.strictEqual(threw, false, "expected executeCommand to resolve without error");
+  });
+
+  test("other tf-tools commands are also registered after activation", async () => {
+    await activateExtension();
+    const cmds = await vscode.commands.getCommands(false);
+    const requiredCmds = ["tfTools.build", "tfTools.clippy", "tfTools.check", "tfTools.clean", "tfTools.showLogs"];
+    for (const cmd of requiredCmds) {
+      assert.ok(cmds.includes(cmd), `expected '${cmd}' to be registered`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: IntelliSenseService with "manual" trigger (equivalent to command)
+// ---------------------------------------------------------------------------
+
+suite("IntelliSenseService – manual refresh trigger (T025)", () => {
+  /** Yields to the microtask queue to let pending refresh resolve. */
+  function drainMicrotasks(): Promise<void> {
+    return drainRefresh(50);
+  }
+
+  function makeManifest(): ManifestStateLoaded {
+    return {
+      status: "loaded",
+      manifestUri: vscode.Uri.file("/workspace/tf-tools.yaml"),
+      models: [{ kind: "model", id: "T2T1", name: "Trezor Model T", artifactFolder: "model-t" }],
+      targets: [{ kind: "target", id: "hw", name: "Hardware", shortName: "HW" }],
+      components: [{ kind: "component", id: "core", name: "Core", artifactName: "compile_commands_core" }],
+      buildOptions: [],
+      hasWorkflowBlockingIssues: false,
+      validationIssues: [],
+      loadedAt: new Date(),
+    };
+  }
+
+  test("scheduleRefresh('manual-refresh') populates getLastReadiness", async () => {
+    const svc = new IntelliSenseService();
+    svc.scheduleRefresh("manual-refresh");
+    await drainMicrotasks();
+    assert.ok(svc.getLastReadiness() !== null, "expected readiness after manual refresh");
+  });
+
+  test("scheduleRefresh('manual-refresh') fires onDidRefresh event", async () => {
+    const svc = new IntelliSenseService();
+    let firedWith: [unknown, unknown] | null = null;
+    svc.onDidRefresh(([artifact, readiness]) => {
+      firedWith = [artifact, readiness];
+    });
+    svc.scheduleRefresh("manual-refresh");
+    await drainMicrotasks();
+    assert.ok(firedWith !== null, "expected onDidRefresh to fire on manual refresh");
+  });
+
+  test("manual refresh after config change produces consistent readiness", async () => {
+    const svc = new IntelliSenseService();
+    svc.setManifest(makeManifest());
+    svc.setActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.setArtifactsRoot(path.join(__dirname, "../../../../test-fixtures/workspaces/intellisense-missing-artifact"));
+
+    svc.scheduleRefresh("active-config-change");
+    await drainMicrotasks();
+    const afterConfig = svc.getLastReadiness();
+
+    svc.scheduleRefresh("manual-refresh");
+    await drainMicrotasks();
+    const afterManual = svc.getLastReadiness();
+
+    assert.ok(afterConfig !== null, "expected readiness after config-change");
+    assert.ok(afterManual !== null, "expected readiness after manual");
+    // Both should see the same provider state
+    assert.strictEqual(afterManual!.warningState, afterConfig!.warningState);
+  });
+
+  test("manual refresh after artifacts path cleared shows null artifact", async () => {
+    const svc = new IntelliSenseService();
+    svc.setManifest(makeManifest());
+    svc.setActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() });
+    svc.setArtifactsRoot(""); // Cleared path
+
+    svc.scheduleRefresh("manual-refresh");
+    await drainMicrotasks();
+
+    // With empty artifactsRoot, no valid inputs — artifact should be null or missing
+    const artifact = svc.getLastArtifact();
+    // Either null (no context resolved) or status "missing" — both are acceptable
+    if (artifact !== null) {
+      assert.strictEqual(artifact.status, "missing");
+    }
+  });
+});

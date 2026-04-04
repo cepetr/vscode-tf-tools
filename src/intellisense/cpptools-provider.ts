@@ -1,11 +1,68 @@
 import * as vscode from "vscode";
-import { IntelliSenseProviderReadiness } from "./intellisense-types";
+import { IntelliSenseProviderReadiness, ProviderPayload, ProviderSettingFix } from "./intellisense-types";
 
 // ---------------------------------------------------------------------------
-// Microsoft C/C++ extension ID
+// Microsoft C/C++ extension ID and provider constants
 // ---------------------------------------------------------------------------
 
 const CPPTOOLS_EXTENSION_ID = "ms-vscode.cpptools";
+const TF_TOOLS_PROVIDER_ID = "cepetr.tf-tools";
+const CPPTOOLS_API_VERSION_LATEST = 7;
+
+// ---------------------------------------------------------------------------
+// Minimal cpptools custom configuration provider API types
+//
+// Defined inline to avoid a hard runtime dependency on the vscode-cpptools-api
+// package. These mirror the subset of the published API that tf-tools consumes.
+// ---------------------------------------------------------------------------
+
+export interface CpptoolsSourceFileConfiguration {
+  includePath: string[];
+  defines: string[];
+  intelliSenseMode?: string;
+  standard?: string;
+  forcedInclude?: string[];
+  compilerPath?: string;
+  compilerArgs?: string[];
+}
+
+export interface CpptoolsSourceFileConfigurationItem {
+  uri: vscode.Uri;
+  configuration: CpptoolsSourceFileConfiguration;
+}
+
+export interface CpptoolsWorkspaceBrowseConfiguration {
+  browsePath: string[];
+  compilerPath?: string;
+  compilerArgs?: string[];
+  windowsSdkVersion?: string;
+}
+
+/** Minimal interface matching the CppToolsApi extension export we consume. */
+export interface CpptoolsApi {
+  registerCustomConfigurationProvider(provider: CpptoolsCustomConfigurationProvider): void | Thenable<void>;
+  notifyReady(provider: CpptoolsCustomConfigurationProvider): void;
+  didChangeCustomConfiguration(provider: CpptoolsCustomConfigurationProvider): void;
+  didChangeCustomBrowseConfiguration(provider: CpptoolsCustomConfigurationProvider): void;
+  dispose(): void;
+}
+
+interface CpptoolsExtensionExports {
+  getApi(version: number): CpptoolsApi;
+}
+
+/** Interface tf-tools implements to serve per-file IntelliSense configuration. */
+export interface CpptoolsCustomConfigurationProvider {
+  readonly name: string;
+  readonly extensionId: string;
+  canProvideConfiguration(uri: vscode.Uri): Thenable<boolean>;
+  provideConfigurations(uris: vscode.Uri[]): Thenable<CpptoolsSourceFileConfigurationItem[]>;
+  canProvideBrowseConfiguration(): Thenable<boolean>;
+  provideBrowseConfiguration(): Thenable<CpptoolsWorkspaceBrowseConfiguration>;
+  canProvideBrowseConfigurationsPerFolder(): Thenable<boolean>;
+  provideFolderBrowseConfiguration(_uri: vscode.Uri): Thenable<CpptoolsWorkspaceBrowseConfiguration>;
+  dispose(): void;
+}
 
 // ---------------------------------------------------------------------------
 // Provider readiness check
@@ -15,12 +72,11 @@ const CPPTOOLS_EXTENSION_ID = "ms-vscode.cpptools";
  * Evaluates whether the cpptools provider prerequisites are currently satisfied.
  *
  * - `missing-provider`: ms-vscode.cpptools is not installed or not enabled.
- * - `wrong-provider`: cpptools is present but the workspace `C_Cpp.default.configurationProvider`
- *   setting does not point to this extension.
- * - `none`: prerequisites are satisfied.
+ * - `wrong-provider`: cpptools is present but the workspace
+ *   `C_Cpp.default.configurationProvider` does not point to tf-tools.
+ * - `none`: both prerequisites are satisfied.
  *
- * This function is pure side-effect-free and synchronous so it can be called
- * from inside the serialized refresh path without async overhead.
+ * Pure, synchronous, side-effect-free — safe to call from the serialized refresh path.
  */
 export function checkProviderReadiness(): IntelliSenseProviderReadiness {
   const ext = vscode.extensions.getExtension(CPPTOOLS_EXTENSION_ID);
@@ -35,29 +91,37 @@ export function checkProviderReadiness(): IntelliSenseProviderReadiness {
     };
   }
 
-  // Check that the workspace uses tf-tools as the active configuration provider.
-  // The setting is scoped to workspace/resource; we check the folder-level value.
+  const apiState = getCpptoolsApiState(ext.exports);
+  if (apiState === "unsupported") {
+    return {
+      providerInstalled: false,
+      providerConfigured: false,
+      warningState: "missing-provider",
+      lastWarningMessage:
+        "IntelliSense integration is unavailable: installed Microsoft C/C++ extension does not expose the supported v7 custom-configuration API.",
+    };
+  }
+
   const cfg = vscode.workspace.getConfiguration("C_Cpp");
   const configuredProvider: string | undefined = cfg.get<string>(
     "default.configurationProvider"
   );
 
-  const EXPECTED_PROVIDER = "ms-vscode.cpptools"; // tf-tools registers under its own publisher id
-  // Accept both the short extension id and the fully-qualified form.
+  // Provider must be explicitly set to tf-tools — empty/unset is NOT acceptable.
   const isConfigured =
-    !configuredProvider ||
-    configuredProvider === "" ||
-    configuredProvider.toLowerCase() === "cepetr.tf-tools";
+    typeof configuredProvider === "string" &&
+    configuredProvider.toLowerCase() === TF_TOOLS_PROVIDER_ID.toLowerCase();
 
   if (!isConfigured) {
+    const currentValue = configuredProvider ?? "(unset)";
     return {
       providerInstalled: true,
       providerConfigured: false,
       warningState: "wrong-provider",
       lastWarningMessage:
-        `IntelliSense integration unavailable: the workspace C_Cpp.default.configurationProvider is set to ` +
-        `"${configuredProvider}" instead of Trezor Firmware Tools. ` +
-        `Update the setting or clear it to let tf-tools provide IntelliSense.`,
+        `IntelliSense integration unavailable: the workspace C_Cpp.default.configurationProvider is ` +
+        `"${currentValue}" instead of Trezor Firmware Tools. ` +
+        `Update the setting to "cepetr.tf-tools" or use the workspace fix to let tf-tools provide IntelliSense.`,
     };
   }
 
@@ -69,65 +133,290 @@ export function checkProviderReadiness(): IntelliSenseProviderReadiness {
 }
 
 // ---------------------------------------------------------------------------
+// Provider workspace-setting fix
+// ---------------------------------------------------------------------------
+
+/** Descriptor for the one-step fix that writes the correct provider setting. */
+export const PROVIDER_SETTING_FIX: ProviderSettingFix = {
+  section: "C_Cpp",
+  key: "default.configurationProvider",
+  correctValue: TF_TOOLS_PROVIDER_ID,
+};
+
+/**
+ * Writes `C_Cpp.default.configurationProvider = cepetr.tf-tools` to the
+ * workspace folder settings (WorkspaceFolder scope), then calls `onFixed`.
+ */
+export async function applyProviderSettingFix(
+  workspaceFolder: vscode.WorkspaceFolder,
+  onFixed: () => void
+): Promise<void> {
+  const cfg = vscode.workspace.getConfiguration("C_Cpp", workspaceFolder.uri);
+  await cfg.update(
+    "default.configurationProvider",
+    TF_TOOLS_PROVIDER_ID,
+    vscode.ConfigurationTarget.WorkspaceFolder
+  );
+  onFixed();
+}
+
+// ---------------------------------------------------------------------------
 // Cpptools provider adapter
 // ---------------------------------------------------------------------------
 
 /**
- * Thin boundary adapter for Microsoft C/C++ compile-database application.
+ * Implements the cpptools `CustomConfigurationProvider` interface.
  *
- * In the real extension host this drives the cpptools custom configuration
- * provider API. In tests it can be replaced with a stub that records calls.
- *
- * The adapter is intentionally minimal: it only exposes apply and clear,
- * keeping the IntelliSense service decoupled from the VS Code provider API.
+ * The adapter:
+ *  - Registers with the cpptools API on first `activate()` call.
+ *  - Serves per-file `SourceFileConfiguration` objects from the latest
+ *    parsed `ProviderPayload`.
+ *  - Returns the browse-configuration snapshot from the latest payload.
+ *  - Accepts an injected `apiAccessor` factory for test injection.
  */
-export class CpptoolsProviderAdapter {
-  private _lastAppliedPath: string | null = null;
+export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvider {
+  readonly name = "Trezor Firmware Tools";
+  readonly extensionId = TF_TOOLS_PROVIDER_ID;
+
+  private _cpptoolsApi: CpptoolsApi | undefined;
+  private _payload: ProviderPayload | undefined;
+  private _activationPromise: Promise<void> | undefined;
+  private readonly _apiAccessor: () => CpptoolsApi | Promise<CpptoolsApi | undefined> | undefined;
 
   /**
-   * Applies the given compile-commands file as the active cpptools configuration.
-   * No-ops when the path is the same as the last applied path.
+   * @param apiAccessor  Optional factory used to get the cpptools API.
+   *   Defaults to reading the export from the installed cpptools extension.
+   *   Tests can inject a null or stub factory.
    */
-  async applyCompileCommands(compiledCommandsPath: string): Promise<void> {
-    if (this._lastAppliedPath === compiledCommandsPath) {
+  constructor(apiAccessor?: () => CpptoolsApi | Promise<CpptoolsApi | undefined> | undefined) {
+    this._apiAccessor = apiAccessor ?? defaultApiAccessor;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Attempts to register with cpptools. Safe to call multiple times;
+   * registers only once per adapter instance.
+   */
+  async activate(): Promise<void> {
+    if (this._cpptoolsApi) {
       return;
     }
-    // Phase 1 scaffolding: notify cpptools to re-read configuration.
-    // A full custom configuration provider registration follows in T016.
-    this._lastAppliedPath = compiledCommandsPath;
-    // Fire the cpptools "configuration changed" event so the editor refreshes.
-    try {
-      await vscode.commands.executeCommand(
-        "C_Cpp.refreshIntelliSense"
-      );
-    } catch {
-      // cpptools command may not be available when cpptools is absent; ignore.
+    if (this._activationPromise) {
+      return this._activationPromise;
+    }
+
+    this._activationPromise = (async () => {
+      let api: CpptoolsApi | undefined;
+      try {
+        api = await this._apiAccessor();
+      } catch {
+        return;
+      }
+      if (!api) {
+        return;
+      }
+      try {
+        await api.registerCustomConfigurationProvider(this);
+        this._cpptoolsApi = api;
+
+        // If payload was prepared before registration completed, replay it so
+        // cpptools immediately re-queries the current configuration.
+        if (this._payload) {
+          this._cpptoolsApi.notifyReady(this);
+          this._cpptoolsApi.didChangeCustomConfiguration(this);
+          this._cpptoolsApi.didChangeCustomBrowseConfiguration(this);
+        }
+      } catch {
+        // cpptools API may not be available in some VS Code versions — ignore.
+      } finally {
+        this._activationPromise = undefined;
+      }
+    })();
+
+    return this._activationPromise;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Provider state updates
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Applies a new parsed payload and notifies cpptools to re-query configurations.
+   */
+  applyPayload(payload: ProviderPayload): void {
+    this._payload = payload;
+    if (this._cpptoolsApi) {
+      this._cpptoolsApi.notifyReady(this);
+      this._cpptoolsApi.didChangeCustomConfiguration(this);
+      this._cpptoolsApi.didChangeCustomBrowseConfiguration(this);
     }
   }
 
   /**
-   * Clears any previously applied compile-commands configuration.
-   * Resets the adapter state and signals cpptools to reload.
+   * Clears the active payload and notifies cpptools that no configurations are available.
    */
-  async clearCompileCommands(): Promise<void> {
-    if (this._lastAppliedPath === null) {
-      return;
-    }
-    this._lastAppliedPath = null;
-    try {
-      await vscode.commands.executeCommand(
-        "C_Cpp.refreshIntelliSense"
-      );
-    } catch {
-      // ignore when unavailable
+  clearPayload(): void {
+    this._payload = undefined;
+    if (this._cpptoolsApi) {
+      this._cpptoolsApi.didChangeCustomConfiguration(this);
+      this._cpptoolsApi.didChangeCustomBrowseConfiguration(this);
     }
   }
 
-  getLastAppliedPath(): string | null {
-    return this._lastAppliedPath;
+  getLastPayload(): ProviderPayload | undefined {
+    return this._payload;
+  }
+
+  // ---------------------------------------------------------------------------
+  // CpptoolsCustomConfigurationProvider implementation
+  // ---------------------------------------------------------------------------
+
+  async canProvideConfiguration(_uri: vscode.Uri): Promise<boolean> {
+    return this._payload !== undefined;
+  }
+
+  async provideConfigurations(
+    uris: vscode.Uri[]
+  ): Promise<CpptoolsSourceFileConfigurationItem[]> {
+    const payload = this._payload;
+    if (!payload) {
+      return [];
+    }
+
+    return uris.flatMap((uri) => {
+      const entry = payload.entriesByFile.get(uri.fsPath);
+      if (!entry) {
+        return [];
+      }
+      const config: CpptoolsSourceFileConfiguration = {
+        includePath: entry.includePaths.slice(),
+        defines: entry.defines.slice(),
+        intelliSenseMode: resolveIntelliSenseMode(entry.compilerPath, entry.languageFamily),
+        standard: entry.standard,
+        forcedInclude: entry.forcedIncludes.slice(),
+        compilerPath: entry.compilerPath || undefined,
+        compilerArgs: entry.arguments.slice(),
+      };
+      return [{ uri, configuration: config }];
+    });
+  }
+
+  async canProvideBrowseConfiguration(): Promise<boolean> {
+    return this._payload !== undefined;
+  }
+
+  async provideBrowseConfiguration(): Promise<CpptoolsWorkspaceBrowseConfiguration> {
+    const snap = this._payload?.browseSnapshot;
+    return {
+      browsePath: snap?.browsePaths.slice() ?? [],
+      compilerPath: snap?.compilerPath,
+      compilerArgs: snap?.compilerArgs.slice() ?? [],
+    };
+  }
+
+  async canProvideBrowseConfigurationsPerFolder(): Promise<boolean> {
+    return false;
+  }
+
+  async provideFolderBrowseConfiguration(
+    _uri: vscode.Uri
+  ): Promise<CpptoolsWorkspaceBrowseConfiguration> {
+    return { browsePath: [] };
   }
 
   dispose(): void {
-    this._lastAppliedPath = null;
+    this._cpptoolsApi?.dispose();
+    this._cpptoolsApi = undefined;
+    this._payload = undefined;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+async function defaultApiAccessor(): Promise<CpptoolsApi | undefined> {
+  const ext = vscode.extensions.getExtension<unknown>(CPPTOOLS_EXTENSION_ID);
+  if (!ext) {
+    return undefined;
+  }
+
+  let exportsObject: unknown;
+  if (!ext.isActive) {
+    try {
+      exportsObject = await ext.activate();
+    } catch {
+      return undefined;
+    }
+  } else {
+    exportsObject = ext.exports;
+  }
+
+  if (isCpptoolsExtensionExports(exportsObject)) {
+    try {
+      return exportsObject.getApi(CPPTOOLS_API_VERSION_LATEST);
+    } catch {
+      return undefined;
+    }
+  }
+
+  if (isCpptoolsApi(exportsObject)) {
+    return exportsObject;
+  }
+
+  return undefined;
+}
+
+function isCpptoolsExtensionExports(value: unknown): value is CpptoolsExtensionExports {
+  return !!value && typeof (value as CpptoolsExtensionExports).getApi === "function";
+}
+
+function isCpptoolsApi(value: unknown): value is CpptoolsApi {
+  return (
+    !!value &&
+    typeof (value as CpptoolsApi).registerCustomConfigurationProvider === "function" &&
+    typeof (value as CpptoolsApi).didChangeCustomConfiguration === "function" &&
+    typeof (value as CpptoolsApi).didChangeCustomBrowseConfiguration === "function"
+  );
+}
+
+function getCpptoolsApiState(exportsObject: unknown): "supported" | "unsupported" | "legacy" {
+  if (isCpptoolsExtensionExports(exportsObject)) {
+    try {
+      const api = exportsObject.getApi(CPPTOOLS_API_VERSION_LATEST);
+      return isCpptoolsApi(api) ? "supported" : "unsupported";
+    } catch {
+      return "unsupported";
+    }
+  }
+
+  if (isCpptoolsApi(exportsObject)) {
+    return "legacy";
+  }
+
+  return "unsupported";
+}
+
+/**
+ * Maps a compiler executable name and language family to the closest
+ * VS Code IntelliSense mode string.
+ */
+function resolveIntelliSenseMode(
+  compilerPath: string,
+  languageFamily: "c" | "cpp"
+): string {
+  const name = compilerPath.toLowerCase();
+
+  if (name.includes("clang")) {
+    return languageFamily === "cpp" ? "clang-cpp" : "clang-c";
+  }
+  if (name.includes("cl.exe") || name.includes("msvc")) {
+    return languageFamily === "cpp" ? "msvc-cpp" : "msvc-c";
+  }
+  // Default: GCC / arm-none-eabi-gcc etc.
+  return languageFamily === "cpp" ? "gcc-cpp" : "gcc-c";
+}
+
