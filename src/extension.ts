@@ -42,6 +42,7 @@ let _manifestState: ManifestState | undefined;
 let _activeConfig: ActiveConfig | undefined;
 let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 let _intelliSenseService: IntelliSenseService | undefined;
+let _manifestStateSubscription: vscode.Disposable | undefined;
 
 // ---------------------------------------------------------------------------
 // Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense slices)
@@ -217,44 +218,62 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Initialize artifactsRoot from current settings
   _intelliSenseService.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
 
-  // Watch for tfTools.artifactsPath configuration changes
+  // Watch for tfTools.artifactsPath AND tfTools.manifestPath configuration changes
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
         _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
         _intelliSenseService?.scheduleRefresh("artifacts-path-change");
       }
+      if (e.affectsConfiguration("tfTools.manifestPath", workspaceFolder.uri)) {
+        // Restart the manifest service with the newly resolved path.
+        // The resulting onDidChangeState fires will propagate "manifest-change"
+        // to the IntelliSense service automatically.
+        _manifestStateSubscription?.dispose();
+        _manifestService?.dispose();
+        const newManifestUri = resolveManifestUri(workspaceFolder);
+        _manifestService = new ManifestService(newManifestUri);
+        _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
+        _manifestService.start().catch((err) => {
+          console.error("[tf-tools] Failed to start manifest service after path change:", err);
+        });
+      }
     })
   );
 
   // --- Manifest service ---
   _manifestService = new ManifestService(manifestUri);
-  context.subscriptions.push(_manifestService);
+  context.subscriptions.push({
+    dispose: () => {
+      _manifestStateSubscription?.dispose();
+      _manifestService?.dispose();
+    },
+  });
 
   // Connect manifest state changes to the tree provider, diagnostics and logs (T020)
   // On each state change, restore and normalize the active config (T026/T031)
-  context.subscriptions.push(
-    _manifestService.onDidChangeState(async (state) => {
-      _manifestState = state;
-      let activeConfig: ActiveConfig | undefined;
-      if (state.status === "loaded") {
-        activeConfig = await restoreActiveConfig(context, state);
-      }
-      _activeConfig = activeConfig;
-      _resolvedOptions = computeResolvedOptions(state, activeConfig, context);
-      _treeProvider?.update(state, activeConfig, _resolvedOptions);
-      _statusBar?.update(state, activeConfig, isStatusBarEnabled(workspaceFolder));
-      handleManifestStateDiagnostics(state);
-      logManifestState(state);
-      updateWorkflowBlockedContext(state);
+  const onManifestStateChange = async (state: ManifestState): Promise<void> => {
+    _manifestState = state;
+    let activeConfig: ActiveConfig | undefined;
+    if (state.status === "loaded") {
+      activeConfig = await restoreActiveConfig(context, state);
+    }
+    _activeConfig = activeConfig;
+    _resolvedOptions = computeResolvedOptions(state, activeConfig, context);
+    _treeProvider?.update(state, activeConfig, _resolvedOptions);
+    _statusBar?.update(state, activeConfig, isStatusBarEnabled(workspaceFolder));
+    handleManifestStateDiagnostics(state);
+    logManifestState(state);
+    updateWorkflowBlockedContext(state);
 
-      // Update IntelliSense service with the new manifest state
-      const loadedState = state.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
-      _intelliSenseService?.setManifest(loadedState);
-      _intelliSenseService?.setActiveConfig(activeConfig);
-      _intelliSenseService?.scheduleRefresh("manifest-change");
-    })
-  );
+    // Update IntelliSense service with the new manifest state
+    const loadedState = state.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+    _intelliSenseService?.setManifest(loadedState);
+    _intelliSenseService?.setActiveConfig(activeConfig);
+    _intelliSenseService?.scheduleRefresh("manifest-change");
+  };
+
+  _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
 
   // --- Commands ---
   context.subscriptions.push(
@@ -426,6 +445,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 export function deactivate(): void {
+  _manifestStateSubscription?.dispose();
+  _manifestStateSubscription = undefined;
   _manifestService?.dispose();
   _manifestService = undefined;
   _treeProvider?.dispose();
