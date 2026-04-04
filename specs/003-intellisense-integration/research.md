@@ -42,7 +42,7 @@
 
 ## Decision 6: Treat refresh work as serialized state recomputation triggered from existing extension events
 
-- **Decision**: Funnel activation, active-context changes, successful builds, manifest changes, provider-availability changes, and relevant settings changes into one serialized refresh path that recomputes artifact status and provider readiness before touching the tree or provider state.
+- **Decision**: Funnel activation, active-context changes, successful builds, provider-availability changes, manifest-path changes, manifest-content changes, and relevant settings changes into one serialized refresh path that recomputes artifact status and provider readiness before touching the tree or provider state.
 - **Rationale**: The extension already coordinates state changes centrally. Serializing refresh prevents races where a build completion, settings change, and active-context change could otherwise reapply stale compile-database state out of order.
 - **Alternatives considered**:
   - Let each trigger update IntelliSense independently: rejected because concurrent refreshes would make stale-state clearing and final-state correctness hard to reason about.
@@ -51,11 +51,11 @@
 ## Decision 7: Translate the active compile database eagerly into cpptools file and browse configurations
 
 - **Decision**: Eagerly parse the active `.cc.json` file during refresh, index entries by normalized absolute source-file path, translate each entry into a cpptools `SourceFileConfiguration`, and build a browse snapshot whose `browsePath` is the de-duplicated union of include paths across the active database.
-- **Rationale**: The cpptools custom configuration provider API consumes per-file configurations, not a compile-database path. Eager parsing keeps refresh behavior deterministic, makes duplicate detection explicit, and ensures `.c` and `.cpp` files can each retain their own inferred language mode and standards.
+- **Rationale**: The cpptools custom configuration provider API consumes per-file configurations, not a compile-database path. Eager parsing keeps refresh behavior deterministic and ensures `.c` and `.cpp` files can each retain their own inferred language mode and standards.
 - **Alternatives considered**:
   - Pass only the compile-database path to cpptools: rejected because the custom provider API does not consume a raw compile-database path and would leave IntelliSense effectively unconfigured.
-  - Parse entries lazily on file request: rejected because the product already centers refresh around active-context changes and because eager parsing simplifies duplicate detection, tree-state synchronization, and browse-configuration generation.
-  - Merge duplicate entries for the same file: rejected because the compile database should not contain duplicates and merging would create non-obvious precedence rules; first-entry-wins with logging is deterministic and simple.
+  - Parse entries lazily on file request: rejected because the product already centers refresh around active-context changes and because eager parsing simplifies tree-state synchronization and browse-configuration generation.
+  - Merge duplicate entries for the same file: rejected because the compile database should not contain duplicates and merging would create non-obvious precedence rules; first-entry-wins is deterministic and simple.
 
 ## Decision 8: Require tf-tools to be the explicit active configuration provider and offer a workspace fix when it is not
 
