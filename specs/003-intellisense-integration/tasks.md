@@ -91,16 +91,16 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T025 [P] [US3] Add unit tests for provider-readiness evaluation and warning transitions in `src/test/unit/workflow/intellisense-provider-readiness.test.ts`
-- [ ] T026 [P] [US3] Add integration tests for provider warnings and recovery in `src/test/integration/configuration-health.integration.test.ts`
-- [ ] T027 [P] [US3] Add integration tests for `Refresh IntelliSense` command contributions and execution in `src/test/integration/build-workflow.integration.test.ts`
+- [X] T025 [P] [US3] Add unit tests for provider-readiness evaluation and warning transitions in `src/test/unit/workflow/intellisense-provider-readiness.test.ts`
+- [X] T026 [P] [US3] Add integration tests for provider warnings and recovery in `src/test/integration/configuration-health.integration.test.ts`
+- [X] T027 [P] [US3] Add integration tests for `Refresh IntelliSense` command contributions and execution in `src/test/integration/build-workflow.integration.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T028 [P] [US3] Implement provider-readiness checks and warning-state clearing in `src/intellisense/cpptools-provider.ts` and `src/intellisense/intellisense-service.ts`
-- [ ] T029 [P] [US3] Extend persistent IntelliSense warning logging and user-facing messages in `src/observability/log-channel.ts` and `src/intellisense/intellisense-service.ts`
-- [ ] T030 [P] [US3] Add `Refresh IntelliSense` command and Configuration view title or overflow contributions in `package.json`
-- [ ] T031 [US3] Wire manual refresh, provider-change refresh, and provider-warning recovery through `src/extension.ts`
+- [X] T028 [P] [US3] Implement provider-readiness checks and warning-state clearing in `src/intellisense/cpptools-provider.ts` and `src/intellisense/intellisense-service.ts`
+- [X] T029 [P] [US3] Extend persistent IntelliSense warning logging and user-facing messages in `src/observability/log-channel.ts` and `src/intellisense/intellisense-service.ts`
+- [X] T030 [P] [US3] Add `Refresh IntelliSense` command and Configuration view title or overflow contributions in `package.json`
+- [X] T031 [US3] Wire manual refresh, provider-change refresh, and provider-warning recovery through `src/extension.ts`
 
 **Checkpoint**: All user stories should now be independently functional and the IntelliSense slice should be complete without crossing into later slices.
 
@@ -110,9 +110,9 @@
 
 **Purpose**: Final consistency, regression coverage, and end-to-end validation for the completed feature.
 
-- [ ] T032 [P] Review command and menu contributions for cross-slice drift in `package.json` and `src/extension.ts`
-- [ ] T033 [P] Expand regression coverage for `tfTools.artifactsPath` changes and target suffix transitions in `src/test/integration/configuration-health.integration.test.ts` and `src/test/unit/workflow/intellisense-artifact-resolution.test.ts`
-- [ ] T034 Validate end-to-end IntelliSense scenarios from `specs/003-intellisense-integration/quickstart.md`
+- [X] T032 [P] Review command and menu contributions for cross-slice drift in `package.json` and `src/extension.ts`
+- [X] T033 [P] Expand regression coverage for `tfTools.artifactsPath` changes and target suffix transitions in `src/test/integration/configuration-health.integration.test.ts` and `src/test/unit/workflow/intellisense-artifact-resolution.test.ts`
+- [X] T034 Validate end-to-end IntelliSense scenarios from `specs/003-intellisense-integration/quickstart.md`
 
 ---
 
