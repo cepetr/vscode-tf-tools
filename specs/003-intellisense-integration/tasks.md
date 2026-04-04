@@ -13,10 +13,10 @@
 
 **Purpose**: Prepare fixtures and test helpers needed by the IntelliSense slice.
 
-- [ ] T001 Create IntelliSense manifest fixtures in `test-fixtures/manifests/intellisense-valid/tf-tools.yaml`, `test-fixtures/manifests/intellisense-missing-artifact/tf-tools.yaml`, and `test-fixtures/manifests/intellisense-suffixed-target/tf-tools.yaml`
-- [ ] T002 Create artifact-path workspace fixtures in `test-fixtures/workspaces/intellisense-valid/.gitkeep` and `test-fixtures/workspaces/intellisense-missing-artifact/.gitkeep`
-- [ ] T003 [P] Extend VS Code and provider test doubles for IntelliSense scenarios in `src/test/unit/vscode-mock.ts`
-- [ ] T004 [P] Add shared IntelliSense test utilities in `src/test/unit/workflow-test-helpers.ts` and `src/test/integration/index.ts`
+- [X] T001 Create IntelliSense manifest fixtures in `test-fixtures/manifests/intellisense-valid/tf-tools.yaml`, `test-fixtures/manifests/intellisense-missing-artifact/tf-tools.yaml`, and `test-fixtures/manifests/intellisense-suffixed-target/tf-tools.yaml`
+- [X] T002 Create artifact-path workspace fixtures in `test-fixtures/workspaces/intellisense-valid/.gitkeep` and `test-fixtures/workspaces/intellisense-missing-artifact/.gitkeep`
+- [X] T003 [P] Extend VS Code and provider test doubles for IntelliSense scenarios in `src/test/unit/vscode-mock.ts`
+- [X] T004 [P] Add shared IntelliSense test utilities in `src/test/unit/workflow-test-helpers.ts` and `src/test/integration/index.ts`
 
 ---
 
@@ -26,12 +26,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Define manifest artifact-field types and IntelliSense state types in `src/manifest/manifest-types.ts`
-- [ ] T006 [P] Extend manifest parsing and validation for `artifact-folder`, `artifact-name`, and `artifact-suffix` in `src/manifest/validate-manifest.ts`
-- [ ] T007 [P] Add `tfTools.artifactsPath` settings support in `package.json` and `src/workspace/settings.ts`
-- [ ] T008 [P] Create IntelliSense artifact-resolution and runtime-state helpers in `src/intellisense/artifact-resolution.ts` and `src/intellisense/intellisense-types.ts`
-- [ ] T009 Implement shared IntelliSense refresh orchestration scaffolding in `src/intellisense/intellisense-service.ts` and `src/extension.ts`
-- [ ] T010 Extend manifest reload and refresh publication for IntelliSense inputs in `src/manifest/manifest-service.ts` and `src/extension.ts`
+- [X] T005 Define manifest artifact-field types and IntelliSense state types in `src/manifest/manifest-types.ts`
+- [X] T006 [P] Extend manifest parsing and validation for `artifact-folder`, `artifact-name`, and `artifact-suffix` in `src/manifest/validate-manifest.ts`
+- [X] T007 [P] Add `tfTools.artifactsPath` settings support in `package.json` and `src/workspace/settings.ts`
+- [X] T008 [P] Create IntelliSense artifact-resolution and runtime-state helpers in `src/intellisense/artifact-resolution.ts` and `src/intellisense/intellisense-types.ts`
+- [X] T009 Implement shared IntelliSense refresh orchestration scaffolding in `src/intellisense/intellisense-service.ts` and `src/extension.ts`
+- [X] T010 Extend manifest reload and refresh publication for IntelliSense inputs in `src/manifest/manifest-service.ts` and `src/extension.ts`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin.
 
@@ -45,18 +45,18 @@
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T011 [P] [US1] Add unit tests for artifact-path derivation and no-fallback resolution in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts`
-- [ ] T012 [P] [US1] Add unit tests for stale-state clearing and refresh serialization in `src/test/unit/workflow/intellisense-service.test.ts`
-- [ ] T013 [P] [US1] Extend manifest validation tests for IntelliSense artifact fields in `src/test/unit/manifest/validate-manifest.test.ts`
-- [ ] T014 [P] [US1] Add integration tests for active-context IntelliSense refresh and stale-state clearing in `src/test/integration/build-context-selection.integration.test.ts`
+- [X] T011 [P] [US1] Add unit tests for artifact-path derivation and no-fallback resolution in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts`
+- [X] T012 [P] [US1] Add unit tests for stale-state clearing and refresh serialization in `src/test/unit/workflow/intellisense-service.test.ts`
+- [X] T013 [P] [US1] Extend manifest validation tests for IntelliSense artifact fields in `src/test/unit/manifest/validate-manifest.test.ts`
+- [X] T014 [P] [US1] Add integration tests for active-context IntelliSense refresh and stale-state clearing in `src/test/integration/build-context-selection.integration.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T015 [P] [US1] Implement compile-commands path derivation from `artifact-folder`, `artifact-name`, and `artifact-suffix` in `src/intellisense/artifact-resolution.ts` and `src/manifest/manifest-types.ts`
-- [ ] T016 [P] [US1] Implement cpptools adapter boundary for compile-database application and clearing in `src/intellisense/cpptools-provider.ts`
-- [ ] T017 [US1] Implement IntelliSense refresh, exact-artifact application, and stale-state clearing in `src/intellisense/intellisense-service.ts`
-- [ ] T018 [US1] Wire IntelliSense activation, active-context refresh, build-trigger refresh, and `tfTools.artifactsPath` refresh through `src/extension.ts` and `src/workspace/settings.ts`
-- [ ] T019 [US1] Record missing-artifact runtime events without popup fallback behavior in `src/intellisense/intellisense-service.ts` and `src/observability/log-channel.ts`
+- [X] T015 [P] [US1] Implement compile-commands path derivation from `artifact-folder`, `artifact-name`, and `artifact-suffix` in `src/intellisense/artifact-resolution.ts` and `src/manifest/manifest-types.ts`
+- [X] T016 [P] [US1] Implement cpptools adapter boundary for compile-database application and clearing in `src/intellisense/cpptools-provider.ts`
+- [X] T017 [US1] Implement IntelliSense refresh, exact-artifact application, and stale-state clearing in `src/intellisense/intellisense-service.ts`
+- [X] T018 [US1] Wire IntelliSense activation, active-context refresh, build-trigger refresh, and `tfTools.artifactsPath` refresh through `src/extension.ts` and `src/workspace/settings.ts`
+- [X] T019 [US1] Record missing-artifact runtime events without popup fallback behavior in `src/intellisense/intellisense-service.ts` and `src/observability/log-channel.ts`
 
 **Checkpoint**: User Story 1 should now be functional and independently testable.
 
@@ -70,14 +70,14 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T020 [P] [US2] Add unit tests for `Build Artifacts` compile-commands row rendering in `src/test/unit/ui/configuration-tree.test.ts`
-- [ ] T021 [P] [US2] Add integration tests for compile-commands status and tooltip refresh in `src/test/integration/configuration-health.integration.test.ts`
+- [X] T020 [P] [US2] Add unit tests for `Build Artifacts` compile-commands row rendering in `src/test/unit/ui/configuration-tree.test.ts`
+- [X] T021 [P] [US2] Add integration tests for compile-commands status and tooltip refresh in `src/test/integration/configuration-health.integration.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T022 [P] [US2] Extend tree item models for compile-commands artifact status and tooltip text in `src/ui/configuration-tree.ts`
-- [ ] T023 [US2] Publish compile-commands artifact state from IntelliSense refresh into the tree view in `src/intellisense/intellisense-service.ts` and `src/extension.ts`
-- [ ] T024 [US2] Recompute the `Compile Commands` row on model, component, target, manifest, and `tfTools.artifactsPath` changes in `src/extension.ts` and `src/ui/configuration-tree.ts`
+- [X] T022 [P] [US2] Extend tree item models for compile-commands artifact status and tooltip text in `src/ui/configuration-tree.ts`
+- [X] T023 [US2] Publish compile-commands artifact state from IntelliSense refresh into the tree view in `src/intellisense/intellisense-service.ts` and `src/extension.ts`
+- [X] T024 [US2] Recompute the `Compile Commands` row on model, component, target, manifest, and `tfTools.artifactsPath` changes in `src/extension.ts` and `src/ui/configuration-tree.ts`
 
 **Checkpoint**: User Stories 1 and 2 should both work, and compile-commands availability should be visible and independently testable.
 
