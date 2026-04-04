@@ -374,3 +374,107 @@ suite("checkProviderReadiness – integration (T026)", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// T004: ConfigurationTreeProvider root section expansion (UI-02)
+// Integration tests asserting all three root sections default to Expanded and
+// that their children (placeholder or status content) are reachable immediately.
+// These tests MUST FAIL for build-options and build-artifacts until T005 fixes
+// the SectionItem constructor.
+// ---------------------------------------------------------------------------
+
+suite("ConfigurationTreeProvider – root section expansion (UI-02)", () => {
+  test("getChildren(undefined) returns exactly three root sections", () => {
+    const provider = new ConfigurationTreeProvider();
+    const roots = provider.getChildren(undefined);
+    assert.strictEqual(
+      roots.length,
+      EXPECTED_ROOT_SECTION_COUNT,
+      `Expected ${EXPECTED_ROOT_SECTION_COUNT} root sections, got ${roots.length}`
+    );
+  });
+
+  test("all three root sections default to Expanded", () => {
+    const provider = new ConfigurationTreeProvider();
+    const roots = provider.getChildren(undefined);
+    for (const item of roots) {
+      assert.strictEqual(
+        item.collapsibleState,
+        vscode.TreeItemCollapsibleState.Expanded,
+        `Expected section '${(item as SectionItem).sectionId}' to be Expanded by default`
+      );
+    }
+  });
+
+  test("Build Context section is Expanded before any manifest is loaded", () => {
+    const provider = new ConfigurationTreeProvider();
+    const roots = provider.getChildren(undefined);
+    const buildContext = roots.find(
+      (r) => (r as SectionItem).sectionId === "build-context"
+    );
+    assert.ok(buildContext, "Expected Build Context section to exist");
+    assert.strictEqual(
+      buildContext!.collapsibleState,
+      vscode.TreeItemCollapsibleState.Expanded
+    );
+  });
+
+  test("Build Options section is Expanded before any manifest is loaded", () => {
+    const provider = new ConfigurationTreeProvider();
+    const roots = provider.getChildren(undefined);
+    const buildOptions = roots.find(
+      (r) => (r as SectionItem).sectionId === "build-options"
+    );
+    assert.ok(buildOptions, "Expected Build Options section to exist");
+    assert.strictEqual(
+      buildOptions!.collapsibleState,
+      vscode.TreeItemCollapsibleState.Expanded
+    );
+  });
+
+  test("Build Artifacts section is Expanded before any manifest is loaded", () => {
+    const provider = new ConfigurationTreeProvider();
+    const roots = provider.getChildren(undefined);
+    const buildArtifacts = roots.find(
+      (r) => (r as SectionItem).sectionId === "build-artifacts"
+    );
+    assert.ok(buildArtifacts, "Expected Build Artifacts section to exist");
+    assert.strictEqual(
+      buildArtifacts!.collapsibleState,
+      vscode.TreeItemCollapsibleState.Expanded
+    );
+  });
+
+  test("Build Context children are reachable immediately (loading placeholder visible)", () => {
+    const provider = new ConfigurationTreeProvider();
+    const roots = provider.getChildren(undefined);
+    const buildContext = roots.find(
+      (r) => (r as SectionItem).sectionId === "build-context"
+    );
+    assert.ok(buildContext, "Expected Build Context section");
+    const children = provider.getChildren(buildContext);
+    assert.ok(children.length > 0, "Expected Build Context to have visible child content");
+  });
+
+  test("Build Options children are reachable immediately (placeholder visible)", () => {
+    const provider = new ConfigurationTreeProvider();
+    const roots = provider.getChildren(undefined);
+    const buildOptions = roots.find(
+      (r) => (r as SectionItem).sectionId === "build-options"
+    );
+    assert.ok(buildOptions, "Expected Build Options section");
+    const children = provider.getChildren(buildOptions);
+    assert.ok(children.length > 0, "Expected Build Options to have visible placeholder content");
+  });
+
+  test("Build Artifacts children are reachable immediately (placeholder visible)", () => {
+    const provider = new ConfigurationTreeProvider();
+    const roots = provider.getChildren(undefined);
+    const buildArtifacts = roots.find(
+      (r) => (r as SectionItem).sectionId === "build-artifacts"
+    );
+    assert.ok(buildArtifacts, "Expected Build Artifacts section");
+    const children = provider.getChildren(buildArtifacts);
+    assert.ok(children.length > 0, "Expected Build Artifacts to have visible placeholder content");
+  });
+});
