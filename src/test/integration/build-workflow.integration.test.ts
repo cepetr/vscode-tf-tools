@@ -187,3 +187,53 @@ suite("Build Workflow – blocked manifest (T030)", () => {
     assert.ok(commands.includes("tfTools.clean"), "expected tfTools.clean in view/title");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Suite: Refresh IntelliSense command contributions (T027)
+// ---------------------------------------------------------------------------
+
+suite("Refresh IntelliSense – command contributions (T027)", () => {
+  test("package.json declares tfTools.refreshIntelliSense command", () => {
+    const ext = vscode.extensions.getExtension("trezor.tf-tools");
+    if (!ext) {
+      return; // Skip gracefully when not installed
+    }
+    const commands: Array<{ command: string }> =
+      ext.packageJSON?.contributes?.commands ?? [];
+    const ids = commands.map((c) => c.command);
+    assert.ok(
+      ids.includes("tfTools.refreshIntelliSense"),
+      `expected tfTools.refreshIntelliSense in package.json contributes.commands, found: ${ids.join(", ")}`
+    );
+  });
+
+  test("package.json exposes tfTools.refreshIntelliSense in view/title overflow menu", () => {
+    const ext = vscode.extensions.getExtension("trezor.tf-tools");
+    if (!ext) {
+      return; // Skip gracefully when not installed
+    }
+    const menus: Record<string, unknown[]> =
+      ext.packageJSON?.contributes?.menus ?? {};
+    const viewTitleMenus: unknown[] = (menus["view/title"] as unknown[]) ?? [];
+    const commands = viewTitleMenus
+      .map((e) => (e as { command?: string }).command)
+      .filter(Boolean);
+    assert.ok(
+      commands.includes("tfTools.refreshIntelliSense"),
+      `expected tfTools.refreshIntelliSense in view/title menus, found: ${commands.join(", ")}`
+    );
+  });
+
+  test("package.json refresh command has a category and icon", () => {
+    const ext = vscode.extensions.getExtension("trezor.tf-tools");
+    if (!ext) {
+      return;
+    }
+    const commands: Array<{ command: string; category?: string; icon?: string }> =
+      ext.packageJSON?.contributes?.commands ?? [];
+    const refreshCmd = commands.find((c) => c.command === "tfTools.refreshIntelliSense");
+    assert.ok(refreshCmd, "expected tfTools.refreshIntelliSense to be declared");
+    assert.ok(refreshCmd!.category, "expected category to be set on refreshIntelliSense");
+    assert.ok(refreshCmd!.icon, "expected icon to be set on refreshIntelliSense");
+  });
+});

@@ -10,6 +10,7 @@ import * as os from "os";
 import { ManifestService } from "../../manifest/manifest-service";
 import { ManifestState, ManifestStateLoaded } from "../../manifest/manifest-types";
 import { resolveActiveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
+import { checkProviderReadiness } from "../../intellisense/cpptools-provider";
 import { ActiveConfig } from "../../configuration/active-config";
 
 const VALID_MANIFEST = `
@@ -298,5 +299,71 @@ suite("resolveActiveArtifact – filesystem integration (T021)", () => {
       artifact.missingReason !== undefined,
       "expected missingReason to be set for missing artifact"
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T026: Provider-readiness and warning recovery (real VS Code host)
+// ---------------------------------------------------------------------------
+
+suite("checkProviderReadiness – integration (T026)", () => {
+  test("returns a defined readiness object", () => {
+    const result = checkProviderReadiness();
+    assert.ok(result, "expected checkProviderReadiness to return a value");
+  });
+
+  test("warningState is one of the expected values", () => {
+    const result = checkProviderReadiness();
+    const validStates = ["none", "missing-provider", "wrong-provider"];
+    assert.ok(
+      validStates.includes(result.warningState),
+      `expected warningState to be one of ${validStates}, got: ${result.warningState}`
+    );
+  });
+
+  test("providerInstalled is boolean", () => {
+    const result = checkProviderReadiness();
+    assert.strictEqual(typeof result.providerInstalled, "boolean");
+  });
+
+  test("providerConfigured is boolean", () => {
+    const result = checkProviderReadiness();
+    assert.strictEqual(typeof result.providerConfigured, "boolean");
+  });
+
+  test("lastWarningMessage is string or undefined", () => {
+    const result = checkProviderReadiness();
+    assert.ok(
+      result.lastWarningMessage === undefined || typeof result.lastWarningMessage === "string",
+      `expected lastWarningMessage to be string or undefined`
+    );
+  });
+
+  test("lastWarningMessage is set when warningState is not 'none'", () => {
+    const result = checkProviderReadiness();
+    if (result.warningState !== "none") {
+      assert.ok(
+        result.lastWarningMessage && result.lastWarningMessage.length > 0,
+        `expected lastWarningMessage when warningState is '${result.warningState}'`
+      );
+    }
+  });
+
+  test("lastWarningMessage is undefined when warningState is 'none'", () => {
+    const result = checkProviderReadiness();
+    if (result.warningState === "none") {
+      assert.strictEqual(result.lastWarningMessage, undefined);
+    }
+  });
+
+  test("cpptools missing means providerInstalled is false (test environment)", () => {
+    // In the integration test environment, ms-vscode.cpptools is not installed.
+    // This test validates the detection path works correctly in the host.
+    const cpptoolsExt = vscode.extensions.getExtension("ms-vscode.cpptools");
+    const result = checkProviderReadiness();
+    if (!cpptoolsExt) {
+      assert.strictEqual(result.providerInstalled, false);
+      assert.strictEqual(result.warningState, "missing-provider");
+    }
   });
 });
