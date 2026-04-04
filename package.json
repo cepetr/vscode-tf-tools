@@ -132,8 +132,8 @@
         },
         "tfTools.artifactsPath": {
           "type": "string",
-          "default": "",
-          "description": "(Trezor) Absolute or workspace-relative path to the directory that contains build artifact sub-folders (e.g. compile-commands files). Leave empty to allow IntelliSense status to show 'missing'.",
+          "default": "core/build-xtask/artifacts",
+          "description": "(Trezor) Absolute or workspace-relative path to the directory that contains build artifact sub-folders (e.g. compile-commands files). Defaults to 'core/build-xtask/artifacts'. Clear to disable IntelliSense artifact resolution.",
           "scope": "resource"
         }
       }

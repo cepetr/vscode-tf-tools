@@ -4,6 +4,14 @@
 
 This contract captures the user-visible VS Code surfaces introduced or changed by the IntelliSense Integration feature so implementation and tests can verify the same extension-facing behavior.
 
+## Settings
+
+- **`tfTools.artifactsPath`**:
+  - Type: `string`, resource-scoped
+  - Default: `core/build-xtask/artifacts`
+  - Resolved relative to the workspace root when not absolute; cleared or empty disables artifact resolution
+  - Triggers a full IntelliSense refresh when changed
+
 ## Configuration View
 
 - **Primary View**: `Configuration`
