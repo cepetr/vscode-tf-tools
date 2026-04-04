@@ -3,6 +3,7 @@ import * as path from "path";
 import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 import { ResolvedOption } from "../configuration/build-options";
+import { ActiveCompileCommandsArtifact } from "../intellisense/intellisense-types";
 
 // ---------------------------------------------------------------------------
 // Tree item types
@@ -36,6 +37,29 @@ export class PlaceholderItem extends vscode.TreeItem {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.contextValue = "placeholder";
     this.iconPath = new vscode.ThemeIcon("info");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Build Artifacts section items
+// ---------------------------------------------------------------------------
+
+/**
+ * The Compile Commands row in the Build Artifacts section.
+ * Shows `valid` or `missing` as description and the expected path as tooltip.
+ */
+export class CompileCommandsArtifactItem extends vscode.TreeItem {
+  constructor(artifact: ActiveCompileCommandsArtifact) {
+    super("Compile Commands", vscode.TreeItemCollapsibleState.None);
+    this.id = "artifact:compile-commands";
+    this.contextValue = "artifact-compile-commands";
+    this.iconPath = new vscode.ThemeIcon(
+      artifact.status === "valid" ? "pass" : "error"
+    );
+    this.description = artifact.status;
+    this.tooltip = artifact.status === "valid"
+      ? `Compile commands: ${artifact.path}`
+      : artifact.missingReason ?? `Expected: ${artifact.path}`;
   }
 }
 
@@ -216,6 +240,7 @@ export class ConfigurationTreeProvider
   private _expandedMultistateKey: string | undefined;
   private _collapsedGroups = new Set<string>();
   private _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
+  private _artifact: ActiveCompileCommandsArtifact | null = null;
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
     vscode.TreeItem | undefined
@@ -237,6 +262,15 @@ export class ConfigurationTreeProvider
       this._expandedMultistateKey = undefined;
       this._collapsedGroups.clear();
     }
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Updates the compile-commands artifact state and refreshes
+   * the Build Artifacts section of the tree.
+   */
+  updateArtifact(artifact: ActiveCompileCommandsArtifact | null): void {
+    this._artifact = artifact;
     this._onDidChangeTreeData.fire(undefined);
   }
 
@@ -303,7 +337,7 @@ export class ConfigurationTreeProvider
         case "build-options":
           return this._buildOptionsChildren();
         case "build-artifacts":
-          return [new PlaceholderItem("Available in a future release")];
+          return this._buildArtifactsChildren();
       }
     }
 
@@ -536,5 +570,17 @@ export class ConfigurationTreeProvider
 
   dispose(): void {
     this._onDidChangeTreeData.dispose();
+  }
+
+  // -------------------------------------------------------------------------
+  // Build Artifacts section children (US2 - FR-006 through FR-010C)
+  // -------------------------------------------------------------------------
+
+  private _buildArtifactsChildren(): vscode.TreeItem[] {
+    const artifact = this._artifact;
+    if (!artifact) {
+      return [new PlaceholderItem("IntelliSense not yet evaluated")];
+    }
+    return [new CompileCommandsArtifactItem(artifact)];
   }
 }

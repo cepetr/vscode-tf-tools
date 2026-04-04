@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
-import { resolveManifestUri, isStatusBarEnabled } from "./workspace/settings";
+import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath } from "./workspace/settings";
 import { ManifestService } from "./manifest/manifest-service";
 import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
@@ -32,6 +32,7 @@ import {
   createWorkflowTask,
   TASK_TYPE,
 } from "./tasks/build-task-provider";
+import { IntelliSenseService } from "./intellisense/intellisense-service";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
@@ -40,21 +41,22 @@ let _statusBar: StatusBarPresenter | undefined;
 let _manifestState: ManifestState | undefined;
 let _activeConfig: ActiveConfig | undefined;
 let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
+let _intelliSenseService: IntelliSenseService | undefined;
 
 // ---------------------------------------------------------------------------
-// Scope guard (FR-016, FR-017 → now expanded for Build Workflow slice)
+// Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense slices)
 //
-// This extension contributes ONLY the commands listed below in this feature
-// slice. Flash, Upload, Debug, IntelliSense, and all other cross-slice
-// commands are intentionally absent. Any attempt to register them here is a
-// scope violation.
+// This extension contributes ONLY the commands listed below in these feature
+// slices. Flash, Upload, Debug, and all other cross-slice commands are
+// intentionally absent. Any attempt to register them here is a scope violation.
 //
 // Allowed commands:
-//   tfTools.showLogs          — reveal the output channel
-//   tfTools.build             — launch Build task
-//   tfTools.clippy            — launch Clippy task
-//   tfTools.check             — launch Check task
-//   tfTools.clean             — launch Clean task
+//   tfTools.showLogs              — reveal the output channel
+//   tfTools.build                 — launch Build task
+//   tfTools.clippy                — launch Clippy task
+//   tfTools.check                 — launch Check task
+//   tfTools.clean                 — launch Clean task
+//   tfTools.refreshIntelliSense   — manual IntelliSense refresh
 // ---------------------------------------------------------------------------
 
 const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
@@ -63,6 +65,7 @@ const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
   "tfTools.clippy",
   "tfTools.check",
   "tfTools.clean",
+  "tfTools.refreshIntelliSense",
 ]);
 
 /**
@@ -192,6 +195,38 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   _statusBar = new StatusBarPresenter();
   context.subscriptions.push(_statusBar);
 
+  // --- IntelliSense service ---
+  _intelliSenseService = new IntelliSenseService();
+  context.subscriptions.push({
+    dispose: () => {
+      _intelliSenseService?.dispose();
+      _intelliSenseService = undefined;
+    },
+  });
+
+  // Subscribe to IntelliSense refresh results → update tree view artifact row
+  context.subscriptions.push(
+    _intelliSenseService.onDidRefresh(([artifact, _readiness]) => {
+      const state = _manifestState;
+      if (state) {
+        _treeProvider?.updateArtifact(artifact);
+      }
+    })
+  );
+
+  // Initialize artifactsRoot from current settings
+  _intelliSenseService.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
+
+  // Watch for tfTools.artifactsPath configuration changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
+        _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
+        _intelliSenseService?.scheduleRefresh("artifacts-path-change");
+      }
+    })
+  );
+
   // --- Manifest service ---
   _manifestService = new ManifestService(manifestUri);
   context.subscriptions.push(_manifestService);
@@ -212,6 +247,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       handleManifestStateDiagnostics(state);
       logManifestState(state);
       updateWorkflowBlockedContext(state);
+
+      // Update IntelliSense service with the new manifest state
+      const loadedState = state.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+      _intelliSenseService?.setManifest(loadedState);
+      _intelliSenseService?.setActiveConfig(activeConfig);
+      _intelliSenseService?.scheduleRefresh("manifest-change");
     })
   );
 
@@ -219,6 +260,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.showLogs", () => {
       revealLogs();
+    })
+  );
+
+  // --- Refresh IntelliSense command (FR-005, FR-005A) ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.refreshIntelliSense", () => {
+      _intelliSenseService?.scheduleRefresh("manual-refresh");
     })
   );
 
@@ -232,6 +280,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _resolvedOptions = computeResolvedOptions(state, config, context);
       _treeProvider?.update(state, config, _resolvedOptions);
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
+      _intelliSenseService?.setActiveConfig(config);
+      _intelliSenseService?.scheduleRefresh("active-config-change");
     })
   );
 
@@ -244,6 +294,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _resolvedOptions = computeResolvedOptions(state, config, context);
       _treeProvider?.update(state, config, _resolvedOptions);
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
+      _intelliSenseService?.setActiveConfig(config);
+      _intelliSenseService?.scheduleRefresh("active-config-change");
     })
   );
 
@@ -256,6 +308,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _resolvedOptions = computeResolvedOptions(state, config, context);
       _treeProvider?.update(state, config, _resolvedOptions);
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
+      _intelliSenseService?.setActiveConfig(config);
+      _intelliSenseService?.scheduleRefresh("active-config-change");
     })
   );
 
@@ -344,8 +398,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
   context.subscriptions.push(vscode.tasks.registerTaskProvider(TASK_TYPE, taskProvider));
 
+  // Trigger IntelliSense refresh after a successful Build task completion (FR-004).
+  context.subscriptions.push(
+    vscode.tasks.onDidEndTaskProcess((e) => {
+      if (
+        e.exitCode === 0 &&
+        (e.execution.task.definition as { type?: string }).type === TASK_TYPE &&
+        e.execution.task.name.startsWith("Build ")
+      ) {
+        _intelliSenseService?.scheduleRefresh("successful-build");
+      }
+    })
+  );
+
   // --- Start manifest service (loads and begins watching) ---
   await _manifestService.start();
+
+  // Schedule IntelliSense refresh on activation (FR-004).
+  _intelliSenseService?.scheduleRefresh("activation");
 }
 
 export function deactivate(): void {
@@ -357,6 +427,8 @@ export function deactivate(): void {
   _configurationTreeView = undefined;
   _statusBar?.dispose();
   _statusBar = undefined;
+  _intelliSenseService?.dispose();
+  _intelliSenseService = undefined;
   _manifestState = undefined;
   _activeConfig = undefined;
   _resolvedOptions = [];

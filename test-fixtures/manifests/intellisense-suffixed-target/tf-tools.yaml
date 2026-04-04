@@ -1,0 +1,22 @@
+# IntelliSense manifest fixture: targets with and without artifact-suffix.
+# Tests that artifact-suffix transitions change the resolved compile-commands path.
+# hw target: no suffix  -> compile_commands_core.cc.json
+# emu target: _emu suffix -> compile_commands_core_emu.cc.json
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifact-folder: model-t
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+    artifact-suffix: _emu
+
+components:
+  - id: core
+    name: Core
+    artifact-name: compile_commands_core

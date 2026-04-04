@@ -10,6 +10,8 @@ export interface ManifestModel {
   readonly kind: "model";
   readonly id: string;
   readonly name: string;
+  /** Required artifact folder under tfTools.artifactsPath for this model. */
+  readonly artifactFolder?: string;
 }
 
 export interface ManifestTarget {
@@ -19,12 +21,16 @@ export interface ManifestTarget {
   readonly shortName?: string;
   /** Command-line flag appended to build commands when set to a non-null string. */
   readonly flag?: string | null;
+  /** Optional suffix appended to the artifact basename for this target. Defaults to "". */
+  readonly artifactSuffix?: string;
 }
 
 export interface ManifestComponent {
   readonly kind: "component";
   readonly id: string;
   readonly name: string;
+  /** Required artifact basename stem for this component's compile-commands artifact. */
+  readonly artifactName?: string;
 }
 
 // --- Validation issues ---

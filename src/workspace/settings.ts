@@ -37,3 +37,23 @@ export function resolveCargoWorkspacePath(
   }
   return workspaceFolder.uri.fsPath;
 }
+
+/**
+ * Returns the resolved absolute artifacts root path for the given workspace folder.
+ * Uses `tfTools.artifactsPath` when set (resolved relative to the workspace root
+ * when it is not an absolute path); returns an empty string when the setting is absent.
+ */
+export function resolveArtifactsPath(
+  workspaceFolder: vscode.WorkspaceFolder
+): string {
+  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
+  const value: string | undefined = cfg.get<string>("artifactsPath");
+  if (!value || !value.trim()) {
+    return "";
+  }
+  const trimmed = value.trim();
+  if (require("path").isAbsolute(trimmed)) {
+    return trimmed;
+  }
+  return vscode.Uri.joinPath(workspaceFolder.uri, trimmed).fsPath;
+}

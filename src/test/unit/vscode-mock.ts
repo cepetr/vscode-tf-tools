@@ -197,6 +197,15 @@ const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 };
 const TreeItemCheckboxState = { Unchecked: 0, Checked: 1 };
 const StatusBarAlignment = { Left: 1, Right: 2 };
 
+// ---------------------------------------------------------------------------
+// Extensions API stub for IntelliSense provider tests
+// ---------------------------------------------------------------------------
+
+const extensions = {
+  getExtension: (_extensionId: string) => undefined as unknown | undefined,
+  all: [] as unknown[],
+};
+
 module.exports = {
   Position,
   Range,
@@ -208,6 +217,7 @@ module.exports = {
   workspace,
   commands,
   tasks,
+  extensions,
   EventEmitter,
   RelativePattern,
   TreeItem,

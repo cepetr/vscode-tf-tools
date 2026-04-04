@@ -68,6 +68,12 @@
         "title": "Clean",
         "category": "Trezor",
         "icon": "$(trash)"
+      },
+      {
+        "command": "tfTools.refreshIntelliSense",
+        "title": "Refresh IntelliSense",
+        "category": "Trezor",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -95,6 +101,11 @@
           "when": "view == tfTools.configuration",
           "group": "navigation@4",
           "enablement": "!tfTools.workflowBlocked"
+        },
+        {
+          "command": "tfTools.refreshIntelliSense",
+          "when": "view == tfTools.configuration",
+          "group": "overflow@1"
         }
       ]
     },
@@ -117,6 +128,12 @@
           "type": "boolean",
           "default": true,
           "description": "(Trezor) Show the active build configuration in the status bar.",
+          "scope": "resource"
+        },
+        "tfTools.artifactsPath": {
+          "type": "string",
+          "default": "",
+          "description": "(Trezor) Absolute or workspace-relative path to the directory that contains build artifact sub-folders (e.g. compile-commands files). Leave empty to allow IntelliSense status to show 'missing'.",
           "scope": "resource"
         }
       }

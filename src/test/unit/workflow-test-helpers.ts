@@ -144,3 +144,38 @@ export function whenAny(...children: WhenExpression[]): WhenExpression {
 export function whenNot(child: WhenExpression): WhenExpression {
   return { type: "not", child };
 }
+
+// ---------------------------------------------------------------------------
+// IntelliSense manifest state factories
+//
+// These are used by IntelliSense unit tests to create manifest states that
+// include the extended artifact-folder / artifact-name / artifact-suffix
+// fields required by the IntelliSense slice.
+// ---------------------------------------------------------------------------
+
+/** Returns a loaded manifest state fixture with IntelliSense artifact fields. */
+export function makeIntelliSenseLoadedState(
+  overrides: Partial<ManifestStateLoaded> = {}
+): ManifestStateLoaded {
+  return {
+    status: "loaded",
+    manifestUri: manifestUri("intellisense-valid"),
+    models: [
+      { kind: "model", id: "T2T1", name: "Trezor Model T (v1)", artifactFolder: "model-t" } as ManifestStateLoaded["models"][0],
+      { kind: "model", id: "T3W1", name: "Trezor Model T3 (w1)", artifactFolder: "model-t3" } as ManifestStateLoaded["models"][0],
+    ],
+    targets: [
+      { kind: "target", id: "hw", name: "Hardware", shortName: "HW" },
+      { kind: "target", id: "emu", name: "Emulator", artifactSuffix: "_emu" } as ManifestStateLoaded["targets"][0],
+    ],
+    components: [
+      { kind: "component", id: "core", name: "Core", artifactName: "compile_commands_core" } as ManifestStateLoaded["components"][0],
+      { kind: "component", id: "prodtest", name: "Prodtest", artifactName: "compile_commands_prodtest" } as ManifestStateLoaded["components"][0],
+    ],
+    buildOptions: [],
+    hasWorkflowBlockingIssues: false,
+    validationIssues: [],
+    loadedAt: new Date("2026-01-01T00:00:00Z"),
+    ...overrides,
+  };
+}

@@ -130,7 +130,12 @@ function validateModels(
       continue;
     }
     seen.add(id);
-    models.push({ kind: "model", id, name });
+    const artifactFolderNode = item.get("artifact-folder", true);
+    const artifactFolder =
+      artifactFolderNode instanceof Scalar && typeof artifactFolderNode.value === "string" && artifactFolderNode.value.trim() !== ""
+        ? artifactFolderNode.value
+        : undefined;
+    models.push({ kind: "model", id, name, artifactFolder });
   }
   return models;
 }
@@ -193,7 +198,12 @@ function validateTargets(
         : flagNode instanceof Scalar && flagNode.value === null
           ? null
           : undefined;
-    targets.push({ kind: "target", id, name, shortName, flag });
+    const artifactSuffixNode = item.get("artifact-suffix", true);
+    const artifactSuffix =
+      artifactSuffixNode instanceof Scalar && typeof artifactSuffixNode.value === "string"
+        ? artifactSuffixNode.value
+        : undefined;
+    targets.push({ kind: "target", id, name, shortName, flag, artifactSuffix });
   }
   return targets;
 }
@@ -244,7 +254,12 @@ function validateComponents(
       continue;
     }
     seen.add(id);
-    components.push({ kind: "component", id, name });
+    const artifactNameNode = item.get("artifact-name", true);
+    const artifactName =
+      artifactNameNode instanceof Scalar && typeof artifactNameNode.value === "string" && artifactNameNode.value.trim() !== ""
+        ? artifactNameNode.value
+        : undefined;
+    components.push({ kind: "component", id, name, artifactName });
   }
   return components;
 }
