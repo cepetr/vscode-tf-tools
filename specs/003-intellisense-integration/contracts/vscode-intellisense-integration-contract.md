@@ -57,13 +57,14 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
   - if duplicate compile-database entries exist for one file, tf-tools uses the first and logs the conflict
   - tf-tools returns a browse configuration whose `browsePath` is the de-duplicated union of include paths from the active compile database and whose representative compiler metadata comes from the first indexed entry
   - if cpptools is unavailable, the user receives a visible warning and the condition is logged persistently
-  - if cpptools is installed but tf-tools is not the active provider, the user receives a visible warning and the condition is logged persistently
+  - if cpptools is installed but tf-tools is not the active provider, the user receives a visible warning, can invoke a workspace-setting fix that writes `C_Cpp.default.configurationProvider = cepetr.tf-tools`, and the condition is logged persistently
   - when provider prerequisites become valid again, stale warning state clears on the next refresh
 
 ## Diagnostics And Logging
 
 - Missing compile-commands artifacts are represented through the `Compile Commands` row plus a persistent log entry, not a popup notification.
 - Missing-provider and wrong-provider conditions produce both visible warnings and output-channel log entries.
+- Wrong-provider warnings also expose a workspace-setting fix for the active folder.
 - Runtime refresh failures are written to the `Trezor Firmware Tools` output channel.
 
 ## Non-Goals For This Contract

@@ -42,8 +42,9 @@ Verify IntelliSense Integration end to end in a VS Code Extension Development Ho
 2. Trigger IntelliSense refresh and confirm a visible warning says IntelliSense integration is unavailable.
 3. Open the log output and confirm the missing-provider condition was recorded.
 4. Install Microsoft C/C++ but leave the workspace configured to another active provider.
-5. Trigger IntelliSense refresh again and confirm a visible warning explains the wrong active provider configuration.
-6. Reconfigure the workspace to use Trezor Firmware Tools as the active provider and confirm the stale warning state clears on the next refresh.
+5. Trigger IntelliSense refresh again and confirm a visible warning explains the wrong active provider configuration and offers to switch the workspace setting.
+6. Accept the offered fix and confirm `C_Cpp.default.configurationProvider` is updated to the Trezor Firmware Tools provider id for the workspace.
+7. Confirm the stale warning state clears on the next refresh.
 
 ## Scenario 4: Manual refresh is available from both required surfaces
 

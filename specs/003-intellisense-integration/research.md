@@ -56,3 +56,11 @@
   - Pass only the compile-database path to cpptools: rejected because the custom provider API does not consume a raw compile-database path and would leave IntelliSense effectively unconfigured.
   - Parse entries lazily on file request: rejected because the product already centers refresh around active-context changes and because eager parsing simplifies duplicate detection, tree-state synchronization, and browse-configuration generation.
   - Merge duplicate entries for the same file: rejected because the compile database should not contain duplicates and merging would create non-obvious precedence rules; first-entry-wins with logging is deterministic and simple.
+
+## Decision 8: Require tf-tools to be the explicit active configuration provider and offer a workspace fix when it is not
+
+- **Decision**: Treat `C_Cpp.default.configurationProvider` as a strict prerequisite: when cpptools is installed, readiness is `ready` only if the workspace provider is set to the tf-tools provider id, and the wrong-provider warning offers a one-step workspace fix that writes that setting.
+- **Rationale**: The informal spec requires an inactive tf-tools provider configuration to fail visibly rather than silently proceeding. Treating an empty or unrelated provider value as acceptable would leave cpptools free to use stale or competing configuration sources while the extension claims IntelliSense is aligned.
+- **Alternatives considered**:
+  - Treat an empty provider setting as implicitly acceptable: rejected because cpptools would not be instructed to use tf-tools and the extension could not guarantee that its per-file configurations are authoritative.
+  - Only warn without offering a fix: rejected because the user spec explicitly calls for a corrective workspace-setting path, and the setting can be changed safely and explicitly.
