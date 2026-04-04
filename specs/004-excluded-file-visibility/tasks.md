@@ -49,7 +49,7 @@
 > **NOTE: Write these tests first and ensure they fail before implementation.**
 
 - [X] T008 [P] [US1] Add unit tests for basename-only matching, case-sensitive evaluation, `/`-separator normalization, absolute and workspace-relative folder globs, and empty-scope disabling in `src/test/unit/workflow/excluded-files-service.test.ts`
-- [ ] T009 [P] [US1] Add integration tests for Explorer `FileDecorationProvider` badge, tooltip, and optional gray color behavior in `src/test/integration/excluded-file-visibility.integration.test.ts`
+- [X] T009 [P] [US1] Add integration tests for Explorer `FileDecorationProvider` badge, tooltip, and optional gray color behavior in `src/test/integration/excluded-file-visibility.integration.test.ts`
 
 ### Implementation for User Story 1
 
