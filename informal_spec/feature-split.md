@@ -4,6 +4,8 @@ This document defines the recommended feature split for implementing Trezor Firm
 
 The goal is to keep each feature user-visible, independently testable, and narrow enough that specs, plans, and task lists stay coherent. The split below avoids bundling unrelated integrations into one oversized feature while also avoiding infrastructure-only features that do not produce a demonstrable result.
 
+This document is intentionally about slice boundaries and implementation ownership. It says what each feature should implement and what should stay out of scope for that slice. Detailed product behavior, rules, and technical mechanics remain defined in `user-spec.md` and `tech-spec.md`, which the specify workflow should read alongside this split.
+
 ## Recommended Feature Order
 
 ### 1. Configuration Experience
@@ -29,6 +31,7 @@ This feature also includes warning behavior for IntelliSense prerequisites: if c
 Explorer badges, optional graying, editor overlay, and file-scope/pattern rules.
 
 This feature uses compile-database inclusion data to show which files are outside the active build configuration.
+It consumes compile-database inclusion data from the IntelliSense slice but does not extend cpptools integration, compile-commands resolution, or artifact-path logic.
 
 ### 5. Flash/Upload Actions
 Binary artifact action enablement, `flashWhen` and `uploadWhen` handling, command execution, and failure reporting.
