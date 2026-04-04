@@ -487,3 +487,84 @@ suite("ExcludedFilesService — clear()", () => {
     svc.dispose();
   });
 });
+
+// ---------------------------------------------------------------------------
+// T024: Regression — path-separator normalization edge cases
+// ---------------------------------------------------------------------------
+
+suite("normalizeToForwardSlashes — regression (T024)", () => {
+  test("trailing backslash is normalized to trailing forward slash", () => {
+    assert.strictEqual(
+      normalizeToForwardSlashes("C:\\project\\core\\"),
+      "C:/project/core/"
+    );
+  });
+
+  test("path with only backslashes normalizes to all forward slashes", () => {
+    const result = normalizeToForwardSlashes("a\\b\\c\\d.c");
+    assert.strictEqual(result, "a/b/c/d.c");
+    assert.ok(!result.includes("\\"), "no backslashes must remain after normalization");
+  });
+
+  test("already-normalized path is returned unchanged", () => {
+    const p = "/workspace/core/embed/main.c";
+    assert.strictEqual(normalizeToForwardSlashes(p), p);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T024: Regression — case-sensitive folder glob matching
+// ---------------------------------------------------------------------------
+
+suite("isFileExcluded — case-sensitive folder glob regression (T024)", () => {
+  const emptySet: ReadonlySet<string> = new Set();
+
+  test("uppercase folder glob does NOT match a lowercase folder path", () => {
+    const settings = makeExcludedFilesSettings({
+      fileNamePatterns: ["*.c"],
+      folderGlobs: ["Core/embed/**"],  // wrong case
+    });
+    const candidatePath = absPath("core/embed/other.c");
+    assert.strictEqual(
+      isFileExcluded(candidatePath, emptySet, settings, WORKSPACE_ROOT),
+      false,
+      "uppercase folder glob must not match lowercase folder path"
+    );
+  });
+
+  test("correct-case folder glob matches while wrong-case does not", () => {
+    const candidate = absPath("core/embed/other.c");
+    const wrong = makeExcludedFilesSettings({ fileNamePatterns: ["*.c"], folderGlobs: ["CORE/EMBED/**"] });
+    const correct = makeExcludedFilesSettings({ fileNamePatterns: ["*.c"], folderGlobs: ["core/embed/**"] });
+
+    assert.strictEqual(isFileExcluded(candidate, emptySet, wrong, WORKSPACE_ROOT), false, "wrong case must not match");
+    assert.strictEqual(isFileExcluded(candidate, emptySet, correct, WORKSPACE_ROOT), true, "correct case must match");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T024: Regression — empty-scope disabling and scope restoration
+// ---------------------------------------------------------------------------
+
+suite("isFileExcluded — empty-scope restoration regression (T024)", () => {
+  const emptySet: ReadonlySet<string> = new Set();
+  const candidate = absPath("core/embed/other.c");
+
+  test("removing and restoring fileNamePatterns restores excluded-file marking", () => {
+    const full = makeExcludedFilesSettings({ fileNamePatterns: ["*.c"], folderGlobs: ["core/embed/**"] });
+    const empty = makeExcludedFilesSettings({ fileNamePatterns: [] });
+
+    assert.strictEqual(isFileExcluded(candidate, emptySet, full, WORKSPACE_ROOT), true, "file should be excluded with full settings");
+    assert.strictEqual(isFileExcluded(candidate, emptySet, empty, WORKSPACE_ROOT), false, "file must not be excluded with empty patterns");
+    assert.strictEqual(isFileExcluded(candidate, emptySet, full, WORKSPACE_ROOT), true, "file must be excluded again after restoring patterns");
+  });
+
+  test("removing and restoring folderGlobs restores excluded-file marking", () => {
+    const full = makeExcludedFilesSettings({ fileNamePatterns: ["*.c"], folderGlobs: ["core/embed/**"] });
+    const noGlobs = makeExcludedFilesSettings({ folderGlobs: [] });
+
+    assert.strictEqual(isFileExcluded(candidate, emptySet, full, WORKSPACE_ROOT), true);
+    assert.strictEqual(isFileExcluded(candidate, emptySet, noGlobs, WORKSPACE_ROOT), false);
+    assert.strictEqual(isFileExcluded(candidate, emptySet, full, WORKSPACE_ROOT), true);
+  });
+});
