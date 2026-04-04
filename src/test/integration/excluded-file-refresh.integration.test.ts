@@ -495,6 +495,34 @@ suite("Excluded-file refresh — stale-state clearing (US3-AC4)", () => {
     manager.dispose();
     svc.dispose();
   });
+
+  test("switching from a valid artifact to no artifact requests a full Explorer refresh and removes badges", () => {
+    const svc = new ExcludedFilesService();
+    const provider = new ExcludedFileDecorationsProvider();
+    const sub = wireProviderToService(svc, provider);
+    const cancelToken = new vscode.CancellationTokenSource().token;
+    const fired: Array<vscode.Uri | vscode.Uri[] | undefined> = [];
+    provider.onDidChangeFileDecorations((e) => { fired.push(e); });
+
+    svc.recompute("T2T1/hw/core", ARTIFACT_PATH, INCLUDED_FILES, BASE_SETTINGS, WORKSPACE_ROOT, ALL_CANDIDATES);
+    assert.ok(
+      provider.provideFileDecoration(uriFor("core/embed/other.c"), cancelToken),
+      "other.c should be decorated before the artifact disappears"
+    );
+
+    svc.clear("T3W1/hw/prodtest");
+
+    assert.ok(fired.includes(undefined), "artifact loss should request a full Explorer refresh");
+    assert.strictEqual(
+      provider.provideFileDecoration(uriFor("core/embed/other.c"), cancelToken),
+      undefined,
+      "badges must be removed when the selected configuration has no compile-commands artifact"
+    );
+
+    sub.dispose();
+    provider.dispose();
+    svc.dispose();
+  });
 });
 
 // ---------------------------------------------------------------------------

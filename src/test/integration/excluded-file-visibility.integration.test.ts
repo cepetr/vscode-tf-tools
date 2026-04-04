@@ -290,6 +290,42 @@ suite("ExcludedFileDecorationsProvider — handleSnapshot() decoration change ev
     );
     provider.dispose();
   });
+
+  test("fires undefined when the active context changes", async () => {
+    const provider = new ExcludedFileDecorationsProvider();
+    const excludedPath = fixturePath("core/embed/other.c");
+
+    provider.handleSnapshot(makeSnapshot([excludedPath], [], true));
+
+    const fired: Array<vscode.Uri | vscode.Uri[] | undefined> = [];
+    provider.onDidChangeFileDecorations((e) => { fired.push(e); });
+
+    provider.handleSnapshot({
+      ...makeSnapshot([excludedPath], [], true),
+      contextKey: "T3W1/hw/core",
+    });
+
+    assert.ok(fired.includes(undefined), "context changes must request a full decoration re-query");
+    provider.dispose();
+  });
+
+  test("fires undefined when the artifact path becomes unavailable", async () => {
+    const provider = new ExcludedFileDecorationsProvider();
+    const excludedPath = fixturePath("core/embed/other.c");
+
+    provider.handleSnapshot(makeSnapshot([excludedPath], [], true));
+
+    const fired: Array<vscode.Uri | vscode.Uri[] | undefined> = [];
+    provider.onDidChangeFileDecorations((e) => { fired.push(e); });
+
+    provider.handleSnapshot({
+      ...makeSnapshot([], [], true),
+      artifactPath: null,
+    });
+
+    assert.ok(fired.includes(undefined), "artifact loss must request a full decoration re-query");
+    provider.dispose();
+  });
 });
 
 // ===========================================================================

@@ -68,6 +68,11 @@ export class ExcludedFileDecorationsProvider implements vscode.FileDecorationPro
     const previous = this._snapshot;
     this._snapshot = snapshot;
 
+    if (requiresFullRefresh(previous, snapshot)) {
+      this._onDidChangeFileDecorations.fire(undefined);
+      return;
+    }
+
     // Collect URIs that changed decoration state (added, removed, or changed settings).
     const affected = computeAffectedUris(previous, snapshot);
     if (affected.length > 0) {
@@ -143,4 +148,18 @@ function settingsChanged(
     return false;
   }
   return previous.settings.grayInTree !== next.settings.grayInTree;
+}
+
+function requiresFullRefresh(
+  previous: ExcludedFilesSnapshot | undefined,
+  next: ExcludedFilesSnapshot
+): boolean {
+  if (!previous) {
+    return false;
+  }
+
+  return (
+    previous.contextKey !== next.contextKey ||
+    previous.artifactPath !== next.artifactPath
+  );
 }
