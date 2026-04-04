@@ -109,7 +109,7 @@
 
 - [X] T024 [P] Expand regression coverage for path-separator normalization, case-sensitive matching, and empty-scope disabling in `src/test/unit/workflow/excluded-files-service.test.ts` and `src/test/integration/excluded-file-refresh.integration.test.ts`
 - [X] T025 [P] Review settings and command contribution scope drift in `package.json` and `src/extension.ts`
-- [ ] T026 Validate end-to-end excluded-file scenarios from `specs/004-excluded-file-visibility/quickstart.md`
+- [X] T026 Validate end-to-end excluded-file scenarios from `specs/004-excluded-file-visibility/quickstart.md`
 
 ---
 
