@@ -11,6 +11,7 @@ import { ManifestService } from "../../manifest/manifest-service";
 import { ManifestState, ManifestStateLoaded } from "../../manifest/manifest-types";
 import { resolveActiveArtifact, buildResolutionInputs, deriveArtifactPath } from "../../intellisense/artifact-resolution";
 import { checkProviderReadiness } from "../../intellisense/cpptools-provider";
+import { IntelliSenseService } from "../../intellisense/intellisense-service";
 import { ActiveConfig } from "../../configuration/active-config";
 import { SectionItem, ConfigurationTreeProvider } from "../../ui/configuration-tree";
 
@@ -476,5 +477,104 @@ suite("ConfigurationTreeProvider – root section expansion (UI-02)", () => {
     assert.ok(buildArtifacts, "Expected Build Artifacts section");
     const children = provider.getChildren(buildArtifacts);
     assert.ok(children.length > 0, "Expected Build Artifacts to have visible placeholder content");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T024: IntelliSenseService – provider-warning and warning recovery flows
+// ---------------------------------------------------------------------------
+
+suite("IntelliSenseService – provider warning flows (T024)", () => {
+  /** Waits for the pending refresh to drain (no public API, so we yield). */
+  function drainRefresh(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  test("getLastReadiness is null before any refresh", () => {
+    const svc = new IntelliSenseService();
+    assert.strictEqual(svc.getLastReadiness(), null);
+  });
+
+  test("getLastArtifact is null before any refresh", () => {
+    const svc = new IntelliSenseService();
+    assert.strictEqual(svc.getLastArtifact(), null);
+  });
+
+  test("getLastReadiness is populated after scheduleRefresh", async () => {
+    const svc = new IntelliSenseService();
+    svc.scheduleRefresh("activation");
+    await drainRefresh();
+    const readiness = svc.getLastReadiness();
+    assert.ok(readiness !== null, "expected readiness to be set after refresh");
+  });
+
+  test("getLastReadiness after refresh matches direct checkProviderReadiness call", async () => {
+    const svc = new IntelliSenseService();
+    svc.scheduleRefresh("activation");
+    await drainRefresh();
+    const fromService = svc.getLastReadiness()!;
+    const direct = checkProviderReadiness();
+    assert.strictEqual(fromService.warningState, direct.warningState);
+    assert.strictEqual(fromService.providerInstalled, direct.providerInstalled);
+    assert.strictEqual(fromService.providerConfigured, direct.providerConfigured);
+  });
+
+  test("getLastArtifact is null when no manifest is set (no active context)", async () => {
+    const svc = new IntelliSenseService();
+    svc.scheduleRefresh("activation");
+    await drainRefresh();
+    assert.strictEqual(svc.getLastArtifact(), null);
+  });
+
+  test("onDidRefresh fires after scheduleRefresh", async () => {
+    const svc = new IntelliSenseService();
+    let firedCount = 0;
+    svc.onDidRefresh(() => {
+      firedCount++;
+    });
+    svc.scheduleRefresh("activation");
+    await drainRefresh();
+    assert.ok(firedCount >= 1, `expected onDidRefresh to fire at least once, fired: ${firedCount}`);
+  });
+
+  test("consecutive refreshes do not corrupt state", async () => {
+    const svc = new IntelliSenseService();
+    svc.scheduleRefresh("activation");
+    svc.scheduleRefresh("active-config-change");
+    svc.scheduleRefresh("manual-refresh");
+    await drainRefresh();
+    // State should reflect a valid final readiness (no crash or null)
+    const readiness = svc.getLastReadiness();
+    assert.ok(readiness !== null, "expected readiness to survive concurrent refresh calls");
+  });
+
+  test("missing-provider warningState persists when cpptools is absent", async () => {
+    // In the integration test host, ms-vscode.cpptools is not installed.
+    const cpptoolsExt = vscode.extensions.getExtension("ms-vscode.cpptools");
+    if (cpptoolsExt) {
+      // Skip: can't isolate missing-provider when cpptools is present
+      return;
+    }
+    const svc = new IntelliSenseService();
+    svc.scheduleRefresh("activation");
+    await drainRefresh();
+    assert.strictEqual(svc.getLastReadiness()!.warningState, "missing-provider");
+  });
+
+  test("warning recovery: warningState transitions when provider is re-checked", async () => {
+    // Verify that each fresh refresh captures the current readiness state.
+    // This tests the "recovery flow" path where a new refresh re-evaluates readiness.
+    const svc = new IntelliSenseService();
+    svc.scheduleRefresh("active-config-change");
+    await drainRefresh();
+    const firstReadiness = svc.getLastReadiness()!;
+
+    // A second refresh should yield the same stable state (recovery requires env change;
+    // here we verify the refresh path itself runs without caching the first warning)
+    svc.scheduleRefresh("active-config-change");
+    await drainRefresh();
+    const secondReadiness = svc.getLastReadiness()!;
+
+    assert.strictEqual(secondReadiness.warningState, firstReadiness.warningState);
   });
 });

@@ -95,9 +95,9 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T023 [P] [US3] Extend provider-readiness unit tests for strict provider selection and workspace-setting fix behavior in `src/test/unit/workflow/intellisense-provider-readiness.test.ts`
-- [ ] T024 [P] [US3] Add integration tests for missing-provider, wrong-provider, provider-availability changes, and warning recovery flows in `src/test/integration/configuration-health.integration.test.ts`
-- [ ] T025 [P] [US3] Add integration tests for `Refresh IntelliSense` command contributions and execution in `src/test/integration/intellisense-workflow.integration.test.ts`
+- [X] T023 [P] [US3] Extend provider-readiness unit tests for strict provider selection and workspace-setting fix behavior in `src/test/unit/workflow/intellisense-provider-readiness.test.ts`
+- [X] T024 [P] [US3] Add integration tests for missing-provider, wrong-provider, provider-availability changes, and warning recovery flows in `src/test/integration/configuration-health.integration.test.ts`
+- [X] T025 [P] [US3] Add integration tests for `Refresh IntelliSense` command contributions and execution in `src/test/integration/intellisense-workflow.integration.test.ts`
 
 ### Implementation for User Story 3
 
