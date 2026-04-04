@@ -55,7 +55,7 @@ export class CompileCommandsArtifactItem extends vscode.TreeItem {
     this.description = artifact.status;
     this.tooltip = artifact.status === "valid"
       ? `Compile commands: ${artifact.path}`
-      : artifact.missingReason ?? `Expected: ${artifact.path}`;
+      : `Expected: ${artifact.path}${artifact.missingReason ? `\n${artifact.missingReason}` : ""}`;
   }
 }
 
