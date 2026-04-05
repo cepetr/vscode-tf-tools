@@ -220,16 +220,31 @@
         },
         "tfTools.excludedFiles.fileNamePatterns": {
           "type": "array",
-          "items": { "type": "string" },
-          "default": ["*.c"],
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "*.c"
+          ],
           "description": "(Trezor) Basename-only glob patterns (name + extension) for files eligible to be marked excluded. Case-sensitive. Subpath globbing is not supported. Excluded-file marking is disabled when this list is empty.",
           "scope": "resource"
         },
         "tfTools.excludedFiles.folderGlobs": {
           "type": "array",
-          "items": { "type": "string" },
-          "default": ["core/embed/**", "core/vendor/**"],
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "core/embed/**",
+            "core/vendor/**"
+          ],
           "description": "(Trezor) Folder glob patterns that scope excluded-file marking. May be absolute paths or paths relative to the workspace root. Use '/' separators. Excluded-file marking is disabled when this list is empty.",
+          "scope": "resource"
+        },
+        "tfTools.debug.templatesPath": {
+          "type": "string",
+          "default": "core/embed/.tf-tools",
+          "description": "(Trezor) Path to the directory containing debugger template files (JSONC). Relative to the workspace root. Defaults to 'core/embed/.tf-tools'.",
           "scope": "resource"
         }
       }
@@ -249,6 +264,7 @@
     "package": "vsce package --no-dependencies"
   },
   "dependencies": {
+    "jsonc-parser": "^3.3.1",
     "minimatch": "^10.2.5",
     "yaml": "^2.7.1"
   },
