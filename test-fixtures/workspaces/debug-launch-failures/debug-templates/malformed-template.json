@@ -1,6 +1,14 @@
-// This template file is intentionally malformed JSONC (missing closing brace)
 {
+  // Intentionally malformed JSONC fixture for invocation-time parse failure coverage.
   "type": "gdb",
   "request": "launch",
-  "program": "${tfTools.executablePath}"
-  // missing closing brace
+  "name": "Malformed ${tfTools.model}",
+  "program": "${tfTools.executablePath}",
+  "cwd": "${workspaceFolder}",
+  "environment": [
+    {
+      "name": "TARGET",
+      "value": "${tfTools.target}"
+    }
+  ],
+  "stopAtEntry": false

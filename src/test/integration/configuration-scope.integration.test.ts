@@ -15,6 +15,17 @@ const BANNED_COMMAND_PATTERNS = [
 ];
 
 suite("Scope guard — no cross-slice commands (FR-026)", () => {
+  test("package.json does not use eager '*' activation", () => {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    assert.ok(ext, "expected cepetr.tf-tools extension to be available in the test host");
+
+    const activationEvents = (ext.packageJSON?.activationEvents ?? []) as string[];
+    assert.ok(
+      !activationEvents.includes("*"),
+      "package.json must not use eager '*' activation"
+    );
+  });
+
   async function activateExtension(): Promise<void> {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     assert.ok(ext, "expected cepetr.tf-tools extension to be available in the test host");

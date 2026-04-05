@@ -1,7 +1,14 @@
 {
-  // Template referencing an unknown tf-tools variable
   "type": "gdb",
   "request": "launch",
+  "name": "Debug ${tfTools.model}",
   "program": "${tfTools.executablePath}",
-  "unknownArg": "${tfTools.nonExistentVariable}"
+  "unknownArg": "${tfTools.nonExistentVariable}",
+  "cwd": "${workspaceFolder}",
+  "environment": [
+    {
+      "name": "TARGET",
+      "value": "${tfTools.target}"
+    }
+  ]
 }

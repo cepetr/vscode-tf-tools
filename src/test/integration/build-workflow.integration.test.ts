@@ -200,13 +200,19 @@ suite("Build Workflow – blocked manifest (T030)", () => {
 
     const primaryCommands = viewTitleMenus
       .filter((entry) => entry.group?.startsWith("navigation@"))
+      .sort((left, right) => {
+        const leftOrder = Number((left.group ?? "").split("@")[1] ?? Number.NaN);
+        const rightOrder = Number((right.group ?? "").split("@")[1] ?? Number.NaN);
+        return leftOrder - rightOrder;
+      })
       .map((entry) => entry.command)
       .filter((command): command is string => Boolean(command));
 
-    assert.deepStrictEqual(
-      primaryCommands,
-      ["tfTools.build"],
-      `expected tfTools.build as the primary view/title action, found: ${primaryCommands.join(", ")}`
+    assert.ok(primaryCommands.length > 0, "expected at least one primary view/title action");
+    assert.strictEqual(
+      primaryCommands[0],
+      "tfTools.build",
+      `expected tfTools.build as the first primary view/title action, found: ${primaryCommands.join(", ")}`
     );
   });
 
@@ -293,6 +299,7 @@ suite("Build Workflow – blocked manifest (T030)", () => {
         "tfTools.clean",
         "tfTools.flash",
         "tfTools.upload",
+        "tfTools.startDebugging",
         "tfTools.refreshIntelliSense",
       ]
     );

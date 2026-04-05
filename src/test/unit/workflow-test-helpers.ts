@@ -23,7 +23,7 @@ import {
 
 export function fixtureUri(relPath: string): vscode.Uri {
   return vscode.Uri.file(
-    path.resolve(__dirname, "../../../../test-fixtures", relPath)
+    path.resolve(__dirname, "../../../test-fixtures", relPath)
   );
 }
 
@@ -254,7 +254,7 @@ export function loadCompileCommandsFixture(fixturePath: string): RawCompileEntry
  * fixture used by excluded-file visibility unit tests.
  */
 export function excludedFilesScopeWorkspaceRoot(): string {
-  return path.resolve(__dirname, "../../../../test-fixtures/workspaces/excluded-files-scope");
+  return path.resolve(__dirname, "../../../test-fixtures/workspaces/excluded-files-scope");
 }
 
 /**
@@ -363,14 +363,14 @@ export function makeDebugLoadedState(
  * Returns the absolute path to the debug-launch-valid workspace fixture root.
  */
 export function debugLaunchValidWorkspaceRoot(): string {
-  return path.resolve(__dirname, "../../../../test-fixtures/workspaces/debug-launch-valid");
+  return path.resolve(__dirname, "../../../test-fixtures/workspaces/debug-launch-valid");
 }
 
 /**
  * Returns the absolute path to the debug-launch-failures workspace fixture root.
  */
 export function debugLaunchFailuresWorkspaceRoot(): string {
-  return path.resolve(__dirname, "../../../../test-fixtures/workspaces/debug-launch-failures");
+  return path.resolve(__dirname, "../../../test-fixtures/workspaces/debug-launch-failures");
 }
 
 /**

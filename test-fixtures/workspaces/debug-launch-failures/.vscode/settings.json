@@ -2,4 +2,8 @@
   "tfTools.manifestPath": "tf-tools-manifest.yaml",
   "tfTools.artifactsPath": "artifacts",
   "tfTools.debug.templatesPath": "debug-templates"
+}{
+  "tfTools.manifestPath": "tf-tools-manifest.yaml",
+  "tfTools.artifactsPath": "artifacts",
+  "tfTools.debug.templatesPath": "debug-templates"
 }

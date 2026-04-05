@@ -2,11 +2,16 @@ models:
   - id: T2T1
     name: Trezor Model T (v1)
     artifactFolder: model-t
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+    artifactFolder: model-t3
 
 targets:
   - id: hw
     name: Hardware
     shortName: HW
+  - id: emu
+    name: Emulator
 
 components:
   - id: core
@@ -14,14 +19,17 @@ components:
     artifactName: compile_commands_core
 
 debug:
-  # Unique match — triggers missing-template failure since template file doesn't exist
-  - when: model(T2T1)
+  - when: all(model(T2T1), target(hw), component(core))
     priority: 10
     template: missing-template.json
     executable: firmware_missing.elf
 
-  # Profile with traversal-attempt template path
-  - when: all(model(T2T1), target(hw))
-    priority: 5
-    template: ../escaped/template.json
-    executable: firmware_traversal.elf
+  - when: all(model(T2T1), target(emu), component(core))
+    priority: 10
+    template: malformed-template.json
+    executable: firmware_malformed.elf
+
+  - when: all(model(T3W1), target(hw), component(core))
+    priority: 10
+    template: unknown-var-template.json
+    executable: firmware_unknown.elf
