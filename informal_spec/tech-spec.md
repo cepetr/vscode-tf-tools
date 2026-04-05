@@ -389,6 +389,8 @@ The Build Artifacts section supports row-scoped actions in addition to artifact 
 
 Design:
 
+- the Binary and Map File rows are rendered only when at least one of the selected component's `flashWhen` or `uploadWhen` expressions evaluates to `true` for the active build context
+- when both `flashWhen` and `uploadWhen` are unavailable for the active build context, the Binary and Map File rows are omitted entirely
 - the Map File row exposes an icon-only action that opens the resolved map file in the current editor
 - the Map File row action opens the resolved map file in the current editor with normal editable file behavior
 - the Binary row exposes icon-only actions backed by `Trezor: Flash {model-name} | {target-display} | {component-name}` and `Trezor: Upload {model-name} | {target-display} | {component-name}` commands according to the selected component action conditions evaluated against the active build context

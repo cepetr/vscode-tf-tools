@@ -170,7 +170,9 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 ### UI-06 Build Artifacts Section
 
 - The `Build Artifacts` section shall show artifact status rows.
-- It shall include rows labeled `Compile Commands`, `Binary`, and `Map File`, in that order.
+- It shall always include a row labeled `Compile Commands`.
+- It shall include rows labeled `Binary` and `Map File`, in that order after `Compile Commands`, only when the selected component's `flashWhen` or `uploadWhen` expression evaluates to `true` for the active build context.
+- If both `flashWhen` and `uploadWhen` are omitted or evaluate to `false` for the active build context, the `Binary` and `Map File` rows shall be hidden.
 - The artifact base path shall be constructed as `<artifacts-root>/<artifact-folder>/`, where `<artifact-folder>` comes from the selected model's required `artifact-folder` manifest field and is interpreted relative to `tfTools.artifactsPath`.
 - The artifact basename shall be constructed as `<artifact-name><artifact-suffix>`, where `<artifact-name>` comes from the selected component's required `artifact-name` manifest field and `<artifact-suffix>` comes from the selected target's optional `artifact-suffix` manifest field and defaults to an empty string when omitted.
 - `Compile Commands` shall resolve its expected path from `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`.
@@ -370,6 +372,7 @@ Each `options` entry shall be a mapping with:
 - If `flashWhen` evaluates to `true` for the active build context, the `Flash` action shall be applicable for that component.
 - If `uploadWhen` evaluates to `true` for the active build context, the `Upload` action shall be applicable for that component.
 - If `flashWhen` or `uploadWhen` evaluates to `false`, the corresponding action shall be unavailable for the active build context.
+- If both `flashWhen` and `uploadWhen` are unavailable for the active build context, the `Binary` and `Map File` rows shall be hidden from the `Build Artifacts` section.
 
 Shared condition expression language:
 

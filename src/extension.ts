@@ -43,6 +43,7 @@ import {
   evaluateArtifactActionPreconditions,
   isFlashApplicable,
   isUploadApplicable,
+  shouldShowArtifactRows,
   resolveArtifactActionContext,
   createFlashTask,
   createUploadTask,
@@ -52,6 +53,7 @@ import {
 } from "./commands/artifact-actions";
 import {
   buildResolutionInputs,
+  resolveActiveArtifact,
   resolveActiveBinaryArtifact,
   resolveActiveMapArtifact,
   ActiveBinaryArtifact,
@@ -209,12 +211,13 @@ function updateArtifactActionContext(
 
   const flashApplicable = component ? isFlashApplicable(component, evalCtx) : false;
   const uploadApplicable = component ? isUploadApplicable(component, evalCtx) : false;
+  const showArtifactRows = shouldShowArtifactRows(flashApplicable, uploadApplicable);
 
   const inputs = buildResolutionInputs(loaded, config, artifactsRoot);
   let binaryExists = false;
   let mapExists = false;
 
-  if (inputs) {
+  if (inputs && showArtifactRows) {
     const binary = resolveActiveBinaryArtifact(inputs, config);
     const map = resolveActiveMapArtifact(inputs, config);
     _binaryArtifact = binary;
@@ -234,6 +237,22 @@ function updateArtifactActionContext(
   vscode.commands.executeCommand("setContext", "tfTools.uploadApplicable", uploadApplicable);
   vscode.commands.executeCommand("setContext", "tfTools.binaryExists", binaryExists);
   vscode.commands.executeCommand("setContext", "tfTools.mapExists", mapExists);
+}
+
+function updateCompileCommandsTreeArtifact(
+  state: ManifestState,
+  config: ActiveConfig | undefined,
+  artifactsRoot: string
+): void {
+  if (state.status !== "loaded" || !config) {
+    _treeProvider?.updateArtifact(null);
+    return;
+  }
+
+  const loaded = state as ManifestStateLoaded;
+  const inputs = buildResolutionInputs(loaded, config, artifactsRoot);
+  const artifact = inputs ? resolveActiveArtifact(inputs, config) : null;
+  _treeProvider?.updateArtifact(artifact);
 }
 
 export function isSuccessfulBuildTaskProcess(event: TaskProcessEndLike): boolean {
@@ -320,6 +339,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
   };
   const refreshBuildArtifacts = (trigger: RefreshTrigger): void => {
+    if (_manifestState) {
+      updateCompileCommandsTreeArtifact(
+        _manifestState,
+        _activeConfig,
+        resolveArtifactsPath(workspaceFolder)
+      );
+    }
     refreshArtifactActionState();
     _intelliSenseService?.scheduleRefresh(trigger);
   };

@@ -12,7 +12,7 @@
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
 - **Selected Slice**: `5. Flash/Upload Actions`
 - **Scope Guard**: This feature includes the `Binary` and `Map File` operational behavior in the `Build Artifacts` section, action applicability from component `flashWhen` and `uploadWhen` rules, disabled-state handling when artifacts are missing, task-backed Flash and Upload execution, map-file opening behavior, and visible failure reporting. This feature excludes compile-commands status behavior, cpptools integration, excluded-file visibility, build/clippy/check/clean behavior, debug-profile resolution and launch, and any automatic post-action refresh beyond the existing static artifact rows.
-- **Critical Informal Details**: The `Binary` row must expose Flash and Upload icon actions only when the selected component's action rules evaluate to `true` for the active model, target, and component; Flash and Upload must also be invokable from the Command Palette, but only when each action is applicable for the active build context; those palette entries use dynamic titles aligned to the active `{model-name} | {target-display} | {component-name}` context; Flash and Upload task invocations both include `-m <model-id>` for the active model; omitted or false action rules make the corresponding action unavailable; both actions may appear at the same time; applicable Flash and Upload actions remain visible but disabled when the binary artifact is missing; the `Map File` row must expose an icon-only action that opens the resolved map file in the current editor and is disabled when the map artifact is missing; the internal command that backs the `Map File` row must not appear in the Command Palette; Flash and Upload execute as task-backed workflows for the active configuration; successful Flash and Upload completion does not trigger an automatic extension refresh; blocked starts and post-start failures must fail visibly.
+- **Critical Informal Details**: The `Binary` row must expose Flash and Upload icon actions only when the selected component's action rules evaluate to `true` for the active model, target, and component; Flash and Upload must also be invokable from the Command Palette, but only when each action is applicable for the active build context; those palette entries use dynamic titles aligned to the active `{model-name} | {target-display} | {component-name}` context; Flash and Upload task invocations both include `-m <model-id>` for the active model; omitted or false action rules make the corresponding action unavailable; when both action rules are unavailable for the active build context, the `Binary` and `Map File` rows are hidden; both actions may appear at the same time; applicable Flash and Upload actions remain visible but disabled when the binary artifact is missing; the `Map File` row must expose an icon-only action that opens the resolved map file in the current editor and is disabled when the map artifact is missing; the internal command that backs the `Map File` row must not appear in the Command Palette; Flash and Upload execute as task-backed workflows for the active configuration; successful Flash and Upload completion does not trigger an automatic extension refresh; blocked starts and post-start failures must fail visibly.
 
 ## Clarifications
 
@@ -53,10 +53,11 @@ As a firmware developer, I want the `Build Artifacts` section to show whether th
 
 **Acceptance Scenarios**:
 
-1. **Given** the selected component omits `flashWhen` or `uploadWhen`, or the corresponding rule evaluates to `false` for the active build context, **When** the user views the `Binary` row, **Then** that action is not shown.
-2. **Given** the selected component makes Flash or Upload applicable but the binary artifact is missing, **When** the user views the `Binary` row, **Then** the applicable action remains visible but disabled and the row reports the binary as missing.
-3. **Given** the manifest is missing, invalid, or the workspace is unsupported, **When** the user attempts to start Flash or Upload, **Then** the extension blocks the start and shows an explicit error instead of starting the workflow.
-4. **Given** the binary or map artifact is missing, **When** the user inspects the corresponding artifact row, **Then** the row shows `missing` and explains the expected artifact path and why the artifact is unavailable.
+1. **Given** the selected component omits `flashWhen` or `uploadWhen`, or the corresponding rule evaluates to `false` for the active build context while the other action remains applicable, **When** the user views the `Binary` row, **Then** only the inapplicable action is not shown.
+2. **Given** the selected component omits both `flashWhen` and `uploadWhen`, or both rules evaluate to `false` for the active build context, **When** the user views the `Build Artifacts` section, **Then** the `Binary` and `Map File` rows are hidden.
+3. **Given** the selected component makes Flash or Upload applicable but the binary artifact is missing, **When** the user views the `Binary` row, **Then** the applicable action remains visible but disabled and the row reports the binary as missing.
+4. **Given** the manifest is missing, invalid, or the workspace is unsupported, **When** the user attempts to start Flash or Upload, **Then** the extension blocks the start and shows an explicit error instead of starting the workflow.
+5. **Given** the binary or map artifact is missing, **When** the user inspects the corresponding artifact row, **Then** the row shows `missing` and explains the expected artifact path and why the artifact is unavailable.
 
 ---
 
@@ -94,7 +95,7 @@ As a firmware developer, I want to open the resolved map file directly from the 
 ### Functional Requirements
 
 - **FR-001**: The system MUST resolve the expected `Binary` and `Map File` artifact paths for the active build context from `tfTools.artifactsPath`, the selected model's required `artifact-folder`, the selected component's required `artifact-name`, and the selected target's optional `artifact-suffix` with an empty-string default when the suffix is omitted.
-- **FR-002**: The `Build Artifacts` section MUST show a `Binary` row and a `Map File` row for the active build context.
+- **FR-002**: The `Build Artifacts` section MUST show `Binary` and `Map File` rows for the active build context only when the selected component's `flashWhen` or `uploadWhen` rule evaluates to `true`.
 - **FR-003**: The `Binary` and `Map File` rows MUST each display `valid` when their expected artifact exists and `missing` when it does not.
 - **FR-004**: The tooltip for the `Binary` and `Map File` rows MUST show the expected artifact path for the active build context.
 - **FR-005**: When the binary or map artifact is missing, the corresponding row tooltip MUST also explain why the artifact is unavailable.
@@ -102,6 +103,7 @@ As a firmware developer, I want to open the resolved map file directly from the 
 - **FR-007**: The system MUST expose an Upload action on the `Binary` row only when the selected component's `uploadWhen` rule evaluates to `true` for the active model, target, and component.
 - **FR-008**: If `flashWhen` or `uploadWhen` is omitted for the selected component, the corresponding action MUST be unavailable for that component.
 - **FR-009**: If `flashWhen` or `uploadWhen` evaluates to `false` for the active build context, the corresponding action MUST be unavailable for that context.
+- **FR-009A**: If both `flashWhen` and `uploadWhen` are omitted or evaluate to `false` for the active build context, the system MUST hide both the `Binary` and `Map File` rows.
 - **FR-010**: The system MUST allow Flash and Upload to be available on the same `Binary` row at the same time when both action rules evaluate to `true`.
 - **FR-011**: When Flash or Upload is applicable but the binary artifact is missing, the corresponding action MUST remain visible but disabled.
 - **FR-012**: Invoking Flash or Upload from an applicable state MUST start the corresponding task-backed workflow for the active configuration.
@@ -136,8 +138,11 @@ As a firmware developer, I want to open the resolved map file directly from the 
 
 ## Failure Modes & Diagnostics *(mandatory)*
 
-- **Trigger**: The selected component's `flashWhen` or `uploadWhen` rule is omitted or evaluates to `false` for the active build context.
-  - **User-visible response**: The corresponding action is not shown on the `Binary` row.
+- **Trigger**: One of the selected component's `flashWhen` or `uploadWhen` rules is omitted or evaluates to `false` for the active build context while the other action remains applicable.
+  - **User-visible response**: The corresponding inapplicable action is not shown on the `Binary` row.
+  - **Persistent signal**: No additional persistent signal is required.
+- **Trigger**: Both selected component action rules are omitted or evaluate to `false` for the active build context.
+  - **User-visible response**: The `Binary` and `Map File` rows are hidden from the `Build Artifacts` section.
   - **Persistent signal**: No additional persistent signal is required.
 - **Trigger**: The binary artifact is missing while Flash or Upload would otherwise be applicable.
   - **User-visible response**: The applicable action remains visible but disabled, and the `Binary` row reports `missing` with the expected path and missing reason.
