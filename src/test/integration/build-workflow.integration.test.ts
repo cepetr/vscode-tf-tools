@@ -33,6 +33,17 @@ function fixtureManifestSource(fixtureName: string): string {
   return fs.readFileSync(fixturePath, "utf-8");
 }
 
+async function activateExtension(): Promise<boolean> {
+  const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+  if (!ext) {
+    return false;
+  }
+  if (!ext.isActive) {
+    await ext.activate();
+  }
+  return ext.isActive;
+}
+
 // ---------------------------------------------------------------------------
 // Suite: workflow precondition checks
 // ---------------------------------------------------------------------------
@@ -99,26 +110,31 @@ suite("Build Workflow – evaluateWorkflowPreconditions", () => {
 
 suite("Build Workflow – command registration", () => {
   test("tfTools.build command is registered", async () => {
+    await activateExtension();
     const all = await vscode.commands.getCommands(true);
     assert.ok(all.includes("tfTools.build"), "expected tfTools.build to be registered");
   });
 
   test("tfTools.clippy command is registered", async () => {
+    await activateExtension();
     const all = await vscode.commands.getCommands(true);
     assert.ok(all.includes("tfTools.clippy"), "expected tfTools.clippy to be registered");
   });
 
   test("tfTools.check command is registered", async () => {
+    await activateExtension();
     const all = await vscode.commands.getCommands(true);
     assert.ok(all.includes("tfTools.check"), "expected tfTools.check to be registered");
   });
 
   test("tfTools.clean command is registered", async () => {
+    await activateExtension();
     const all = await vscode.commands.getCommands(true);
     assert.ok(all.includes("tfTools.clean"), "expected tfTools.clean to be registered");
   });
 
   test("tfTools.toggleBuildOption command is registered", async () => {
+    await activateExtension();
     const all = await vscode.commands.getCommands(true);
     assert.ok(
       all.includes("tfTools.toggleBuildOption"),
@@ -127,6 +143,7 @@ suite("Build Workflow – command registration", () => {
   });
 
   test("tfTools.selectBuildOptionState command is registered", async () => {
+    await activateExtension();
     const all = await vscode.commands.getCommands(true);
     assert.ok(
       all.includes("tfTools.selectBuildOptionState"),
@@ -170,7 +187,7 @@ suite("Build Workflow – blocked manifest (T030)", () => {
   });
 
   test("package.json exposes Build/Clippy/Check/Clean in view/title menus", () => {
-    const ext = vscode.extensions.getExtension("trezor.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
       return; // Skip gracefully when not installed
     }
@@ -194,7 +211,7 @@ suite("Build Workflow – blocked manifest (T030)", () => {
 
 suite("Refresh IntelliSense – command contributions (T027)", () => {
   test("package.json declares tfTools.refreshIntelliSense command", () => {
-    const ext = vscode.extensions.getExtension("trezor.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
       return; // Skip gracefully when not installed
     }
@@ -208,7 +225,7 @@ suite("Refresh IntelliSense – command contributions (T027)", () => {
   });
 
   test("package.json exposes tfTools.refreshIntelliSense in view/title overflow menu", () => {
-    const ext = vscode.extensions.getExtension("trezor.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
       return; // Skip gracefully when not installed
     }

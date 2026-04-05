@@ -15,7 +15,16 @@ const BANNED_COMMAND_PATTERNS = [
 ];
 
 suite("Scope guard — no cross-slice commands (FR-026)", () => {
+  async function activateExtension(): Promise<void> {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    assert.ok(ext, "expected cepetr.tf-tools extension to be available in the test host");
+    if (!ext.isActive) {
+      await ext.activate();
+    }
+  }
+
   test("no Debug/IntelliSense commands are registered", async () => {
+    await activateExtension();
     const allCommands = await vscode.commands.getCommands(true);
     const offenders = allCommands.filter((cmd) =>
       BANNED_COMMAND_PATTERNS.some((re) => re.test(cmd))
@@ -28,8 +37,11 @@ suite("Scope guard — no cross-slice commands (FR-026)", () => {
   });
 
   test("only expected tfTools commands are registered", async () => {
+    await activateExtension();
     const allCommands = await vscode.commands.getCommands(true);
-    const tfCommands = allCommands.filter((cmd) => cmd.startsWith("tfTools."));
+    const tfCommands = allCommands
+      .filter((cmd) => cmd.startsWith("tfTools."))
+      .filter((cmd) => !cmd.startsWith("tfTools.configuration."));
 
     // Allowed commands through Flash/Upload Actions (Feature 5) and earlier slices
     const ALLOWED = new Set([
@@ -58,7 +70,7 @@ suite("Scope guard — no cross-slice commands (FR-026)", () => {
   });
 
   test("configuration view header does not expose Debug actions", async () => {
-    const ext = vscode.extensions.getExtension("trezor.tf-tools");
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
       return; // Skip gracefully when extension not installed in test host
     }

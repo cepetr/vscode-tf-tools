@@ -143,8 +143,7 @@ function assertNoUnauthorizedContributions(
     const msg =
       `Trezor Firmware Tools scope violation (FR-016/FR-017): ` +
       `unauthorized commands found in package.json: ${unauthorized.join(", ")}`;
-    // In development host, fail loudly; in packaged extension log to channel
-    console.error(msg);
+    void vscode.window.showWarningMessage(msg);
   }
 }
 
@@ -255,6 +254,49 @@ function updateCompileCommandsTreeArtifact(
   _treeProvider?.updateArtifact(artifact);
 }
 
+function registerUnsupportedWorkspaceCommands(
+  context: vscode.ExtensionContext
+): void {
+  const registerNoop = (command: string): vscode.Disposable =>
+    vscode.commands.registerCommand(command, async () => {
+      return;
+    });
+
+  const registerBlockedWorkflow = (kind: WorkflowKind): vscode.Disposable =>
+    vscode.commands.registerCommand(`tfTools.${kind.toLowerCase()}`, async () => {
+      reportWorkflowBlocked(kind, "workspace-unsupported");
+    });
+
+  const registerBlockedArtifact = (
+    command: "tfTools.flash" | "tfTools.upload",
+    kind: "flash" | "upload"
+  ): vscode.Disposable =>
+    vscode.commands.registerCommand(command, async () => {
+      reportArtifactActionBlocked(kind, "workspace-unsupported");
+    });
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.showLogs", () => {
+      revealLogs();
+    }),
+    vscode.commands.registerCommand("tfTools.refreshIntelliSense", async () => {
+      return;
+    }),
+    registerBlockedWorkflow("Build"),
+    registerBlockedWorkflow("Clippy"),
+    registerBlockedWorkflow("Check"),
+    registerBlockedWorkflow("Clean"),
+    registerBlockedArtifact("tfTools.flash", "flash"),
+    registerBlockedArtifact("tfTools.upload", "upload"),
+    registerNoop("tfTools.openMapFile"),
+    registerNoop("tfTools.selectModel"),
+    registerNoop("tfTools.selectTarget"),
+    registerNoop("tfTools.selectComponent"),
+    registerNoop("tfTools.toggleBuildOption"),
+    registerNoop("tfTools.selectBuildOptionState")
+  );
+}
+
 export function isSuccessfulBuildTaskProcess(event: TaskProcessEndLike): boolean {
   return (
     event.exitCode === 0 &&
@@ -315,6 +357,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   if (!hasSupportedWorkspace()) {
+    registerUnsupportedWorkspaceCommands(context);
     // Extension activated without a workspace — show a visible warning and bail.
     vscode.window.showWarningMessage(
       "Trezor Firmware Tools requires an open workspace folder."
@@ -471,7 +514,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         _manifestService = new ManifestService(newManifestUri);
         _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
         _manifestService.start().catch((err) => {
-          console.error("[tf-tools] Failed to start manifest service after path change:", err);
+          const detail = err instanceof Error ? err.message : String(err);
+          void vscode.window.showErrorMessage(
+            `[tf-tools] Failed to start manifest service after path change: ${detail}`
+          );
         });
       }
     })
