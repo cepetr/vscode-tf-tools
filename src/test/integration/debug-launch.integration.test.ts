@@ -324,10 +324,14 @@ suite("Debug Launch – package.json contributions (T011)", () => {
       when?: string;
       group?: string;
     }>;
-    const entry = titleEntries.find(
-      (e) => e.command === "tfTools.startDebugging" && e.when?.includes("activeViewlet")
+    const headerEntry = titleEntries.find(
+      (e) => e.command === "tfTools.startDebugging" && e.group?.startsWith("navigation@")
     );
-    assert.ok(entry, "expected view/title entry for tfTools.startDebugging header action");
+    assert.ok(headerEntry, "expected view/title navigation entry for tfTools.startDebugging");
+    assert.ok(
+      headerEntry.when?.includes("view == tfTools.configuration"),
+      `expected 'view == tfTools.configuration' in when-clause, got: ${headerEntry.when}`
+    );
   });
 
   test("view/item/context has Start Debugging entry for Executable row", () => {
@@ -341,5 +345,85 @@ suite("Debug Launch – package.json contributions (T011)", () => {
       (e) => e.command === "tfTools.startDebugging" && e.when?.includes("artifact-executable")
     );
     assert.ok(entry, "expected view/item/context entry for tfTools.startDebugging on Executable row");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: Debug Launch scope boundaries (T025)
+// ---------------------------------------------------------------------------
+
+suite("Debug Launch – scope boundaries (T025)", () => {
+  function getPackageJson(): Record<string, unknown> {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    if (!ext) {
+      return {};
+    }
+    return ext.packageJSON as Record<string, unknown>;
+  }
+
+  test("no Build/Clippy/Check/Clean entries appear in debug-launch contributions", () => {
+    const pkg = getPackageJson();
+    const menus = (pkg.contributes as { menus?: Record<string, unknown[]> } | undefined)?.menus ?? {};
+    const allEntries = [
+      ...(menus["view/title"] as Array<{ command: string }> ?? []),
+      ...(menus["view/item/context"] as Array<{ command: string }> ?? []),
+    ];
+    const WORKFLOW_CMD_PATTERNS = [/^tfTools\.build$/, /^tfTools\.clippy$/, /^tfTools\.check$/, /^tfTools\.clean$/];
+    // Workflow commands may appear in view/title but must not appear in
+    // view/item/context (where only artifact-row actions belong)
+    const contextEntries = (menus["view/item/context"] as Array<{ command: string }> ?? []);
+    const contextOffenders = contextEntries.filter((e) =>
+      WORKFLOW_CMD_PATTERNS.some((re) => re.test(e.command))
+    );
+    assert.deepStrictEqual(
+      contextOffenders,
+      [],
+      "Build/Clippy/Check/Clean commands must not appear in view/item/context"
+    );
+    void allEntries; // suppress unused-variable warning
+  });
+
+  test("startDebugging is the only debug-related command contributed in package.json settings", () => {
+    const pkg = getPackageJson();
+    const conf = (pkg.contributes as { configuration?: { properties?: Record<string, unknown> } } | undefined)
+      ?.configuration;
+    const propKeys = Object.keys(conf?.properties ?? {});
+    const debugSettingKeys = propKeys.filter((k) => k.startsWith("tfTools.debug."));
+    // Only the templatesPath setting is allowed
+    assert.deepStrictEqual(
+      debugSettingKeys,
+      ["tfTools.debug.templatesPath"],
+      `Only tfTools.debug.templatesPath must be contributed; found: ${debugSettingKeys.join(", ")}`
+    );
+  });
+
+  test("startDebugging overflow entry is after flash/upload and before refreshIntelliSense", () => {
+    const pkg = getPackageJson();
+    const menus = (pkg.contributes as { menus?: Record<string, unknown[]> } | undefined)?.menus ?? {};
+    const overflowEntries = ((menus["view/title"] as Array<{ command: string; group?: string }>) ?? [])
+      .filter((e) => e.group?.startsWith("overflow@"))
+      .sort((a, b) => {
+        const aOrd = parseInt((a.group ?? "overflow@99").split("@")[1] ?? "99", 10);
+        const bOrd = parseInt((b.group ?? "overflow@99").split("@")[1] ?? "99", 10);
+        return aOrd - bOrd;
+      });
+
+    const cmdOrder = overflowEntries.map((e) => e.command);
+    const flashIdx = cmdOrder.indexOf("tfTools.flash");
+    const uploadIdx = cmdOrder.indexOf("tfTools.upload");
+    const startDebugIdx = cmdOrder.indexOf("tfTools.startDebugging");
+    const refreshIdx = cmdOrder.indexOf("tfTools.refreshIntelliSense");
+
+    // startDebugging must come after flash/upload (when present) and before refreshIntelliSense
+    if (flashIdx !== -1) {
+      assert.ok(startDebugIdx > flashIdx, "startDebugging must appear after flash in overflow");
+    }
+    if (uploadIdx !== -1) {
+      assert.ok(startDebugIdx > uploadIdx, "startDebugging must appear after upload in overflow");
+    }
+    if (refreshIdx !== -1) {
+      assert.ok(startDebugIdx < refreshIdx, "startDebugging must appear before refreshIntelliSense in overflow");
+    }
+    assert.ok(startDebugIdx !== -1, "startDebugging must be in overflow menu");
   });
 });
