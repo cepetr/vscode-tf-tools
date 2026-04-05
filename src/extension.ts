@@ -257,6 +257,7 @@ function updateDebugContext(
   if (state.status !== "loaded" || !config) {
     _executableArtifact = undefined;
     vscode.commands.executeCommand("setContext", "tfTools.startDebuggingEnabled", false);
+    _treeProvider?.updateExecutableArtifact(null);
     return;
   }
 
@@ -265,6 +266,7 @@ function updateDebugContext(
   _executableArtifact = artifact;
   const enabled = artifact.status === "valid";
   vscode.commands.executeCommand("setContext", "tfTools.startDebuggingEnabled", enabled);
+  _treeProvider?.updateExecutableArtifact(artifact);
 }
 
 function updateCompileCommandsTreeArtifact(
@@ -886,6 +888,7 @@ export function deactivate(): void {
   _resolvedOptions = [];
   _binaryArtifact = undefined;
   _mapArtifact = undefined;
+  _executableArtifact = undefined;
   disposeDiagnostics();
   disposeLogChannel();
 }
