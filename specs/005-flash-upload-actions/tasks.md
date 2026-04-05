@@ -90,14 +90,14 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T018 [P] [US3] Add unit tests for map-file open requests, missing-file guards, and disabled-state behavior in `src/test/unit/workflow/open-map-file.test.ts`
-- [ ] T019 [P] [US3] Add integration tests for Map File row action enablement, editor open behavior, and Command Palette exclusion in `src/test/integration/map-file-action.integration.test.ts`
+- [X] T018 [P] [US3] Add unit tests for map-file open requests, missing-file guards, and disabled-state behavior in `src/test/unit/workflow/open-map-file.test.ts`
+- [X] T019 [P] [US3] Add integration tests for Map File row action enablement, editor open behavior, and Command Palette exclusion in `src/test/integration/map-file-action.integration.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T020 [P] [US3] Contribute the internal `tfTools.openMapFile` row action command, `menus.view/item/context` entry, and explicit Command Palette exclusion in `package.json`
-- [ ] T021 [P] [US3] Implement map-file open execution and missing-file guards in `src/commands/artifact-actions.ts`
-- [ ] T022 [US3] Wire `tfTools.openMapFile` registration and Map File action enablement in `src/extension.ts` and `src/ui/configuration-tree.ts`
+- [X] T020 [P] [US3] Contribute the internal `tfTools.openMapFile` row action command, `menus.view/item/context` entry, and explicit Command Palette exclusion in `package.json`
+- [X] T021 [P] [US3] Implement map-file open execution and missing-file guards in `src/commands/artifact-actions.ts`
+- [X] T022 [US3] Wire `tfTools.openMapFile` registration and Map File action enablement in `src/extension.ts` and `src/ui/configuration-tree.ts`
 
 **Checkpoint**: All user stories are independently functional, and the Build Artifacts section supports Flash, Upload, and Map File operations for the active context.
 

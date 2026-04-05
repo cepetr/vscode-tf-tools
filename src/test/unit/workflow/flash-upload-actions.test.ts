@@ -318,3 +318,86 @@ suite("createUploadTask", () => {
     assert.strictEqual(task.group, undefined);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T018: openMapFile unit tests
+// ---------------------------------------------------------------------------
+
+import { openMapFile } from "../../../commands/artifact-actions";
+import * as vscode from "vscode";
+
+suite("openMapFile – missing-file guards (T018)", () => {
+  test("returns without error when path is empty string", async () => {
+    // openMapFile must not throw when called with an empty path
+    let threw = false;
+    try {
+      await openMapFile("");
+    } catch {
+      threw = true;
+    }
+    assert.strictEqual(threw, false, "openMapFile('') must not throw");
+  });
+
+  test("returns without error when path is only whitespace", async () => {
+    let threw = false;
+    try {
+      await openMapFile("   ");
+    } catch {
+      threw = true;
+    }
+    // openMapFile guards on empty path; whitespace-only path will attempt to open
+    // and may show an error from VS Code mocked layer — it must not throw itself
+    assert.strictEqual(threw, false, "openMapFile with whitespace path must not throw internally");
+  });
+});
+
+suite("openMapFile – valid path handling (T018)", () => {
+  test("calls vscode.window.showTextDocument with the provided path", async () => {
+    // Track calls to the mock showTextDocument
+    const calls: vscode.Uri[] = [];
+    const originalShowTextDocument = vscode.window.showTextDocument;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (vscode.window as any).showTextDocument = async (uri: vscode.Uri) => {
+      calls.push(uri);
+    };
+
+    try {
+      await openMapFile("/build/model-t/firmware_core.map");
+    } finally {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (vscode.window as any).showTextDocument = originalShowTextDocument;
+    }
+
+    assert.strictEqual(calls.length, 1, "expected exactly one showTextDocument call");
+    assert.strictEqual(
+      calls[0].fsPath,
+      "/build/model-t/firmware_core.map",
+      "showTextDocument must be called with the correct file path"
+    );
+  });
+
+  test("does not throw when showTextDocument rejects (wraps error in notification)", async () => {
+    const originalShowTextDocument = vscode.window.showTextDocument;
+    const originalShowError = vscode.window.showErrorMessage;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (vscode.window as any).showTextDocument = async (_uri: vscode.Uri) => {
+      throw new Error("file not found");
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (vscode.window as any).showErrorMessage = (..._args: unknown[]) => { /* suppress */ };
+
+    let threw = false;
+    try {
+      await openMapFile("/build/model-t/firmware_core.map");
+    } catch {
+      threw = true;
+    } finally {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (vscode.window as any).showTextDocument = originalShowTextDocument;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (vscode.window as any).showErrorMessage = originalShowError;
+    }
+
+    assert.strictEqual(threw, false, "openMapFile must not propagate showTextDocument errors");
+  });
+});
