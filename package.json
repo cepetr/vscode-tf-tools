@@ -281,7 +281,7 @@
   "scripts": {
     "vscode:prepublish": "npm run bundle",
     "compile": "tsc -p ./",
-    "bundle": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "bundle": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --main-fields=module,main --sourcemap",
     "watch": "npm run bundle -- --watch",
     "watch:tsc": "tsc -watch -p ./",
     "pretest": "npm run compile",
