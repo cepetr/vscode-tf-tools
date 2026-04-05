@@ -306,11 +306,12 @@ suite("createUploadTask", () => {
     assert.strictEqual(task.name, "Upload Trezor Model T (v1) | HW | Core");
   });
 
-  test("task shell execution includes xtask upload with component-id", () => {
+  test("task shell execution includes xtask upload with component-id and model-id", () => {
     const task = createUploadTask(ctx, MOCK_WORKSPACE_FOLDER);
     const exec = task.execution as import("vscode").ShellExecution;
     assert.ok(exec.commandLine?.includes("xtask upload"));
     assert.ok(exec.commandLine?.includes("core"));
+    assert.ok(exec.commandLine?.includes("-m T2T1"));
   });
 
   test("upload task has no group (not a standard build-task entry)", () => {

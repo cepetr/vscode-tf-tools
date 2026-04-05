@@ -61,7 +61,7 @@
 - **Validation rules**:
   - request creation is allowed only when the action is applicable and the binary artifact exists
   - Flash command line is `xtask flash <component-id> -m <model-id>`
-  - Upload command line is `xtask upload <component-id>`
+  - Upload command line is `xtask upload <component-id> -m <model-id>`
 
 ## Map File Open Request
 

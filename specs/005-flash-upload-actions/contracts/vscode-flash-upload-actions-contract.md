@@ -67,7 +67,7 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 
 - Flash and Upload run as VS Code tasks, not as direct spawned processes.
 - Flash uses `xtask flash <component-id> -m <model-id>`.
-- Upload uses `xtask upload <component-id>`.
+- Upload uses `xtask upload <component-id> -m <model-id>`.
 - Missing or invalid manifest, unsupported workspace, inapplicable action state, or missing binary artifact blocks task start with an explicit error.
 - Post-start Flash or Upload failures show an explicit error and write a dedicated output-channel log entry.
 - Successful Flash or Upload completion does not trigger automatic IntelliSense, excluded-file, or artifact refresh.

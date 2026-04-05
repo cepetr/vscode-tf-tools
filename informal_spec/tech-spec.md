@@ -245,7 +245,7 @@ Additional command behavior:
 
 - command titles use the `Trezor:` prefix
 - `Flash` uses the user-facing title `Trezor: Flash {model-name} | {target-display} | {component-name}` and executes `xtask flash <component-id> -m <model-id>`
-- `Upload` uses the user-facing title `Trezor: Upload {model-name} | {target-display} | {component-name}` and executes `xtask upload <component-id>`
+- `Upload` uses the user-facing title `Trezor: Upload {model-name} | {target-display} | {component-name}` and executes `xtask upload <component-id> -m <model-id>`
 - `Flash` and `Upload` are launched through VS Code task execution rather than direct process spawning
 - `Debug` uses the user-facing title `Trezor: Debug` and launches the resolved debugger template for the active build context
 - `Flash` is available only when the selected component's `flashWhen` expression evaluates to `true`

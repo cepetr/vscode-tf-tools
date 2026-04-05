@@ -230,7 +230,7 @@ export function createFlashTask(
 /**
  * Creates an on-demand VS Code Task for the Upload action.
  *
- * Command line: `cargo xtask upload <component-id>`
+ * Command line: `cargo xtask upload <component-id> -m <model-id>`
  */
 export function createUploadTask(
   ctx: ArtifactActionContext,
@@ -238,7 +238,7 @@ export function createUploadTask(
 ): vscode.Task {
   const label = formatArtifactTaskLabel("upload", ctx);
   const cargoPath = resolveCargoWorkspacePath(workspaceFolder);
-  const args = [ctx.componentId];
+  const args = [ctx.componentId, "-m", ctx.modelId];
   const command = `cargo xtask upload ${args.join(" ")}`;
 
   const definition: vscode.TaskDefinition = { type: TASK_TYPE };
