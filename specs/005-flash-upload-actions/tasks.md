@@ -54,7 +54,7 @@
 ### Implementation for User Story 1
 
 - [X] T010 [P] [US1] Contribute `tfTools.flash` and `tfTools.upload` commands plus dynamic title support and conditional `menus.commandPalette` visibility in `package.json` and `src/extension.ts`
-- [ ] T011 [US1] Implement Flash/Upload task creation, blocked-start handling, failure logging, and no-auto-refresh behavior in `src/commands/artifact-actions.ts` and `src/observability/log-channel.ts`
+- [X] T011 [US1] Implement Flash/Upload task creation, blocked-start handling, failure logging, and no-auto-refresh behavior in `src/commands/artifact-actions.ts` and `src/observability/log-channel.ts`
 - [ ] T012 [US1] Wire `tfTools.flash` and `tfTools.upload` command registration, applicability context keys, and task execution in `src/extension.ts`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable from the Binary row and the Command Palette.

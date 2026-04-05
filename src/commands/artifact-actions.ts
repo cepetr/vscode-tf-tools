@@ -20,7 +20,6 @@ import { ActiveConfig } from "../configuration/active-config";
 import { evaluateWhenExpression, EvalContext } from "../manifest/when-expressions";
 import { resolveCargoWorkspacePath } from "../workspace/settings";
 import { logWorkflowFailure } from "../observability/log-channel";
-import { isWorkflowWorkspaceSupported } from "../workspace/workspace-guard";
 
 // ---------------------------------------------------------------------------
 // Types
