@@ -1,6 +1,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import {
+  ConfigurationTreeProvider,
   SectionItem,
   SectionId,
   SelectorChoiceItem,
@@ -10,8 +11,11 @@ import {
   BuildOptionCheckboxItem,
   BuildOptionStateItem,
   CompileCommandsArtifactItem,
+  BinaryArtifactItem,
+  MapArtifactItem,
 } from "../../../ui/configuration-tree";
 import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
+import { ActiveBinaryArtifact, ActiveMapArtifact } from "../../../intellisense/artifact-resolution";
 
 // ---------------------------------------------------------------------------
 // Regression target: all three root sections must default to Expanded (UI-02)
@@ -347,5 +351,307 @@ suite("SectionItem default expansion (UI-02)", () => {
   test("Build Artifacts section defaults to Expanded", () => {
     const item = new SectionItem("build-artifacts", "Build Artifacts");
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T013: BinaryArtifactItem rendering
+// ---------------------------------------------------------------------------
+
+function makeValidBinaryArtifact(overrides: Partial<ActiveBinaryArtifact> = {}): ActiveBinaryArtifact {
+  return {
+    path: "/build/model-t/firmware_core.bin",
+    exists: true,
+    status: "valid",
+    contextKey: "T2T1::hw::core",
+    ...overrides,
+  };
+}
+
+function makeMissingBinaryArtifact(overrides: Partial<ActiveBinaryArtifact> = {}): ActiveBinaryArtifact {
+  return {
+    path: "/build/model-t/firmware_core.bin",
+    exists: false,
+    status: "missing",
+    missingReason: "Binary artifact not found at the expected path.",
+    contextKey: "T2T1::hw::core",
+    ...overrides,
+  };
+}
+
+suite("BinaryArtifactItem – label and identity", () => {
+  test("label is 'Binary'", () => {
+    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    assert.strictEqual(item.label, "Binary");
+  });
+
+  test("id is 'artifact:binary'", () => {
+    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    assert.strictEqual(item.id, "artifact:binary");
+  });
+
+  test("contextValue is 'artifact-binary'", () => {
+    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    assert.strictEqual(item.contextValue, "artifact-binary");
+  });
+
+  test("collapsibleState is None", () => {
+    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.None);
+  });
+});
+
+suite("BinaryArtifactItem – valid artifact", () => {
+  test("description is 'valid'", () => {
+    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    assert.strictEqual(item.description, "valid");
+  });
+
+  test("icon is 'pass' theme icon", () => {
+    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    assert.ok(item.iconPath instanceof vscode.ThemeIcon);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
+  });
+
+  test("tooltip includes the artifact path", () => {
+    const artifact = makeValidBinaryArtifact({ path: "/build/model-t/firmware_core.bin" });
+    const item = new BinaryArtifactItem(artifact);
+    assert.ok(
+      String(item.tooltip).includes("/build/model-t/firmware_core.bin"),
+      `expected tooltip to include path, got: ${item.tooltip}`
+    );
+  });
+});
+
+suite("BinaryArtifactItem – missing artifact", () => {
+  test("description is 'missing'", () => {
+    const item = new BinaryArtifactItem(makeMissingBinaryArtifact());
+    assert.strictEqual(item.description, "missing");
+  });
+
+  test("icon is 'error' theme icon", () => {
+    const item = new BinaryArtifactItem(makeMissingBinaryArtifact());
+    assert.ok(item.iconPath instanceof vscode.ThemeIcon);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "error");
+  });
+
+  test("tooltip shows missingReason when present", () => {
+    const artifact = makeMissingBinaryArtifact({ missingReason: "Build the firmware first." });
+    const item = new BinaryArtifactItem(artifact);
+    assert.ok(
+      String(item.tooltip).includes("Build the firmware first."),
+      `expected tooltip to include missingReason, got: ${item.tooltip}`
+    );
+  });
+
+  test("tooltip falls back to 'Expected: <path>' when missingReason is absent", () => {
+    const artifact: ActiveBinaryArtifact = {
+      path: "/build/model-t/firmware_core.bin",
+      exists: false,
+      status: "missing",
+      contextKey: "T2T1::hw::core",
+    };
+    const item = new BinaryArtifactItem(artifact);
+    assert.ok(
+      String(item.tooltip).includes("firmware_core.bin"),
+      `expected path in fallback tooltip, got: ${item.tooltip}`
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T013: MapArtifactItem rendering
+// ---------------------------------------------------------------------------
+
+function makeValidMapArtifact(overrides: Partial<ActiveMapArtifact> = {}): ActiveMapArtifact {
+  return {
+    path: "/build/model-t/firmware_core.map",
+    exists: true,
+    status: "valid",
+    contextKey: "T2T1::hw::core",
+    ...overrides,
+  };
+}
+
+function makeMissingMapArtifact(overrides: Partial<ActiveMapArtifact> = {}): ActiveMapArtifact {
+  return {
+    path: "/build/model-t/firmware_core.map",
+    exists: false,
+    status: "missing",
+    missingReason: "Map artifact not found at the expected path.",
+    contextKey: "T2T1::hw::core",
+    ...overrides,
+  };
+}
+
+suite("MapArtifactItem – label and identity", () => {
+  test("label is 'Map File'", () => {
+    const item = new MapArtifactItem(makeValidMapArtifact());
+    assert.strictEqual(item.label, "Map File");
+  });
+
+  test("id is 'artifact:map'", () => {
+    const item = new MapArtifactItem(makeValidMapArtifact());
+    assert.strictEqual(item.id, "artifact:map");
+  });
+
+  test("contextValue is 'artifact-map'", () => {
+    const item = new MapArtifactItem(makeValidMapArtifact());
+    assert.strictEqual(item.contextValue, "artifact-map");
+  });
+
+  test("collapsibleState is None", () => {
+    const item = new MapArtifactItem(makeValidMapArtifact());
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.None);
+  });
+});
+
+suite("MapArtifactItem – valid artifact", () => {
+  test("description is 'valid'", () => {
+    const item = new MapArtifactItem(makeValidMapArtifact());
+    assert.strictEqual(item.description, "valid");
+  });
+
+  test("icon is 'pass' theme icon", () => {
+    const item = new MapArtifactItem(makeValidMapArtifact());
+    assert.ok(item.iconPath instanceof vscode.ThemeIcon);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
+  });
+
+  test("tooltip includes the artifact path", () => {
+    const artifact = makeValidMapArtifact({ path: "/build/model-t/firmware_core.map" });
+    const item = new MapArtifactItem(artifact);
+    assert.ok(
+      String(item.tooltip).includes("/build/model-t/firmware_core.map"),
+      `expected tooltip to include path, got: ${item.tooltip}`
+    );
+  });
+});
+
+suite("MapArtifactItem – missing artifact", () => {
+  test("description is 'missing'", () => {
+    const item = new MapArtifactItem(makeMissingMapArtifact());
+    assert.strictEqual(item.description, "missing");
+  });
+
+  test("icon is 'error' theme icon", () => {
+    const item = new MapArtifactItem(makeMissingMapArtifact());
+    assert.ok(item.iconPath instanceof vscode.ThemeIcon);
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "error");
+  });
+
+  test("tooltip shows missingReason when present", () => {
+    const artifact = makeMissingMapArtifact({ missingReason: "Map file not found." });
+    const item = new MapArtifactItem(artifact);
+    assert.ok(
+      String(item.tooltip).includes("Map file not found."),
+      `expected tooltip to include missingReason, got: ${item.tooltip}`
+    );
+  });
+
+  test("tooltip falls back to 'Expected: <path>' when missingReason is absent", () => {
+    const artifact: ActiveMapArtifact = {
+      path: "/build/model-t/firmware_core.map",
+      exists: false,
+      status: "missing",
+      contextKey: "T2T1::hw::core",
+    };
+    const item = new MapArtifactItem(artifact);
+    assert.ok(
+      String(item.tooltip).includes("firmware_core.map"),
+      `expected path in fallback tooltip, got: ${item.tooltip}`
+    );
+  });
+});
+
+suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  function getBuildArtifactsChildren(): vscode.TreeItem[] {
+    return provider.getChildren(new SectionItem("build-artifacts", "Build Artifacts"));
+  }
+
+  test("switching artifact context replaces Binary and Map rows with the new paths", () => {
+    provider.updateArtifact(
+      makeValidArtifact({
+        path: "/build/model-t/compile_commands_core.cc.json",
+        contextKey: "T2T1::hw::core",
+      })
+    );
+    provider.updateBinaryArtifact(
+      makeValidBinaryArtifact({
+        path: "/build/model-t/firmware_core.bin",
+        contextKey: "T2T1::hw::core",
+      })
+    );
+    provider.updateMapArtifact(
+      makeValidMapArtifact({
+        path: "/build/model-t/firmware_core.map",
+        contextKey: "T2T1::hw::core",
+      })
+    );
+
+    provider.updateArtifact(
+      makeValidArtifact({
+        path: "/build/model-t3/compile_commands_boot_emu.cc.json",
+        contextKey: "T3W1::emu::bootloader",
+      })
+    );
+    provider.updateBinaryArtifact(
+      makeValidBinaryArtifact({
+        path: "/build/model-t3/firmware_boot_emu.bin",
+        contextKey: "T3W1::emu::bootloader",
+      })
+    );
+    provider.updateMapArtifact(
+      makeValidMapArtifact({
+        path: "/build/model-t3/firmware_boot_emu.map",
+        contextKey: "T3W1::emu::bootloader",
+      })
+    );
+
+    const children = getBuildArtifactsChildren();
+    assert.strictEqual(children.length, 3);
+
+    const binary = children[1] as BinaryArtifactItem;
+    const map = children[2] as MapArtifactItem;
+
+    assert.ok(
+      String(binary.tooltip).includes("/build/model-t3/firmware_boot_emu.bin"),
+      `binary tooltip should reference the new context path, got: ${binary.tooltip}`
+    );
+    assert.ok(
+      !String(binary.tooltip).includes("/build/model-t/firmware_core.bin"),
+      `binary tooltip must not retain the previous context path, got: ${binary.tooltip}`
+    );
+    assert.ok(
+      String(map.tooltip).includes("/build/model-t3/firmware_boot_emu.map"),
+      `map tooltip should reference the new context path, got: ${map.tooltip}`
+    );
+    assert.ok(
+      !String(map.tooltip).includes("/build/model-t/firmware_core.map"),
+      `map tooltip must not retain the previous context path, got: ${map.tooltip}`
+    );
+  });
+
+  test("clearing Binary and Map artifacts removes stale rows", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateBinaryArtifact(makeValidBinaryArtifact());
+    provider.updateMapArtifact(makeValidMapArtifact());
+
+    provider.updateBinaryArtifact(null);
+    provider.updateMapArtifact(null);
+
+    const children = getBuildArtifactsChildren();
+    assert.strictEqual(children.length, 1, "only compile-commands row should remain");
+    assert.ok(children[0] instanceof CompileCommandsArtifactItem);
   });
 });

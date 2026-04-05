@@ -74,9 +74,61 @@
         "title": "Refresh IntelliSense",
         "category": "Trezor",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "tfTools.flash",
+        "title": "Flash",
+        "category": "Trezor",
+        "icon": "$(zap)"
+      },
+      {
+        "command": "tfTools.upload",
+        "title": "Upload",
+        "category": "Trezor",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "tfTools.openMapFile",
+        "title": "Open Map File",
+        "category": "Trezor",
+        "icon": "$(go-to-file)"
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "tfTools.flash",
+          "when": "tfTools.flashApplicable"
+        },
+        {
+          "command": "tfTools.upload",
+          "when": "tfTools.uploadApplicable"
+        },
+        {
+          "command": "tfTools.openMapFile",
+          "when": "false"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "tfTools.flash",
+          "when": "view == tfTools.configuration && viewItem == artifact-binary && tfTools.flashApplicable",
+          "group": "inline@1",
+          "enablement": "tfTools.binaryExists"
+        },
+        {
+          "command": "tfTools.upload",
+          "when": "view == tfTools.configuration && viewItem == artifact-binary && tfTools.uploadApplicable",
+          "group": "inline@2",
+          "enablement": "tfTools.binaryExists"
+        },
+        {
+          "command": "tfTools.openMapFile",
+          "when": "view == tfTools.configuration && viewItem == artifact-map",
+          "group": "inline@1",
+          "enablement": "tfTools.mapExists"
+        }
+      ],
       "view/title": [
         {
           "command": "tfTools.build",

@@ -244,8 +244,9 @@ Command handlers for Build, Clippy, Check, and Clean validate manifest status an
 Additional command behavior:
 
 - command titles use the `Trezor:` prefix
-- `Flash` uses the user-facing title `Trezor: Flash {model-id}-{component-name}` and executes `xtask flash <component-id> -m <model-id>`
-- `Upload` uses the user-facing title `Trezor: Upload {model-id}-{component-name}` and executes `xtask upload <component-id>`
+- `Flash` uses the user-facing title `Trezor: Flash {model-name} | {target-display} | {component-name}` and executes `xtask flash <component-id> -m <model-id>`
+- `Upload` uses the user-facing title `Trezor: Upload {model-name} | {target-display} | {component-name}` and executes `xtask upload <component-id> -m <model-id>`
+- `Flash` and `Upload` are launched through VS Code task execution rather than direct process spawning
 - `Debug` uses the user-facing title `Trezor: Debug` and launches the resolved debugger template for the active build context
 - `Flash` is available only when the selected component's `flashWhen` expression evaluates to `true`
 - `Upload` is available only when the selected component's `uploadWhen` expression evaluates to `true`
@@ -254,6 +255,8 @@ Additional command behavior:
 - artifact-row actions remain visible whenever their action is applicable
 - artifact-row actions that require the binary artifact are disabled when the binary artifact is missing
 - the map-file action is disabled when the map artifact is missing
+- the internal command backing the map-file row action is not shown in the Command Palette
+- successful `Flash` and `Upload` completion does not trigger an automatic extension refresh
 
 Debug-template behavior:
 
@@ -386,12 +389,15 @@ The Build Artifacts section supports row-scoped actions in addition to artifact 
 
 Design:
 
+- the Binary and Map File rows are rendered only when at least one of the selected component's `flashWhen` or `uploadWhen` expressions evaluates to `true` for the active build context
+- when both `flashWhen` and `uploadWhen` are unavailable for the active build context, the Binary and Map File rows are omitted entirely
 - the Map File row exposes an icon-only action that opens the resolved map file in the current editor
 - the Map File row action opens the resolved map file in the current editor with normal editable file behavior
-- the Binary row exposes icon-only actions backed by `Trezor: Flash {model-id}-{component-name}` and `Trezor: Upload {model-id}-{component-name}` commands according to the selected component action conditions evaluated against the active build context
+- the Binary row exposes icon-only actions backed by `Trezor: Flash {model-name} | {target-display} | {component-name}` and `Trezor: Upload {model-name} | {target-display} | {component-name}` commands according to the selected component action conditions evaluated against the active build context
 - the Binary row actions remain present when applicable but are disabled when the binary artifact is missing
 - action icons use VS Code theme icons: `go-to-file` for map reveal, `zap` for flash, and `arrow-up` for upload
 - where VS Code requires tree actions to be command-backed, the Map File action may use an internal implementation command and should not be exposed as a standalone Command Palette entry
+- the Flash/Upload slice owns the `Binary` row actions and the `Map File` row action, while compile-commands status remains owned by the IntelliSense slice
 
 ## Excluded-File Detection And Presentation
 

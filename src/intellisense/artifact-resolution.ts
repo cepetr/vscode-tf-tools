@@ -83,8 +83,145 @@ export function deriveArtifactPath(inputs: ArtifactResolutionInputs): string | u
   );
 }
 
+/**
+ * Computes the expected binary artifact path from the given inputs.
+ *
+ * Formula: `<artifactsRoot>/<artifactFolder>/<artifactName><artifactSuffix>.bin`
+ *
+ * Returns `undefined` when any of `artifactsRoot`, `artifactFolder`, or
+ * `artifactName` is absent/empty.
+ */
+export function deriveBinaryArtifactPath(inputs: ArtifactResolutionInputs): string | undefined {
+  if (!inputs.artifactsRoot || !inputs.artifactFolder || !inputs.artifactName) {
+    return undefined;
+  }
+  return path.join(
+    inputs.artifactsRoot,
+    inputs.artifactFolder,
+    `${inputs.artifactName}${inputs.artifactSuffix}.bin`
+  );
+}
+
+/**
+ * Computes the expected map artifact path from the given inputs.
+ *
+ * Formula: `<artifactsRoot>/<artifactFolder>/<artifactName><artifactSuffix>.map`
+ *
+ * Returns `undefined` when any of `artifactsRoot`, `artifactFolder`, or
+ * `artifactName` is absent/empty.
+ */
+export function deriveMapArtifactPath(inputs: ArtifactResolutionInputs): string | undefined {
+  if (!inputs.artifactsRoot || !inputs.artifactFolder || !inputs.artifactName) {
+    return undefined;
+  }
+  return path.join(
+    inputs.artifactsRoot,
+    inputs.artifactFolder,
+    `${inputs.artifactName}${inputs.artifactSuffix}.map`
+  );
+}
+
 // ---------------------------------------------------------------------------
-// Artifact status resolution (no fallback)
+// Binary / Map artifact status resolution
+// ---------------------------------------------------------------------------
+
+export type BinaryArtifactStatus = "valid" | "missing";
+export type MapArtifactStatus = "valid" | "missing";
+
+export interface ActiveBinaryArtifact {
+  readonly path: string;
+  readonly exists: boolean;
+  readonly status: BinaryArtifactStatus;
+  readonly missingReason?: string;
+  readonly contextKey: string;
+}
+
+export interface ActiveMapArtifact {
+  readonly path: string;
+  readonly exists: boolean;
+  readonly status: MapArtifactStatus;
+  readonly missingReason?: string;
+  readonly contextKey: string;
+}
+
+function checkFileExists(filePath: string): boolean {
+  try {
+    return fs.existsSync(filePath);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolves the active binary artifact status for the given inputs.
+ * Returns `status: "valid"` only when the exact expected `.bin` file exists.
+ */
+export function resolveActiveBinaryArtifact(
+  inputs: ArtifactResolutionInputs,
+  config: ActiveConfig
+): ActiveBinaryArtifact {
+  const contextKey = makeContextKey(config);
+  const artifactPath = deriveBinaryArtifactPath(inputs);
+
+  if (!artifactPath) {
+    return {
+      path: "",
+      exists: false,
+      status: "missing",
+      missingReason: buildBinaryMissingReason(inputs),
+      contextKey,
+    };
+  }
+
+  const exists = checkFileExists(artifactPath);
+  if (exists) {
+    return { path: artifactPath, exists: true, status: "valid", contextKey };
+  }
+  return {
+    path: artifactPath,
+    exists: false,
+    status: "missing",
+    missingReason: `Binary artifact not found at the expected path: ${artifactPath}`,
+    contextKey,
+  };
+}
+
+/**
+ * Resolves the active map artifact status for the given inputs.
+ * Returns `status: "valid"` only when the exact expected `.map` file exists.
+ */
+export function resolveActiveMapArtifact(
+  inputs: ArtifactResolutionInputs,
+  config: ActiveConfig
+): ActiveMapArtifact {
+  const contextKey = makeContextKey(config);
+  const artifactPath = deriveMapArtifactPath(inputs);
+
+  if (!artifactPath) {
+    return {
+      path: "",
+      exists: false,
+      status: "missing",
+      missingReason: buildMapMissingReason(inputs),
+      contextKey,
+    };
+  }
+
+  const exists = checkFileExists(artifactPath);
+  if (exists) {
+    return { path: artifactPath, exists: true, status: "valid", contextKey };
+  }
+  return {
+    path: artifactPath,
+    exists: false,
+    status: "missing",
+    missingReason: `Map artifact not found at the expected path: ${artifactPath}`,
+    contextKey,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Artifact status resolution (no fallback) — compile commands
 // ---------------------------------------------------------------------------
 
 /**
@@ -138,7 +275,7 @@ export function resolveActiveArtifact(
 }
 
 // ---------------------------------------------------------------------------
-// Missing-reason helper
+// Missing-reason helpers
 // ---------------------------------------------------------------------------
 
 function buildMissingReasonForUnresolvablePath(
@@ -154,4 +291,30 @@ function buildMissingReasonForUnresolvablePath(
     return `The active component does not define an artifact-name in the manifest; cannot resolve the compile-commands artifact.`;
   }
   return "Cannot resolve the compile-commands artifact path.";
+}
+
+function buildBinaryMissingReason(inputs: ArtifactResolutionInputs): string {
+  if (!inputs.artifactsRoot) {
+    return "tfTools.artifactsPath is not configured; cannot resolve the binary artifact.";
+  }
+  if (!inputs.artifactFolder) {
+    return "The active model does not define an artifact-folder in the manifest; cannot resolve the binary artifact.";
+  }
+  if (!inputs.artifactName) {
+    return "The active component does not define an artifact-name in the manifest; cannot resolve the binary artifact.";
+  }
+  return "Cannot resolve the binary artifact path.";
+}
+
+function buildMapMissingReason(inputs: ArtifactResolutionInputs): string {
+  if (!inputs.artifactsRoot) {
+    return "tfTools.artifactsPath is not configured; cannot resolve the map artifact.";
+  }
+  if (!inputs.artifactFolder) {
+    return "The active model does not define an artifact-folder in the manifest; cannot resolve the map artifact.";
+  }
+  if (!inputs.artifactName) {
+    return "The active component does not define an artifact-name in the manifest; cannot resolve the map artifact.";
+  }
+  return "Cannot resolve the map artifact path.";
 }

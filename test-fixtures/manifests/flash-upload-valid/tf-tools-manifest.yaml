@@ -1,0 +1,38 @@
+# Flash/Upload actions manifest: valid configuration with flashWhen and uploadWhen rules.
+# Provides models with artifact-folder, targets with/without artifact-suffix,
+# and components with artifact-name, flashWhen, and uploadWhen rules.
+#
+# Summary of action availability per component:
+#   core:       Flash=model(T2T1)  Upload=any(model(T2T1), model(T3W1))
+#   prodtest:   Flash=model(T2T1)  Upload=<absent>
+#   bootloader: Flash=<absent>     Upload=<absent>
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifact-folder: model-t
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+    artifact-folder: model-t3
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+    artifact-suffix: _emu
+
+components:
+  - id: core
+    name: Core
+    artifact-name: compile_commands_core
+    flashWhen: model(T2T1)
+    uploadWhen: any(model(T2T1), model(T3W1))
+  - id: prodtest
+    name: Prodtest
+    artifact-name: compile_commands_prodtest
+    flashWhen: model(T2T1)
+  - id: bootloader
+    name: Bootloader
+    artifact-name: compile_commands_bootloader

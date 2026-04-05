@@ -1,0 +1,227 @@
+/**
+ * Integration tests for Binary and Map File artifact rows (T014 - US2).
+ *
+ * Covers:
+ *  - BinaryArtifactItem and MapArtifactItem contextValues are correct for row-scoped actions
+ *  - package.json view/item/context entries exist with proper enablement rules
+ *  - Binary row flash enablement expression references binaryExists
+ *  - Map row openMapFile enablement expression references mapExists
+ */
+
+import * as assert from "assert";
+import * as vscode from "vscode";
+import {
+  BinaryArtifactItem,
+  MapArtifactItem,
+} from "../../ui/configuration-tree";
+import {
+  ActiveBinaryArtifact,
+  ActiveMapArtifact,
+} from "../../intellisense/artifact-resolution";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeValidBinaryArtifact(): ActiveBinaryArtifact {
+  return {
+    path: "/build/model-t/firmware_core.bin",
+    exists: true,
+    status: "valid",
+    contextKey: "T2T1::hw::core",
+  };
+}
+
+function makeMissingBinaryArtifact(): ActiveBinaryArtifact {
+  return {
+    path: "/build/model-t/firmware_core.bin",
+    exists: false,
+    status: "missing",
+    missingReason: "Binary not found. Build the firmware first.",
+    contextKey: "T2T1::hw::core",
+  };
+}
+
+function makeValidMapArtifact(): ActiveMapArtifact {
+  return {
+    path: "/build/model-t/firmware_core.map",
+    exists: true,
+    status: "valid",
+    contextKey: "T2T1::hw::core",
+  };
+}
+
+function makeMissingMapArtifact(): ActiveMapArtifact {
+  return {
+    path: "/build/model-t/firmware_core.map",
+    exists: false,
+    status: "missing",
+    missingReason: "Map file not found.",
+    contextKey: "T2T1::hw::core",
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Suite: BinaryArtifactItem context values (row-scoped actions)
+// ---------------------------------------------------------------------------
+
+suite("Flash/Upload artifacts – BinaryArtifactItem (T014)", () => {
+  test("contextValue is 'artifact-binary' for valid artifact", () => {
+    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    assert.strictEqual(
+      item.contextValue,
+      "artifact-binary",
+      "Binary row must have contextValue 'artifact-binary' to enable Flash/Upload actions"
+    );
+  });
+
+  test("contextValue is 'artifact-binary' for missing artifact (action visible but disabled)", () => {
+    const item = new BinaryArtifactItem(makeMissingBinaryArtifact());
+    assert.strictEqual(
+      item.contextValue,
+      "artifact-binary",
+      "Missing Binary row must keep contextValue 'artifact-binary' so actions remain visible"
+    );
+  });
+
+  test("id is 'artifact:binary'", () => {
+    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    assert.strictEqual(item.id, "artifact:binary");
+  });
+
+  test("valid binary shows 'valid' description", () => {
+    const item = new BinaryArtifactItem(makeValidBinaryArtifact());
+    assert.strictEqual(item.description, "valid");
+  });
+
+  test("missing binary shows 'missing' description", () => {
+    const item = new BinaryArtifactItem(makeMissingBinaryArtifact());
+    assert.strictEqual(item.description, "missing");
+  });
+
+  test("missing binary tooltip includes missingReason", () => {
+    const item = new BinaryArtifactItem(makeMissingBinaryArtifact());
+    assert.ok(
+      String(item.tooltip).includes("Build the firmware first"),
+      `expected missingReason in tooltip, got: ${item.tooltip}`
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: MapArtifactItem context values (row-scoped actions)
+// ---------------------------------------------------------------------------
+
+suite("Flash/Upload artifacts – MapArtifactItem (T014)", () => {
+  test("contextValue is 'artifact-map' for valid artifact", () => {
+    const item = new MapArtifactItem(makeValidMapArtifact());
+    assert.strictEqual(
+      item.contextValue,
+      "artifact-map",
+      "Map File row must have contextValue 'artifact-map' to enable openMapFile action"
+    );
+  });
+
+  test("contextValue is 'artifact-map' for missing artifact (action visible but disabled)", () => {
+    const item = new MapArtifactItem(makeMissingMapArtifact());
+    assert.strictEqual(
+      item.contextValue,
+      "artifact-map",
+      "Missing Map row must keep contextValue 'artifact-map' so openMapFile remains visible"
+    );
+  });
+
+  test("id is 'artifact:map'", () => {
+    const item = new MapArtifactItem(makeValidMapArtifact());
+    assert.strictEqual(item.id, "artifact:map");
+  });
+
+  test("valid map shows 'valid' description", () => {
+    const item = new MapArtifactItem(makeValidMapArtifact());
+    assert.strictEqual(item.description, "valid");
+  });
+
+  test("missing map shows 'missing' description", () => {
+    const item = new MapArtifactItem(makeMissingMapArtifact());
+    assert.strictEqual(item.description, "missing");
+  });
+
+  test("missing map tooltip includes missingReason", () => {
+    const item = new MapArtifactItem(makeMissingMapArtifact());
+    assert.ok(
+      String(item.tooltip).includes("Map file not found"),
+      `expected missingReason in tooltip, got: ${item.tooltip}`
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: package.json view/item/context enablement rules
+// ---------------------------------------------------------------------------
+
+suite("Flash/Upload artifacts – menu enablement rules (T014)", () => {
+  function getExtPackageJson(): Record<string, unknown> | undefined {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    return ext?.packageJSON as Record<string, unknown> | undefined;
+  }
+
+  test("Binary-row flash entry has enablement: tfTools.binaryExists", () => {
+    const pkg = getExtPackageJson();
+    if (!pkg) { return; } // Skip if extension not loaded
+    const menus = pkg.contributes as { menus: Record<string, unknown[]> };
+    const contextEntries = (menus.menus["view/item/context"] ?? []) as Array<{
+      command: string;
+      when?: string;
+      enablement?: string;
+    }>;
+    const flashEntry = contextEntries.find(
+      (e) => e.command === "tfTools.flash" && e.when?.includes("artifact-binary")
+    );
+    assert.ok(flashEntry, "expected view/item/context flash entry for artifact-binary");
+    assert.strictEqual(
+      flashEntry.enablement,
+      "tfTools.binaryExists",
+      "flash enablement must be 'tfTools.binaryExists'"
+    );
+  });
+
+  test("Binary-row upload entry has enablement: tfTools.binaryExists", () => {
+    const pkg = getExtPackageJson();
+    if (!pkg) { return; }
+    const menus = pkg.contributes as { menus: Record<string, unknown[]> };
+    const contextEntries = (menus.menus["view/item/context"] ?? []) as Array<{
+      command: string;
+      when?: string;
+      enablement?: string;
+    }>;
+    const uploadEntry = contextEntries.find(
+      (e) => e.command === "tfTools.upload" && e.when?.includes("artifact-binary")
+    );
+    assert.ok(uploadEntry, "expected view/item/context upload entry for artifact-binary");
+    assert.strictEqual(
+      uploadEntry.enablement,
+      "tfTools.binaryExists",
+      "upload enablement must be 'tfTools.binaryExists'"
+    );
+  });
+
+  test("Map-row openMapFile entry has enablement: tfTools.mapExists", () => {
+    const pkg = getExtPackageJson();
+    if (!pkg) { return; }
+    const menus = pkg.contributes as { menus: Record<string, unknown[]> };
+    const contextEntries = (menus.menus["view/item/context"] ?? []) as Array<{
+      command: string;
+      when?: string;
+      enablement?: string;
+    }>;
+    const mapEntry = contextEntries.find(
+      (e) => e.command === "tfTools.openMapFile" && e.when?.includes("artifact-map")
+    );
+    assert.ok(mapEntry, "expected view/item/context openMapFile entry for artifact-map");
+    assert.strictEqual(
+      mapEntry.enablement,
+      "tfTools.mapExists",
+      "openMapFile enablement must be 'tfTools.mapExists'"
+    );
+  });
+});

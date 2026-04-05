@@ -34,9 +34,11 @@ This feature uses compile-database inclusion data to show which files are outsid
 It consumes compile-database inclusion data from the IntelliSense slice but does not extend cpptools integration, compile-commands resolution, or artifact-path logic.
 
 ### 5. Flash/Upload Actions
-Binary artifact action enablement, `flashWhen` and `uploadWhen` handling, command execution, and failure reporting.
+Binary artifact row behavior, `flashWhen` and `uploadWhen` handling, Map File action behavior, VS Code task execution, and failure reporting.
 
 This feature is intentionally separate from debug. It is an operational command-execution slice tied to artifact availability and component action rules.
+
+This feature owns the operational behavior in the `Build Artifacts` section other than compile-commands status: the `Binary` row, its `Flash` and `Upload` action buttons, and the `Map File` row action for opening the resolved map file. `Flash` and `Upload` run as VS Code tasks rather than ad hoc process execution. Successful `Flash` and `Upload` completion does not trigger an automatic extension refresh.
 
 ### 6. Debug Launch
 Debug profile resolution, priority handling, template loading, substitution variables, debug API launch, and debug-specific errors and logging.

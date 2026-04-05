@@ -4,6 +4,7 @@ import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 import { ResolvedOption } from "../configuration/build-options";
 import { ActiveCompileCommandsArtifact } from "../intellisense/intellisense-types";
+import { ActiveBinaryArtifact, ActiveMapArtifact } from "../intellisense/artifact-resolution";
 
 // ---------------------------------------------------------------------------
 // Tree item types
@@ -56,6 +57,48 @@ export class CompileCommandsArtifactItem extends vscode.TreeItem {
     this.tooltip = artifact.status === "valid"
       ? `Compile commands: ${artifact.path}`
       : `Expected: ${artifact.path}${artifact.missingReason ? `\n${artifact.missingReason}` : ""}`;
+  }
+}
+
+/**
+ * The Binary row in the Build Artifacts section (US2).
+ * contextValue "artifact-binary" enables Flash/Upload row actions via menus.view/item/context.
+ */
+export class BinaryArtifactItem extends vscode.TreeItem {
+  constructor(artifact: ActiveBinaryArtifact) {
+    super("Binary", vscode.TreeItemCollapsibleState.None);
+    this.id = "artifact:binary";
+    this.contextValue = "artifact-binary";
+    this.iconPath = new vscode.ThemeIcon(
+      artifact.status === "valid" ? "pass" : "error"
+    );
+    this.description = artifact.status;
+    this.tooltip = artifact.status === "valid"
+      ? `Binary artifact: ${artifact.path}`
+      : (artifact.missingReason
+          ? artifact.missingReason
+          : `Expected: ${artifact.path}`);
+  }
+}
+
+/**
+ * The Map File row in the Build Artifacts section (US3).
+ * contextValue "artifact-map" enables the openMapFile row action via menus.view/item/context.
+ */
+export class MapArtifactItem extends vscode.TreeItem {
+  constructor(artifact: ActiveMapArtifact) {
+    super("Map File", vscode.TreeItemCollapsibleState.None);
+    this.id = "artifact:map";
+    this.contextValue = "artifact-map";
+    this.iconPath = new vscode.ThemeIcon(
+      artifact.status === "valid" ? "pass" : "error"
+    );
+    this.description = artifact.status;
+    this.tooltip = artifact.status === "valid"
+      ? `Map artifact: ${artifact.path}`
+      : (artifact.missingReason
+          ? artifact.missingReason
+          : `Expected: ${artifact.path}`);
   }
 }
 
@@ -237,6 +280,8 @@ export class ConfigurationTreeProvider
   private _collapsedGroups = new Set<string>();
   private _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
   private _artifact: ActiveCompileCommandsArtifact | null = null;
+  private _binaryArtifact: ActiveBinaryArtifact | null = null;
+  private _mapArtifact: ActiveMapArtifact | null = null;
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
     vscode.TreeItem | undefined
@@ -267,6 +312,22 @@ export class ConfigurationTreeProvider
    */
   updateArtifact(artifact: ActiveCompileCommandsArtifact | null): void {
     this._artifact = artifact;
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Updates the binary artifact state and refreshes the Build Artifacts section.
+   */
+  updateBinaryArtifact(artifact: ActiveBinaryArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
+    this._binaryArtifact = artifact ?? null;
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Updates the map artifact state and refreshes the Build Artifacts section.
+   */
+  updateMapArtifact(artifact: ActiveMapArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
+    this._mapArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
   }
 
@@ -577,6 +638,13 @@ export class ConfigurationTreeProvider
     if (!artifact) {
       return [new PlaceholderItem("IntelliSense not yet evaluated")];
     }
-    return [new CompileCommandsArtifactItem(artifact)];
+    const items: vscode.TreeItem[] = [new CompileCommandsArtifactItem(artifact)];
+    if (this._binaryArtifact) {
+      items.push(new BinaryArtifactItem(this._binaryArtifact));
+    }
+    if (this._mapArtifact) {
+      items.push(new MapArtifactItem(this._mapArtifact));
+    }
+    return items;
   }
 }

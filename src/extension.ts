@@ -33,11 +33,33 @@ import {
   TASK_TYPE,
 } from "./tasks/build-task-provider";
 import { IntelliSenseService } from "./intellisense/intellisense-service";
+import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { applyProviderSettingFix } from "./intellisense/cpptools-provider";
 import { ExcludedFilesService } from "./intellisense/excluded-files-service";
 import { ExcludedFilesRefreshCoordinator } from "./intellisense/excluded-files-refresh";
 import { ExcludedFileDecorationsProvider } from "./ui/excluded-file-decorations";
 import { ExcludedFileOverlaysManager } from "./ui/excluded-file-overlays";
+import {
+  evaluateArtifactActionPreconditions,
+  isFlashApplicable,
+  isUploadApplicable,
+  shouldShowArtifactRows,
+  resolveArtifactActionContext,
+  createFlashTask,
+  createUploadTask,
+  executeArtifactTask,
+  reportArtifactActionBlocked,
+  openMapFile,
+} from "./commands/artifact-actions";
+import {
+  buildResolutionInputs,
+  resolveActiveArtifact,
+  resolveActiveBinaryArtifact,
+  resolveActiveMapArtifact,
+  ActiveBinaryArtifact,
+  ActiveMapArtifact,
+} from "./intellisense/artifact-resolution";
+import { EvalContext } from "./manifest/when-expressions";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
@@ -54,13 +76,27 @@ let _excludedFileOverlays: ExcludedFileOverlaysManager | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
+/** Binary and Map artifact state for Flash/Upload/openMapFile context keys. */
+let _binaryArtifact: ActiveBinaryArtifact | undefined;
+let _mapArtifact: ActiveMapArtifact | undefined;
+
+export interface TaskProcessEndLike {
+  readonly exitCode?: number;
+  readonly execution: {
+    readonly task: {
+      readonly definition: { readonly type?: string };
+      readonly name: string;
+    };
+  };
+}
 
 // ---------------------------------------------------------------------------
-// Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense slices)
+// Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense
+// + Flash/Upload Actions slices)
 //
 // This extension contributes ONLY the commands listed below in these feature
-// slices. Flash, Upload, Debug, and all other cross-slice commands are
-// intentionally absent. Any attempt to register them here is a scope violation.
+// slices. Debug and all other cross-slice commands are intentionally absent.
+// Any attempt to register them here is a scope violation.
 //
 // Allowed commands:
 //   tfTools.showLogs              — reveal the output channel
@@ -69,6 +105,9 @@ let _lastShownProviderFixState: string = "none";
 //   tfTools.check                 — launch Check task
 //   tfTools.clean                 — launch Clean task
 //   tfTools.refreshIntelliSense   — manual IntelliSense refresh
+//   tfTools.flash                 — launch Flash task (Flash/Upload slice)
+//   tfTools.upload                — launch Upload task (Flash/Upload slice)
+//   tfTools.openMapFile           — open resolved map file (Flash/Upload slice)
 // ---------------------------------------------------------------------------
 
 const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
@@ -78,6 +117,9 @@ const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
   "tfTools.check",
   "tfTools.clean",
   "tfTools.refreshIntelliSense",
+  "tfTools.flash",
+  "tfTools.upload",
+  "tfTools.openMapFile",
 ]);
 
 /**
@@ -137,6 +179,88 @@ function updateWorkflowBlockedContext(state: ManifestState): void {
       workspaceSupported: isWorkflowWorkspaceSupported(),
     }) !== "no-block";
   vscode.commands.executeCommand("setContext", "tfTools.workflowBlocked", blocked);
+}
+
+/**
+ * Updates the four Flash/Upload/map VS Code context keys based on the current
+ * manifest state, active configuration, and artifact-resolution results.
+ */
+function updateArtifactActionContext(
+  state: ManifestState,
+  config: ActiveConfig | undefined,
+  artifactsRoot: string,
+  workspaceFolder: vscode.WorkspaceFolder
+): void {
+  if (state.status !== "loaded" || !config) {
+    _binaryArtifact = undefined;
+    _mapArtifact = undefined;
+    vscode.commands.executeCommand("setContext", "tfTools.flashApplicable", false);
+    vscode.commands.executeCommand("setContext", "tfTools.uploadApplicable", false);
+    vscode.commands.executeCommand("setContext", "tfTools.binaryExists", false);
+    vscode.commands.executeCommand("setContext", "tfTools.mapExists", false);
+    return;
+  }
+
+  const loaded = state as ManifestStateLoaded;
+  const component = loaded.components.find((c) => c.id === config.componentId);
+  const evalCtx: EvalContext = {
+    modelId: config.modelId,
+    targetId: config.targetId,
+    componentId: config.componentId,
+  };
+
+  const flashApplicable = component ? isFlashApplicable(component, evalCtx) : false;
+  const uploadApplicable = component ? isUploadApplicable(component, evalCtx) : false;
+  const showArtifactRows = shouldShowArtifactRows(flashApplicable, uploadApplicable);
+
+  const inputs = buildResolutionInputs(loaded, config, artifactsRoot);
+  let binaryExists = false;
+  let mapExists = false;
+
+  if (inputs && showArtifactRows) {
+    const binary = resolveActiveBinaryArtifact(inputs, config);
+    const map = resolveActiveMapArtifact(inputs, config);
+    _binaryArtifact = binary;
+    _mapArtifact = map;
+    binaryExists = binary.exists;
+    mapExists = map.exists;
+    _treeProvider?.updateBinaryArtifact(binary, workspaceFolder);
+    _treeProvider?.updateMapArtifact(map, workspaceFolder);
+  } else {
+    _binaryArtifact = undefined;
+    _mapArtifact = undefined;
+    _treeProvider?.updateBinaryArtifact(null, workspaceFolder);
+    _treeProvider?.updateMapArtifact(null, workspaceFolder);
+  }
+
+  vscode.commands.executeCommand("setContext", "tfTools.flashApplicable", flashApplicable);
+  vscode.commands.executeCommand("setContext", "tfTools.uploadApplicable", uploadApplicable);
+  vscode.commands.executeCommand("setContext", "tfTools.binaryExists", binaryExists);
+  vscode.commands.executeCommand("setContext", "tfTools.mapExists", mapExists);
+}
+
+function updateCompileCommandsTreeArtifact(
+  state: ManifestState,
+  config: ActiveConfig | undefined,
+  artifactsRoot: string
+): void {
+  if (state.status !== "loaded" || !config) {
+    _treeProvider?.updateArtifact(null);
+    return;
+  }
+
+  const loaded = state as ManifestStateLoaded;
+  const inputs = buildResolutionInputs(loaded, config, artifactsRoot);
+  const artifact = inputs ? resolveActiveArtifact(inputs, config) : null;
+  _treeProvider?.updateArtifact(artifact);
+}
+
+export function isSuccessfulBuildTaskProcess(event: TaskProcessEndLike): boolean {
+  return (
+    event.exitCode === 0 &&
+    event.execution.task.definition.type === TASK_TYPE &&
+    event.execution.task.name.startsWith("Build ")
+  );
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -202,6 +326,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const workspaceFolder = requireWorkspaceFolder();
   const manifestUri = resolveManifestUri(workspaceFolder);
+  const refreshArtifactActionState = (): void => {
+    if (!_manifestState) {
+      return;
+    }
+
+    updateArtifactActionContext(
+      _manifestState,
+      _activeConfig,
+      resolveArtifactsPath(workspaceFolder),
+      workspaceFolder
+    );
+  };
+  const refreshBuildArtifacts = (trigger: RefreshTrigger): void => {
+    if (_manifestState) {
+      updateCompileCommandsTreeArtifact(
+        _manifestState,
+        _activeConfig,
+        resolveArtifactsPath(workspaceFolder)
+      );
+    }
+    refreshArtifactActionState();
+    _intelliSenseService?.scheduleRefresh(trigger);
+  };
 
   // --- Status-bar presenter (T031) ---
   _statusBar = new StatusBarPresenter();
@@ -290,7 +437,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
         _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
-        _intelliSenseService?.scheduleRefresh("artifacts-path-change");
+        refreshBuildArtifacts("artifacts-path-change");
       }
       if (
         e.affectsConfiguration("tfTools.excludedFiles.grayInTree", workspaceFolder.uri) ||
@@ -345,7 +492,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const loadedState = state.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
     _intelliSenseService?.setManifest(loadedState);
     _intelliSenseService?.setActiveConfig(activeConfig);
-    _intelliSenseService?.scheduleRefresh("manifest-change");
+    refreshBuildArtifacts("manifest-change");
   };
 
   _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
@@ -361,6 +508,81 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.refreshIntelliSense", () => {
       _intelliSenseService?.scheduleRefresh("manual-refresh");
+    })
+  );
+
+  // --- Flash command (FR-005 Feature 5) ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.flash", async () => {
+      const state = _manifestState;
+      const config = _activeConfig;
+      const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+      const component = loaded?.components.find((c) => c.id === config?.componentId);
+      const evalCtx: EvalContext | undefined = config
+        ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
+        : undefined;
+
+      const blockReason = evaluateArtifactActionPreconditions({
+        workspaceSupported: isWorkflowWorkspaceSupported(),
+        manifestStatus: state?.status ?? "missing",
+        actionApplicable: !!(component && evalCtx && isFlashApplicable(component, evalCtx)),
+        binaryExists: _binaryArtifact?.exists ?? false,
+      });
+
+      if (blockReason !== "no-block") {
+        reportArtifactActionBlocked("flash", blockReason);
+        return;
+      }
+
+      const ctx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
+      if (!ctx) { return; }
+
+      const task = createFlashTask(ctx, workspaceFolder);
+      await executeArtifactTask(task, "flash");
+    })
+  );
+
+  // --- Upload command (FR-005 Feature 5) ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.upload", async () => {
+      const state = _manifestState;
+      const config = _activeConfig;
+      const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+      const component = loaded?.components.find((c) => c.id === config?.componentId);
+      const evalCtx: EvalContext | undefined = config
+        ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
+        : undefined;
+
+      const blockReason = evaluateArtifactActionPreconditions({
+        workspaceSupported: isWorkflowWorkspaceSupported(),
+        manifestStatus: state?.status ?? "missing",
+        actionApplicable: !!(component && evalCtx && isUploadApplicable(component, evalCtx)),
+        binaryExists: _binaryArtifact?.exists ?? false,
+      });
+
+      if (blockReason !== "no-block") {
+        reportArtifactActionBlocked("upload", blockReason);
+        return;
+      }
+
+      const ctx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
+      if (!ctx) { return; }
+
+      const task = createUploadTask(ctx, workspaceFolder);
+      await executeArtifactTask(task, "upload");
+    })
+  );
+
+  // --- openMapFile command (FR-005 Feature 5, row-only) ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.openMapFile", async () => {
+      const mapArtifact = _mapArtifact;
+      if (!mapArtifact?.exists) {
+        // Action is disabled in the UI when the map file is missing;
+        // silently return if somehow invoked without a valid path.
+        return;
+      }
+      await openMapFile(mapArtifact.path);
     })
   );
 
@@ -382,7 +604,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _treeProvider?.update(state, config, _resolvedOptions);
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
       _intelliSenseService?.setActiveConfig(config);
-      _intelliSenseService?.scheduleRefresh("active-config-change");
+      refreshBuildArtifacts("active-config-change");
     })
   );
 
@@ -396,7 +618,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _treeProvider?.update(state, config, _resolvedOptions);
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
       _intelliSenseService?.setActiveConfig(config);
-      _intelliSenseService?.scheduleRefresh("active-config-change");
+      refreshBuildArtifacts("active-config-change");
     })
   );
 
@@ -410,7 +632,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _treeProvider?.update(state, config, _resolvedOptions);
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
       _intelliSenseService?.setActiveConfig(config);
-      _intelliSenseService?.scheduleRefresh("active-config-change");
+      refreshBuildArtifacts("active-config-change");
     })
   );
 
@@ -502,12 +724,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Trigger IntelliSense refresh after a successful Build task completion (FR-004).
   context.subscriptions.push(
     vscode.tasks.onDidEndTaskProcess((e) => {
-      if (
-        e.exitCode === 0 &&
-        (e.execution.task.definition as { type?: string }).type === TASK_TYPE &&
-        e.execution.task.name.startsWith("Build ")
-      ) {
-        _intelliSenseService?.scheduleRefresh("successful-build");
+      if (isSuccessfulBuildTaskProcess(e)) {
+        refreshBuildArtifacts("successful-build");
       }
     })
   );
@@ -551,6 +769,8 @@ export function deactivate(): void {
   _manifestState = undefined;
   _activeConfig = undefined;
   _resolvedOptions = [];
+  _binaryArtifact = undefined;
+  _mapArtifact = undefined;
   disposeDiagnostics();
   disposeLogChannel();
 }

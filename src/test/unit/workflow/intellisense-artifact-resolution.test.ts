@@ -14,7 +14,11 @@ import * as assert from "assert";
 import * as path from "path";
 import {
   deriveArtifactPath,
+  deriveBinaryArtifactPath,
+  deriveMapArtifactPath,
   resolveActiveArtifact,
+  resolveActiveBinaryArtifact,
+  resolveActiveMapArtifact,
   buildResolutionInputs,
   makeContextKey,
 } from "../../../intellisense/artifact-resolution";
@@ -303,5 +307,161 @@ suite("T033 — target suffix transition regression", () => {
     const keyHw = makeContextKey(makeActiveConfig({ targetId: "hw" }));
     const keyEmu = makeContextKey(makeActiveConfig({ targetId: "emu" }));
     assert.notStrictEqual(keyHw, keyEmu);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T013: deriveBinaryArtifactPath
+// ---------------------------------------------------------------------------
+
+suite("deriveBinaryArtifactPath", () => {
+  test("constructs correct .bin path for all inputs", () => {
+    const inputs = makeInputs();
+    const result = deriveBinaryArtifactPath(inputs);
+    assert.strictEqual(
+      result,
+      path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core.bin")
+    );
+  });
+
+  test("appends artifactSuffix before .bin extension", () => {
+    const inputs = makeInputs({ artifactSuffix: "_emu" });
+    const result = deriveBinaryArtifactPath(inputs);
+    assert.strictEqual(
+      result,
+      path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core_emu.bin")
+    );
+  });
+
+  test("returns undefined when artifactsRoot is missing", () => {
+    const inputs = makeInputs({ artifactsRoot: "" });
+    assert.strictEqual(deriveBinaryArtifactPath(inputs), undefined);
+  });
+
+  test("returns undefined when artifactFolder is missing", () => {
+    const inputs = makeInputs({ artifactFolder: "" });
+    assert.strictEqual(deriveBinaryArtifactPath(inputs), undefined);
+  });
+
+  test("returns undefined when artifactName is missing", () => {
+    const inputs = makeInputs({ artifactName: "" });
+    assert.strictEqual(deriveBinaryArtifactPath(inputs), undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T013: deriveMapArtifactPath
+// ---------------------------------------------------------------------------
+
+suite("deriveMapArtifactPath", () => {
+  test("constructs correct .map path for all inputs", () => {
+    const inputs = makeInputs();
+    const result = deriveMapArtifactPath(inputs);
+    assert.strictEqual(
+      result,
+      path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core.map")
+    );
+  });
+
+  test("appends artifactSuffix before .map extension", () => {
+    const inputs = makeInputs({ artifactSuffix: "_emu" });
+    const result = deriveMapArtifactPath(inputs);
+    assert.strictEqual(
+      result,
+      path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core_emu.map")
+    );
+  });
+
+  test("returns undefined when artifactsRoot is missing", () => {
+    const inputs = makeInputs({ artifactsRoot: "" });
+    assert.strictEqual(deriveMapArtifactPath(inputs), undefined);
+  });
+
+  test("returns undefined when artifactFolder is missing", () => {
+    const inputs = makeInputs({ artifactFolder: "" });
+    assert.strictEqual(deriveMapArtifactPath(inputs), undefined);
+  });
+
+  test("returns undefined when artifactName is missing", () => {
+    const inputs = makeInputs({ artifactName: "" });
+    assert.strictEqual(deriveMapArtifactPath(inputs), undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T013: resolveActiveBinaryArtifact
+// ---------------------------------------------------------------------------
+
+suite("resolveActiveBinaryArtifact", () => {
+  test("returns missing status when binary file does not exist on disk", () => {
+    const inputs = makeInputs({
+      artifactsRoot: "/nonexistent/root",
+    });
+    const result = resolveActiveBinaryArtifact(inputs, makeActiveConfig());
+    assert.strictEqual(result.status, "missing");
+    assert.strictEqual(result.exists, false);
+  });
+
+  test("sets contextKey matching active config", () => {
+    const config = makeActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" });
+    const result = resolveActiveBinaryArtifact(makeInputs(), config);
+    assert.strictEqual(result.contextKey, "T2T1::hw::core");
+  });
+
+  test("includes expected path in result", () => {
+    const result = resolveActiveBinaryArtifact(makeInputs(), makeActiveConfig());
+    assert.ok(result.path.endsWith(".bin"), `expected .bin path, got: ${result.path}`);
+  });
+
+  test("returns missing with missingReason when inputs cannot derive path", () => {
+    const inputs = makeInputs({ artifactsRoot: "" });
+    const result = resolveActiveBinaryArtifact(inputs, makeActiveConfig());
+    assert.strictEqual(result.status, "missing");
+    assert.ok(result.missingReason, "expected a missingReason string");
+  });
+
+  test("path is empty string when inputs cannot derive path", () => {
+    const inputs = makeInputs({ artifactsRoot: "" });
+    const result = resolveActiveBinaryArtifact(inputs, makeActiveConfig());
+    assert.strictEqual(result.path, "");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T013: resolveActiveMapArtifact
+// ---------------------------------------------------------------------------
+
+suite("resolveActiveMapArtifact", () => {
+  test("returns missing status when map file does not exist on disk", () => {
+    const inputs = makeInputs({
+      artifactsRoot: "/nonexistent/root",
+    });
+    const result = resolveActiveMapArtifact(inputs, makeActiveConfig());
+    assert.strictEqual(result.status, "missing");
+    assert.strictEqual(result.exists, false);
+  });
+
+  test("sets contextKey matching active config", () => {
+    const config = makeActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" });
+    const result = resolveActiveMapArtifact(makeInputs(), config);
+    assert.strictEqual(result.contextKey, "T2T1::hw::core");
+  });
+
+  test("includes expected path in result", () => {
+    const result = resolveActiveMapArtifact(makeInputs(), makeActiveConfig());
+    assert.ok(result.path.endsWith(".map"), `expected .map path, got: ${result.path}`);
+  });
+
+  test("returns missing with missingReason when inputs cannot derive path", () => {
+    const inputs = makeInputs({ artifactsRoot: "" });
+    const result = resolveActiveMapArtifact(inputs, makeActiveConfig());
+    assert.strictEqual(result.status, "missing");
+    assert.ok(result.missingReason, "expected a missingReason string");
+  });
+
+  test("path is empty string when inputs cannot derive path", () => {
+    const inputs = makeInputs({ artifactsRoot: "" });
+    const result = resolveActiveMapArtifact(inputs, makeActiveConfig());
+    assert.strictEqual(result.path, "");
   });
 });
