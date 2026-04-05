@@ -2,15 +2,15 @@
 # Mirrors intellisense-valid structure so excluded-file tests can use a real
 # compile-commands artifact while exercising the excluded-files matching rules.
 #
-# Artifact path formula: <artifactsRoot>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json
+# Artifact path formula: <artifactsRoot>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json
 
 models:
   - id: T2T1
     name: Trezor Model T (v1)
-    artifact-folder: model-t
+    artifactFolder: model-t
   - id: T3W1
     name: Trezor Model T3 (w1)
-    artifact-folder: model-t3
+    artifactFolder: model-t3
 
 targets:
   - id: hw
@@ -18,9 +18,9 @@ targets:
     shortName: HW
   - id: emu
     name: Emulator
-    artifact-suffix: _emu
+    artifactSuffix: _emu
 
 components:
   - id: core
     name: Core
-    artifact-name: compile_commands_core
+    artifactName: compile_commands_core

@@ -2,7 +2,7 @@
 
 ## Decision 1: Resolve compile-commands paths strictly from settings plus manifest artifact metadata
 
-- **Decision**: Derive the active compile-commands artifact path from `tfTools.artifactsPath`, the selected model's required `artifact-folder`, the selected component's required `artifact-name`, and the selected target's optional `artifact-suffix`, producing `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`.
+- **Decision**: Derive the active compile-commands artifact path from `tfTools.artifactsPath`, the selected model's required `artifactFolder`, the selected component's required `artifactName`, and the selected target's optional `artifactSuffix`, producing `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`.
 - **Rationale**: The corrected informal specification now makes artifact layout fully manifest-driven. Encoding that rule once in a dedicated resolver prevents drift between the tree view, IntelliSense provider integration, and future artifact consumers.
 - **Alternatives considered**:
   - Continue deriving paths from model id and component id: rejected because that no longer matches the agreed manifest schema.

@@ -5,10 +5,10 @@
 models:
   - id: T2T1
     name: Trezor Model T (v1)
-    artifact-folder: model-t
+    artifactFolder: model-t
   - id: T3W1
     name: Trezor Model T3 (w1)
-    artifact-folder: model-t3
+    artifactFolder: model-t3
 
 targets:
   - id: hw
@@ -18,7 +18,7 @@ targets:
 components:
   - id: core
     name: Core
-    artifact-name: compile_commands_core
+    artifactName: compile_commands_core
   - id: prodtest
     name: Prodtest
-    artifact-name: compile_commands_prodtest
+    artifactName: compile_commands_prodtest

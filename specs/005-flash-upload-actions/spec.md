@@ -94,7 +94,7 @@ As a firmware developer, I want to open the resolved map file directly from the 
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST resolve the expected `Binary` and `Map File` artifact paths for the active build context from `tfTools.artifactsPath`, the selected model's required `artifact-folder`, the selected component's required `artifact-name`, and the selected target's optional `artifact-suffix` with an empty-string default when the suffix is omitted.
+- **FR-001**: The system MUST resolve the expected `Binary` and `Map File` artifact paths for the active build context from `tfTools.artifactsPath`, the selected model's required `artifactFolder`, the selected component's required `artifactName`, and the selected target's optional `artifactSuffix` with an empty-string default when the suffix is omitted.
 - **FR-002**: The `Build Artifacts` section MUST show `Binary` and `Map File` rows for the active build context only when the selected component's `flashWhen` or `uploadWhen` rule evaluates to `true`.
 - **FR-003**: The `Binary` and `Map File` rows MUST each display `valid` when their expected artifact exists and `missing` when it does not.
 - **FR-004**: The tooltip for the `Binary` and `Map File` rows MUST show the expected artifact path for the active build context.
@@ -132,7 +132,7 @@ As a firmware developer, I want to open the resolved map file directly from the 
 ## Operational Constraints *(mandatory)*
 
 - Supported host/version: VS Code 1.110+.
-- Source of truth inputs: The active model/target/component selection, `tfTools.artifactsPath`, the selected model's `artifact-folder`, the selected component's `artifact-name`, the selected target's optional `artifact-suffix`, the selected component's `flashWhen` and `uploadWhen` rules, manifest validity, workspace support state, and the presence of the resolved binary and map artifacts on disk.
+- Source of truth inputs: The active model/target/component selection, `tfTools.artifactsPath`, the selected model's `artifactFolder`, the selected component's `artifactName`, the selected target's optional `artifactSuffix`, the selected component's `flashWhen` and `uploadWhen` rules, manifest validity, workspace support state, and the presence of the resolved binary and map artifacts on disk.
 - Workspace assumptions: Single-root workspace only.
 - Compatibility exclusions: Multi-root behavior, compile-commands status ownership, cpptools integration, excluded-file decorations and overlays, build/clippy/check/clean workflows, debug launch, and automatic post-action refresh are out of scope.
 
@@ -170,6 +170,6 @@ As a firmware developer, I want to open the resolved map file directly from the 
 
 - Earlier slices already provide the Configuration view, the `Build Artifacts` section container, active build-context persistence, manifest diagnostics, and the `Trezor Firmware Tools` log output channel.
 - Manifest validation already treats invalid `flashWhen` and `uploadWhen` expressions as actionable manifest problems before this slice attempts to start Flash or Upload.
-- The active binary artifact follows the resolved path pattern `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.bin`, and the active map artifact follows the corresponding `.map` path.
+- The active binary artifact follows the resolved path pattern `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.bin`, and the active map artifact follows the corresponding `.map` path.
 - Opening the map file in the current editor without a special preview mode is acceptable for this product.
 - No automatic refresh is required after successful Flash or Upload because these actions are operational outputs rather than inputs to IntelliSense or excluded-file recomputation in this slice.

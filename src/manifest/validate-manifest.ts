@@ -9,7 +9,6 @@ import {
   BuildOptionState,
   ValidationIssue,
   ValidationCode,
-  WhenExpression,
 } from "./manifest-types";
 import {
   parseWhenExpression,
@@ -44,6 +43,73 @@ function issue(
   range?: vscode.Range
 ): ValidationIssue {
   return { severity, code, message, range };
+}
+
+function getScalarStringField(map: YAMLMap, ...fieldNames: string[]): string | undefined {
+  for (const field of fieldNames) {
+    const node = map.get(field, true);
+    if (node instanceof Scalar && typeof node.value === "string") {
+      return node.value;
+    }
+  }
+  return undefined;
+}
+
+function parseOptionalWhenExpression(
+  item: YAMLMap,
+  field: "flashWhen" | "uploadWhen",
+  lineCounter: LineCounter,
+  issues: ValidationIssue[],
+  contextLabel: string,
+  whenContext: WhenContext
+) {
+  const whenNode = item.get(field, true);
+  if (whenNode === undefined || whenNode === null) {
+    return undefined;
+  }
+
+  if (!(whenNode instanceof Scalar) || typeof whenNode.value !== "string") {
+    const nodeRange = whenNode as unknown as { range?: [number, number, number] };
+    issues.push(
+      issue(
+        "error",
+        "invalid-when",
+        `${contextLabel}: "${field}" must be a string expression`,
+        toVsRange(lineCounter, nodeRange?.range)
+      )
+    );
+    return undefined;
+  }
+
+  const parseResult = parseWhenExpression(whenNode.value);
+  if (!parseResult.ok) {
+    const nodeRange = whenNode as unknown as { range?: [number, number, number] };
+    issues.push(
+      issue(
+        "error",
+        "invalid-when",
+        `${contextLabel}: invalid "${field}" expression — ${parseResult.error}`,
+        toVsRange(lineCounter, nodeRange?.range)
+      )
+    );
+    return undefined;
+  }
+
+  const unknownIds = findUnknownIds(parseResult.expr, whenContext);
+  if (unknownIds.length > 0) {
+    const nodeRange = whenNode as unknown as { range?: [number, number, number] };
+    issues.push(
+      issue(
+        "error",
+        "invalid-when",
+        `${contextLabel}: "${field}" expression references unknown ids: ${unknownIds.join(", ")}`,
+        toVsRange(lineCounter, nodeRange?.range)
+      )
+    );
+    return undefined;
+  }
+
+  return parseResult.expr;
 }
 
 // ---------------------------------------------------------------------------
@@ -131,11 +197,8 @@ function validateModels(
       continue;
     }
     seen.add(id);
-    const artifactFolderNode = item.get("artifact-folder", true);
-    const artifactFolder =
-      artifactFolderNode instanceof Scalar && typeof artifactFolderNode.value === "string" && artifactFolderNode.value.trim() !== ""
-        ? artifactFolderNode.value
-        : undefined;
+    const artifactFolderValue = getScalarStringField(item, "artifactFolder", "artifact-folder");
+    const artifactFolder = artifactFolderValue?.trim() ? artifactFolderValue : undefined;
     models.push({ kind: "model", id, name, artifactFolder });
   }
   return models;
@@ -199,11 +262,7 @@ function validateTargets(
         : flagNode instanceof Scalar && flagNode.value === null
           ? null
           : undefined;
-    const artifactSuffixNode = item.get("artifact-suffix", true);
-    const artifactSuffix =
-      artifactSuffixNode instanceof Scalar && typeof artifactSuffixNode.value === "string"
-        ? artifactSuffixNode.value
-        : undefined;
+    const artifactSuffix = getScalarStringField(item, "artifactSuffix", "artifact-suffix");
     targets.push({ kind: "target", id, name, shortName, flag, artifactSuffix });
   }
   return targets;
@@ -212,7 +271,8 @@ function validateTargets(
 function validateComponents(
   doc: YAMLMap,
   lineCounter: LineCounter,
-  issues: ValidationIssue[]
+  issues: ValidationIssue[],
+  baseWhenContext: Omit<WhenContext, "componentIds">
 ): ManifestComponent[] {
   const components: ManifestComponent[] = [];
   const seqNode = doc.get("components", true);
@@ -233,6 +293,12 @@ function validateComponents(
   }
 
   const seen = new Set<string>();
+  const drafts: Array<{
+    item: YAMLMap;
+    id: string;
+    name: string;
+    artifactName: string | undefined;
+  }> = [];
   for (const item of seqNode.items) {
     if (!(item instanceof YAMLMap)) {
       continue;
@@ -255,126 +321,45 @@ function validateComponents(
       continue;
     }
     seen.add(id);
-    const artifactNameNode = item.get("artifact-name", true);
-    const artifactName =
-      artifactNameNode instanceof Scalar && typeof artifactNameNode.value === "string" && artifactNameNode.value.trim() !== ""
-        ? artifactNameNode.value
-        : undefined;
-    components.push({ kind: "component", id, name, artifactName });
-  }
-  return components;
-}
-
-// ---------------------------------------------------------------------------
-// Component action rules (flashWhen / uploadWhen) — second-pass validator
-// ---------------------------------------------------------------------------
-
-/**
- * Parses `flashWhen` and `uploadWhen` from the manifest components section and
- * returns a new array of `ManifestComponent` objects enriched with those fields.
- *
- * Must be called after `whenContext` is built from all models, targets, and
- * components so that id references inside the expressions can be validated.
- *
- * Invalid expressions surface as `invalid-when` validation issues but do NOT
- * set `hasWorkflowBlockingIssues` — they only block Flash/Upload, not
- * Build/Clippy/Check/Clean.
- */
-function parseComponentActionRules(
-  doc: YAMLMap,
-  lineCounter: LineCounter,
-  issues: ValidationIssue[],
-  components: ManifestComponent[],
-  whenContext: WhenContext
-): ManifestComponent[] {
-  const seqNode = doc.get("components", true);
-  if (!(seqNode instanceof YAMLSeq)) {
-    return components;
+    const artifactNameValue = getScalarStringField(item, "artifactName", "artifact-name");
+    const artifactName = artifactNameValue?.trim() ? artifactNameValue : undefined;
+    drafts.push({ item, id, name, artifactName });
   }
 
-  // Build a lookup by id so we can enrich in order.
-  const byId = new Map<string, ManifestComponent>(components.map((c) => [c.id, c]));
-
-  const parseActionWhen = (
-    item: YAMLMap,
-    field: string,
-    label: string
-  ): WhenExpression | undefined => {
-    const node = item.get(field, true);
-    if (node === undefined || node === null) {
-      return undefined;
-    }
-    if (!(node instanceof Scalar) || typeof node.value !== "string") {
-      const nodeRange = node as unknown as { range?: [number, number, number] };
-      issues.push(
-        issue(
-          "error",
-          "invalid-when",
-          `components entry "${label}": "${field}" must be a string expression`,
-          toVsRange(lineCounter, nodeRange?.range)
-        )
-      );
-      return undefined;
-    }
-    const parseResult = parseWhenExpression(node.value);
-    if (!parseResult.ok) {
-      const nodeRange = node as unknown as { range?: [number, number, number] };
-      issues.push(
-        issue(
-          "error",
-          "invalid-when",
-          `components entry "${label}": invalid "${field}" expression — ${parseResult.error}`,
-          toVsRange(lineCounter, nodeRange?.range)
-        )
-      );
-      return undefined;
-    }
-    const unknownIds = findUnknownIds(parseResult.expr, whenContext);
-    if (unknownIds.length > 0) {
-      const nodeRange = node as unknown as { range?: [number, number, number] };
-      issues.push(
-        issue(
-          "error",
-          "invalid-when",
-          `components entry "${label}": "${field}" expression references unknown ids: ${unknownIds.join(", ")}`,
-          toVsRange(lineCounter, nodeRange?.range)
-        )
-      );
-      return undefined;
-    }
-    return parseResult.expr;
+  const whenContext: WhenContext = {
+    ...baseWhenContext,
+    componentIds: new Set(drafts.map((draft) => draft.id)),
   };
 
-  const enriched: ManifestComponent[] = [];
-  for (const item of seqNode.items) {
-    if (!(item instanceof YAMLMap)) {
-      continue;
-    }
-    const idNode = item.get("id", true);
-    const id =
-      idNode instanceof Scalar && typeof idNode.value === "string" ? idNode.value : undefined;
-    if (!id || !byId.has(id)) {
-      continue;
-    }
-    const base = byId.get(id)!;
-    const flashWhen = parseActionWhen(item, "flashWhen", base.name);
-    const uploadWhen = parseActionWhen(item, "uploadWhen", base.name);
-    enriched.push({
-      ...base,
-      ...(flashWhen !== undefined ? { flashWhen } : {}),
-      ...(uploadWhen !== undefined ? { uploadWhen } : {}),
+  for (const draft of drafts) {
+    const contextLabel = `components entry "${draft.id}"`;
+    const flashWhen = parseOptionalWhenExpression(
+      draft.item,
+      "flashWhen",
+      lineCounter,
+      issues,
+      contextLabel,
+      whenContext
+    );
+    const uploadWhen = parseOptionalWhenExpression(
+      draft.item,
+      "uploadWhen",
+      lineCounter,
+      issues,
+      contextLabel,
+      whenContext
+    );
+
+    components.push({
+      kind: "component",
+      id: draft.id,
+      name: draft.name,
+      artifactName: draft.artifactName,
+      flashWhen,
+      uploadWhen,
     });
   }
-
-  // Any components not found in the YAML (shouldn't happen) pass through unchanged.
-  const enrichedIds = new Set(enriched.map((c) => c.id));
-  for (const c of components) {
-    if (!enrichedIds.has(c.id)) {
-      enriched.push(c);
-    }
-  }
-
-  return enriched;
+  return components;
 }
 
 // ---------------------------------------------------------------------------
@@ -760,7 +745,10 @@ export function parseManifest(source: string): {
 
   const models = validateModels(root, lineCounter, issues);
   const targets = validateTargets(root, lineCounter, issues);
-  const components = validateComponents(root, lineCounter, issues);
+  const components = validateComponents(root, lineCounter, issues, {
+    modelIds: new Set(models.map((m) => m.id)),
+    targetIds: new Set(targets.map((t) => t.id)),
+  });
 
   // Build options validation requires known ids for `when` expression validation
   const whenContext: WhenContext = {
@@ -775,16 +763,7 @@ export function parseManifest(source: string): {
     whenContext
   );
 
-  // Second pass: enrich components with parsed flashWhen / uploadWhen rules.
-  const enrichedComponents = parseComponentActionRules(
-    root,
-    lineCounter,
-    issues,
-    components,
-    whenContext
-  );
-
-  return { models, targets, components: enrichedComponents, buildOptions, hasWorkflowBlockingIssues, issues };
+  return { models, targets, components, buildOptions, hasWorkflowBlockingIssues, issues };
 }
 
 /**

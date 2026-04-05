@@ -25,7 +25,7 @@
   - `missingReason`: user-facing explanation when `status` is `missing`
   - `tooltip`: expected-path plus missing-reason text
 - **Validation rules**:
-  - `expectedPath` must derive from `<tfTools.artifactsPath>/<artifact-folder>/<artifact-name><artifact-suffix>` with the correct extension for the row kind
+  - `expectedPath` must derive from `<tfTools.artifactsPath>/<artifactFolder>/<artifactName><artifactSuffix>` with the correct extension for the row kind
   - `tooltip` always includes the expected path
   - `missingReason` is present whenever `status` is `missing`
 

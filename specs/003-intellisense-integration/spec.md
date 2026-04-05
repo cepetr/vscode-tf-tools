@@ -10,7 +10,7 @@
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
 - **Selected Slice**: `3. IntelliSense Integration`
 - **Scope Guard**: This feature includes resolving the active compile-commands artifact, showing compile-commands artifact presence and expected-path tooltip in the `Build Artifacts` section, registering and updating the cpptools custom configuration provider, warning when IntelliSense prerequisites are unavailable or misconfigured, and refreshing IntelliSense state when the active context or relevant workspace state changes. This feature excludes excluded-file explorer badges, optional tree graying, editor overlays, file-scope and pattern rules, Binary and Map File artifact behavior, Flash/Upload actions, and Debug launch.
-- **Critical Informal Details**: IntelliSense must always follow the active model, target, and component rather than silently reusing another compile database; the expected compile-commands artifact path is derived from the artifact base path `<tfTools.artifactsPath>/<artifact-folder>/`, where `<artifact-folder>` comes from the selected model's required manifest field and is interpreted relative to `tfTools.artifactsPath`, and an artifact basename constructed as `<artifact-name><artifact-suffix>`, where `<artifact-name>` comes from the selected component's required manifest field and the selected target's optional `artifact-suffix` defaults to an empty string when omitted; the provider must eagerly parse the active `.cc.json` database on refresh and translate entries into cpptools per-file configurations rather than only recording the database path; the user must be able to see whether the active compile-commands artifact is present and where it is expected; IntelliSense refresh runs on activation, configuration changes, successful builds, explicit refresh, provider-availability changes, manifest-path changes, manifest-content changes, and other relevant workspace/settings changes; cpptools is the only supported IntelliSense provider and tf-tools requires the cpptools custom-configuration API v7; missing provider support or an inactive tf-tools provider configuration must produce both a visible user message and a persistent log entry; when cpptools is installed but another configuration provider is active, the warning must offer a workspace-setting fix that switches the provider to Trezor Firmware Tools.
+- **Critical Informal Details**: IntelliSense must always follow the active model, target, and component rather than silently reusing another compile database; the expected compile-commands artifact path is derived from the artifact base path `<tfTools.artifactsPath>/<artifactFolder>/`, where `<artifactFolder>` comes from the selected model's required manifest field and is interpreted relative to `tfTools.artifactsPath`, and an artifact basename constructed as `<artifactName><artifactSuffix>`, where `<artifactName>` comes from the selected component's required manifest field and the selected target's optional `artifactSuffix` defaults to an empty string when omitted; the provider must eagerly parse the active `.cc.json` database on refresh and translate entries into cpptools per-file configurations rather than only recording the database path; the user must be able to see whether the active compile-commands artifact is present and where it is expected; IntelliSense refresh runs on activation, configuration changes, successful builds, explicit refresh, provider-availability changes, manifest-path changes, manifest-content changes, and other relevant workspace/settings changes; cpptools is the only supported IntelliSense provider and tf-tools requires the cpptools custom-configuration API v7; missing provider support or an inactive tf-tools provider configuration must produce both a visible user message and a persistent log entry; when cpptools is installed but another configuration provider is active, the warning must offer a workspace-setting fix that switches the provider to Trezor Firmware Tools.
 
 ## Clarifications
 
@@ -27,7 +27,7 @@ As a firmware developer, I want C/C++ editor assistance to track my currently se
 
 **Why this priority**: This is the core user outcome of the slice. If the editor stays on stale or mismatched compile data, the feature fails even if artifact status and warnings are present.
 
-**Independent Test**: Activate the extension with a valid compile-commands artifact for the selected model, target, and component, switch active build context values including model changes that alter `artifact-folder`, component changes that alter `artifact-name`, and target changes that alter `artifact-suffix`, and verify that IntelliSense updates to the newly selected context without using another artifact as fallback.
+**Independent Test**: Activate the extension with a valid compile-commands artifact for the selected model, target, and component, switch active build context values including model changes that alter `artifactFolder`, component changes that alter `artifactName`, and target changes that alter `artifactSuffix`, and verify that IntelliSense updates to the newly selected context without using another artifact as fallback.
 
 **Acceptance Scenarios**:
 
@@ -50,9 +50,9 @@ As a firmware developer, I want to see whether the active compile-commands artif
 
 1. **Given** the expected compile-commands artifact exists for the active configuration, **When** the user views the `Build Artifacts` section, **Then** the `Compile Commands` row shows `valid` and its tooltip shows the expected artifact path.
 2. **Given** the expected compile-commands artifact does not exist for the active configuration, **When** the user views the `Build Artifacts` section, **Then** the `Compile Commands` row shows `missing` and its tooltip identifies the expected artifact path and that the artifact was not found.
-3. **Given** the selected model changes to one with a different required `artifact-folder`, **When** refresh completes, **Then** the `Compile Commands` row recomputes its state using the new artifact base path under `tfTools.artifactsPath`.
-4. **Given** the selected component changes to one with a different required `artifact-name`, **When** refresh completes, **Then** the `Compile Commands` row recomputes its state using the new artifact basename stem for the selected component.
-5. **Given** the selected target changes from one without `artifact-suffix` to one with `artifact-suffix`, **When** refresh completes, **Then** the `Compile Commands` row recomputes its state using the artifact basename `<artifact-name><artifact-suffix>` for the newly selected target.
+3. **Given** the selected model changes to one with a different required `artifactFolder`, **When** refresh completes, **Then** the `Compile Commands` row recomputes its state using the new artifact base path under `tfTools.artifactsPath`.
+4. **Given** the selected component changes to one with a different required `artifactName`, **When** refresh completes, **Then** the `Compile Commands` row recomputes its state using the new artifact basename stem for the selected component.
+5. **Given** the selected target changes from one without `artifactSuffix` to one with `artifactSuffix`, **When** refresh completes, **Then** the `Compile Commands` row recomputes its state using the artifact basename `<artifactName><artifactSuffix>` for the newly selected target.
 6. **Given** `tfTools.artifactsPath` changes, **When** refresh completes, **Then** the `Compile Commands` row recomputes its state for the new expected path of the active configuration.
 
 ---
@@ -75,9 +75,9 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 ### Edge Cases
 
 - The active compile-commands artifact is missing for the current model, target, and component even though another compile database exists elsewhere under the artifacts root.
-- The selected model changes the required `artifact-folder`, causing the artifact base path to change even though the selected target and component stay the same.
-- The selected component changes the required `artifact-name`, causing the artifact basename stem to change even though the selected model and target stay the same.
-- The selected target changes the optional `artifact-suffix`, causing the artifact basename to change even though the selected component stays the same.
+- The selected model changes the required `artifactFolder`, causing the artifact base path to change even though the selected target and component stay the same.
+- The selected component changes the required `artifactName`, causing the artifact basename stem to change even though the selected model and target stay the same.
+- The selected target changes the optional `artifactSuffix`, causing the artifact basename to change even though the selected component stays the same.
 - `tfTools.artifactsPath` changes while the previous compile-commands artifact state was `valid`.
 - The user triggers a manual IntelliSense refresh while another refresh-worthy change has just occurred.
 - cpptools becomes installed, removed, enabled, or disabled after the extension has already activated.
@@ -91,7 +91,7 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST resolve the expected compile-commands artifact for the active configuration from `tfTools.artifactsPath` (default: `core/build-xtask/artifacts`, resolved relative to the workspace root when not absolute), the selected model's required `artifact-folder` interpreted relative to that setting, and an artifact basename constructed as `<artifact-name><artifact-suffix>`, where `artifact-name` comes from the selected component's required manifest field and `artifact-suffix` comes from the selected target's optional manifest field and defaults to an empty string when omitted.
+- **FR-001**: The system MUST resolve the expected compile-commands artifact for the active configuration from `tfTools.artifactsPath` (default: `core/build-xtask/artifacts`, resolved relative to the workspace root when not absolute), the selected model's required `artifactFolder` interpreted relative to that setting, and an artifact basename constructed as `<artifactName><artifactSuffix>`, where `artifactName` comes from the selected component's required manifest field and `artifactSuffix` comes from the selected target's optional manifest field and defaults to an empty string when omitted.
 - **FR-002**: The system MUST treat the resolved compile-commands artifact for the active configuration as the only valid IntelliSense source for that configuration and MUST NOT fall back to a different artifact path, model, target-derived suffix, component, or previously applied IntelliSense state.
 - **FR-002A**: When the expected compile-commands artifact for the active configuration is missing, the system MUST clear any previously applied compile-commands configuration instead of leaving stale IntelliSense data active.
 - **FR-003**: The system MUST register and maintain IntelliSense integration through the Microsoft C/C++ custom configuration provider model.
@@ -112,9 +112,9 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 - **FR-008**: The `Compile Commands` row MUST display `missing` when the expected compile-commands artifact for the active configuration does not exist.
 - **FR-009**: The tooltip for the `Compile Commands` row MUST show the expected artifact path for the active configuration.
 - **FR-010**: When the expected compile-commands artifact is missing, the tooltip for the `Compile Commands` row MUST explain that the artifact was not found for the active configuration.
-- **FR-010B**: The expected compile-commands artifact path MUST use the selected model's required `artifact-folder` as the folder under `tfTools.artifactsPath` rather than the model id.
-- **FR-010A**: The expected compile-commands artifact path MUST use the selected component's required `artifact-name` as the artifact basename stem rather than the component id.
-- **FR-010C**: When the selected target defines `artifact-suffix`, the expected compile-commands artifact path MUST use `<artifact-name><artifact-suffix>` as the artifact basename.
+- **FR-010B**: The expected compile-commands artifact path MUST use the selected model's required `artifactFolder` as the folder under `tfTools.artifactsPath` rather than the model id.
+- **FR-010A**: The expected compile-commands artifact path MUST use the selected component's required `artifactName` as the artifact basename stem rather than the component id.
+- **FR-010C**: When the selected target defines `artifactSuffix`, the expected compile-commands artifact path MUST use `<artifactName><artifactSuffix>` as the artifact basename.
 - **FR-011**: When `tfTools.artifactsPath` changes, the system MUST clear previously applied IntelliSense artifact state and recompute the active `Compile Commands` row state against the new expected path.
 - **FR-012**: If no supported C/C++ provider is installed, the system MUST show a user-facing warning that IntelliSense integration is unavailable.
 - **FR-013**: If cpptools is installed but Trezor Firmware Tools is not the active configuration provider, the system MUST show a user-facing warning describing that provider misconfiguration.
@@ -134,7 +134,7 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 ## Operational Constraints *(mandatory)*
 
 - Supported host/version: VS Code 1.110+.
-- Source of truth inputs: `tfTools.artifactsPath`, the active model/target/component selection already managed by earlier slices, the selected model's required `artifact-folder` manifest field, the selected component's required `artifact-name` manifest field, the selected target's optional `artifact-suffix` manifest field, the manifest path and content when they affect active configuration normalization, workspace folder state, extension/provider availability, the active compile-commands artifact on disk, and each compile-database entry's `directory`, source file, compiler executable, and ordered arguments.
+- Source of truth inputs: `tfTools.artifactsPath`, the active model/target/component selection already managed by earlier slices, the selected model's required `artifactFolder` manifest field, the selected component's required `artifactName` manifest field, the selected target's optional `artifactSuffix` manifest field, the manifest path and content when they affect active configuration normalization, workspace folder state, extension/provider availability, the active compile-commands artifact on disk, and each compile-database entry's `directory`, source file, compiler executable, and ordered arguments.
 - Workspace assumptions: Single-root workspace only.
 - Compatibility exclusions: Alternate C/C++ providers, multi-root-specific behavior, excluded-file visibility, Binary and Map File artifact behavior, Flash/Upload actions, and Debug launch are out of scope.
 
@@ -160,7 +160,7 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 
 ### Measurable Outcomes
 
-- **SC-001**: In validation testing across representative model, target, and component changes, 100% of successful IntelliSense refreshes use the compile-commands artifact expected for the active configuration, including the selected model's `artifact-folder` and the selected component's `artifact-name`, rather than a fallback artifact.
+- **SC-001**: In validation testing across representative model, target, and component changes, 100% of successful IntelliSense refreshes use the compile-commands artifact expected for the active configuration, including the selected model's `artifactFolder` and the selected component's `artifactName`, rather than a fallback artifact.
 - **SC-002**: In usability testing, 90% of users can determine within 30 seconds whether IntelliSense is blocked by a missing compile-commands artifact by using the `Compile Commands` row and its tooltip alone.
 - **SC-003**: In prerequisite-failure testing, 100% of missing-provider and wrong-provider conditions produce both a visible warning and a persistent log record.
 
@@ -168,7 +168,7 @@ As a firmware developer, I want clear warnings when IntelliSense prerequisites a
 
 - The Configuration Experience slice already provides the Configuration view, Build Artifacts section container, active build-context persistence, and the output channel used for persistent logging.
 - The Build Workflow slice already provides successful-build completion events that later slices can react to.
-- The active compile-commands artifact uses the path pattern `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`, where `artifact-folder` comes from the selected model, `artifact-name` comes from the selected component, and `artifact-suffix` is empty when the selected target omits it.
+- The active compile-commands artifact uses the path pattern `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`, where `artifactFolder` comes from the selected model, `artifactName` comes from the selected component, and `artifactSuffix` is empty when the selected target omits it.
 - The active compile-commands artifact follows normal compile-commands semantics: entries may use either absolute paths or paths relative to the entry `directory`, and the current firmware `.cc.json` files primarily use absolute paths.
 - When the active compile-commands artifact is missing, clearing the previously applied compile-commands configuration is acceptable and preferred over retaining stale IntelliSense data.
 - Only Microsoft C/C++ (`ms-vscode.cpptools`) is supported for IntelliSense integration in this product.

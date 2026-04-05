@@ -1,15 +1,15 @@
 # IntelliSense manifest fixture: valid configuration with artifact metadata.
-# Provides models with artifact-folder, components with artifact-name,
-# and targets with and without artifact-suffix.
-# Artifact path formula: <artifactsRoot>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json
+# Provides models with artifactFolder, components with artifactName,
+# and targets with and without artifactSuffix.
+# Artifact path formula: <artifactsRoot>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json
 
 models:
   - id: T2T1
     name: Trezor Model T (v1)
-    artifact-folder: model-t
+    artifactFolder: model-t
   - id: T3W1
     name: Trezor Model T3 (w1)
-    artifact-folder: model-t3
+    artifactFolder: model-t3
 
 targets:
   - id: hw
@@ -17,12 +17,12 @@ targets:
     shortName: HW
   - id: emu
     name: Emulator
-    artifact-suffix: _emu
+    artifactSuffix: _emu
 
 components:
   - id: core
     name: Core
-    artifact-name: compile_commands_core
+    artifactName: compile_commands_core
   - id: prodtest
     name: Prodtest
-    artifact-name: compile_commands_prodtest
+    artifactName: compile_commands_prodtest

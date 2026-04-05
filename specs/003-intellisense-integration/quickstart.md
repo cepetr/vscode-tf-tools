@@ -9,7 +9,7 @@ Verify IntelliSense Integration end to end in a VS Code Extension Development Ho
 - Install repository dependencies.
 - Compile the extension sources.
 - Prepare fixture manifests covering:
-  - valid artifact metadata with model `artifact-folder`, component `artifact-name`, and target `artifact-suffix`
+  - valid artifact metadata with model `artifactFolder`, component `artifactName`, and target `artifactSuffix`
   - valid workspaces with and without the expected compile-commands artifact
   - manifests or workspaces that cause model, component, target, and `tfTools.artifactsPath` changes to alter the expected compile-commands path
 - Have a workspace scenario for each provider case:
@@ -22,10 +22,10 @@ Verify IntelliSense Integration end to end in a VS Code Extension Development Ho
 1. Launch the extension against a valid workspace with a compile-commands artifact at the expected active path.
 2. Open the `Trezor` activity-bar container and the `Configuration` view.
 3. Confirm the `Build Artifacts` section shows a `Compile Commands` row with status `valid`.
-4. Hover the row and confirm the tooltip shows the expected path `<artifacts-root>/<artifact-folder>/<artifact-name><artifact-suffix>.cc.json`.
-5. Change the active model to one with a different `artifact-folder` and confirm the row recomputes to the new folder.
-6. Change the active component to one with a different `artifact-name` and confirm the row recomputes to the new basename.
-7. Change the active target to one with `artifact-suffix` and confirm the row recomputes to the suffixed basename.
+4. Hover the row and confirm the tooltip shows the expected path `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`.
+5. Change the active model to one with a different `artifactFolder` and confirm the row recomputes to the new folder.
+6. Change the active component to one with a different `artifactName` and confirm the row recomputes to the new basename.
+7. Change the active target to one with `artifactSuffix` and confirm the row recomputes to the suffixed basename.
 
 ## Scenario 2: Missing artifact clears stale IntelliSense state
 
@@ -57,7 +57,7 @@ Verify IntelliSense Integration end to end in a VS Code Extension Development Ho
 
 1. Start with a valid active compile-commands artifact.
 2. Change `tfTools.artifactsPath` and confirm the compile-commands row and IntelliSense state recompute for the new root.
-3. Modify the manifest so `artifact-folder`, `artifact-name`, or `artifact-suffix` changes for the active context and confirm refresh follows the new path.
+3. Modify the manifest so `artifactFolder`, `artifactName`, or `artifactSuffix` changes for the active context and confirm refresh follows the new path.
 4. Run a successful build that produces the active compile-commands artifact and confirm IntelliSense refresh follows the updated artifact.
 
 ## Automated Test Expectations

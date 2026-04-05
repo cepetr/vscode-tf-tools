@@ -377,8 +377,8 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
     assert.ok(children[0] instanceof PlaceholderItem, "expected placeholder after null artifact update");
   });
 
-  test("compile-commands artifact path uses artifact-folder, not model id", () => {
-    // The artifact path should be constructed from artifact-folder, not from the model id.
+  test("compile-commands artifact path uses artifactFolder, not model id", () => {
+    // The artifact path should be constructed from artifactFolder, not from the model id.
     const artifact = makeValidArtifact({
       path: "/artifacts/model-t/compile_commands_core.cc.json",
       contextKey: "T2T1::hw::core",
@@ -388,7 +388,7 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
     const item = children[0] as CompileCommandsArtifactItem;
     assert.ok(
       String(item.tooltip).includes("model-t"),
-      `path should contain artifact-folder 'model-t', not model id`
+      `path should contain artifactFolder 'model-t', not model id`
     );
     assert.ok(
       !String(item.tooltip).includes("T2T1"),

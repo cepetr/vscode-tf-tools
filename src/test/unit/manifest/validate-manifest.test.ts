@@ -681,26 +681,26 @@ suite("parseManifest — IntelliSense artifact fields", () => {
 models:
   - id: T2T1
     name: Trezor Model T
-    artifact-folder: model-t
+    artifactFolder: model-t
 targets:
   - id: hw
     name: Hardware
   - id: emu
     name: Emulator
-    artifact-suffix: _emu
+    artifactSuffix: _emu
 components:
   - id: core
     name: Core
-    artifact-name: compile_commands_core
+    artifactName: compile_commands_core
 `.trim();
 
-  test("parses artifact-folder from model entries", () => {
+  test("parses artifactFolder from model entries", () => {
     const result = parseManifest(baseSource);
     assert.strictEqual(result.issues.length, 0);
     assert.strictEqual(result.models[0].artifactFolder, "model-t");
   });
 
-  test("artifact-folder is undefined when absent from model", () => {
+  test("artifactFolder is undefined when absent from model", () => {
     const source = `
 models:
   - id: T2T1
@@ -717,12 +717,12 @@ components:
     assert.strictEqual(result.models[0].artifactFolder, undefined);
   });
 
-  test("parses artifact-name from component entries", () => {
+  test("parses artifactName from component entries", () => {
     const result = parseManifest(baseSource);
     assert.strictEqual(result.components[0].artifactName, "compile_commands_core");
   });
 
-  test("artifact-name is undefined when absent from component", () => {
+  test("artifactName is undefined when absent from component", () => {
     const source = `
 models:
   - id: T2T1
@@ -738,12 +738,12 @@ components:
     assert.strictEqual(result.components[0].artifactName, undefined);
   });
 
-  test("parses artifact-suffix from target entries", () => {
+  test("parses artifactSuffix from target entries", () => {
     const result = parseManifest(baseSource);
     assert.strictEqual(result.targets[1].artifactSuffix, "_emu");
   });
 
-  test("artifact-suffix is undefined when absent from target", () => {
+  test("artifactSuffix is undefined when absent from target", () => {
     const result = parseManifest(baseSource);
     assert.strictEqual(result.targets[0].artifactSuffix, undefined);
   });
@@ -764,12 +764,12 @@ components:
     assert.strictEqual(result.issues.length, 0);
   });
 
-  test("empty string artifact-folder is treated as absent", () => {
+  test("empty string artifactFolder is treated as absent", () => {
     const source = `
 models:
   - id: T2T1
     name: Trezor Model T
-    artifact-folder: "  "
+    artifactFolder: "  "
 targets:
   - id: hw
     name: Hardware
@@ -780,6 +780,55 @@ components:
     const result = parseManifest(source);
     // Whitespace-only value is treated as absent
     assert.strictEqual(result.models[0].artifactFolder, undefined);
+  });
+
+  test("parses legacy hyphenated artifact fields for backward compatibility", () => {
+    const source = `
+models:
+  - id: T2T1
+    name: Trezor Model T
+    artifact-folder: model-t
+targets:
+  - id: emu
+    name: Emulator
+    artifact-suffix: _emu
+components:
+  - id: core
+    name: Core
+    artifact-name: compile_commands_core
+`.trim();
+    const result = parseManifest(source);
+
+    assert.strictEqual(result.issues.length, 0);
+    assert.strictEqual(result.models[0].artifactFolder, "model-t");
+    assert.strictEqual(result.targets[0].artifactSuffix, "_emu");
+    assert.strictEqual(result.components[0].artifactName, "compile_commands_core");
+  });
+
+  test("prefers camelCase artifact fields when both legacy and canonical names are present", () => {
+    const source = `
+models:
+  - id: T2T1
+    name: Trezor Model T
+    artifactFolder: model-t-new
+    artifact-folder: model-t-old
+targets:
+  - id: emu
+    name: Emulator
+    artifactSuffix: _new
+    artifact-suffix: _old
+components:
+  - id: core
+    name: Core
+    artifactName: compile_commands_new
+    artifact-name: compile_commands_old
+`.trim();
+    const result = parseManifest(source);
+
+    assert.strictEqual(result.issues.length, 0);
+    assert.strictEqual(result.models[0].artifactFolder, "model-t-new");
+    assert.strictEqual(result.targets[0].artifactSuffix, "_new");
+    assert.strictEqual(result.components[0].artifactName, "compile_commands_new");
   });
 });
 
@@ -793,10 +842,10 @@ suite("parseManifest – flashWhen and uploadWhen (T023)", () => {
 models:
   - id: T2T1
     name: Trezor Model T
-    artifact-folder: model-t
+    artifactFolder: model-t
   - id: T3W1
     name: Trezor Model T3
-    artifact-folder: model-t3
+    artifactFolder: model-t3
 targets:
   - id: hw
     name: Hardware

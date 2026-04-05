@@ -83,7 +83,7 @@ suite("deriveArtifactPath", () => {
     assert.strictEqual(result, expected);
   });
 
-  test("appends artifact-suffix to the basename", () => {
+  test("appends artifactSuffix to the basename", () => {
     const result = deriveArtifactPath(makeInputs({ artifactSuffix: "_emu" }));
     const expected = path.join(ARTIFACTS_ROOT, "model-t", "compile_commands_core_emu.cc.json");
     assert.strictEqual(result, expected);
@@ -110,13 +110,13 @@ suite("deriveArtifactPath", () => {
     assert.strictEqual(result, expected);
   });
 
-  test("uses artifact-folder from model, not model id, as the folder segment", () => {
+  test("uses artifactFolder from model, not model id, as the folder segment", () => {
     const result = deriveArtifactPath(makeInputs({ artifactFolder: "custom-folder", modelId: "SHOULD_NOT_APPEAR" }));
     assert.ok(result?.includes("custom-folder"), `expected 'custom-folder' in path, got: ${result}`);
     assert.ok(!result?.includes("SHOULD_NOT_APPEAR"), `model id should not appear in path: ${result}`);
   });
 
-  test("uses artifact-name from component, not component id, as the basename stem", () => {
+  test("uses artifactName from component, not component id, as the basename stem", () => {
     const result = deriveArtifactPath(makeInputs({ artifactName: "cc_override", componentId: "SHOULD_NOT_APPEAR" }));
     assert.ok(result?.includes("cc_override"), `expected 'cc_override' in path, got: ${result}`);
     assert.ok(!result?.includes("SHOULD_NOT_APPEAR"), `component id should not appear in path: ${result}`);
@@ -157,14 +157,14 @@ suite("resolveActiveArtifact — status and no-fallback", () => {
     const inputs = makeInputs({ artifactFolder: undefined });
     const result = resolveActiveArtifact(inputs, config);
     assert.strictEqual(result.status, "missing");
-    assert.ok(result.missingReason?.includes("artifact-folder"), `expected 'artifact-folder' in missingReason, got: ${result.missingReason}`);
+    assert.ok(result.missingReason?.includes("artifactFolder"), `expected 'artifactFolder' in missingReason, got: ${result.missingReason}`);
   });
 
   test("reports missing-reason when artifactName is missing", () => {
     const inputs = makeInputs({ artifactName: undefined });
     const result = resolveActiveArtifact(inputs, config);
     assert.strictEqual(result.status, "missing");
-    assert.ok(result.missingReason?.includes("artifact-name"), `expected 'artifact-name' in missingReason, got: ${result.missingReason}`);
+    assert.ok(result.missingReason?.includes("artifactName"), `expected 'artifactName' in missingReason, got: ${result.missingReason}`);
   });
 
   test("contextKey includes active model, target, and component", () => {

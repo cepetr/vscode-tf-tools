@@ -4,7 +4,7 @@
 models:
   - id: T2T1
     name: Trezor Model T (v1)
-    artifact-folder: model-t
+    artifactFolder: model-t
 
 targets:
   - id: hw
@@ -13,10 +13,10 @@ targets:
 components:
   - id: core
     name: Core
-    artifact-name: compile_commands_core
+    artifactName: compile_commands_core
     flashWhen: "model(UNKNOWN_MODEL)"
     uploadWhen: "not a valid expression"
   - id: prodtest
     name: Prodtest
-    artifact-name: compile_commands_prodtest
+    artifactName: compile_commands_prodtest
     flashWhen: 42

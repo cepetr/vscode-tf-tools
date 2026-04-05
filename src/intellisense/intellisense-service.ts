@@ -292,7 +292,7 @@ function buildMissingReasonNoInputs(artifactsRoot: string): string {
   if (!artifactsRoot) {
     return "tfTools.artifactsPath is not configured; cannot resolve the compile-commands artifact.";
   }
-  return "Cannot resolve the compile-commands artifact: check manifest artifact-folder and artifact-name fields.";
+  return "Cannot resolve the compile-commands artifact: check manifest artifactFolder and artifactName fields.";
 }
 
 

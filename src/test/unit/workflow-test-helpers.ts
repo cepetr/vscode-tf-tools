@@ -150,7 +150,7 @@ export function whenNot(child: WhenExpression): WhenExpression {
 // IntelliSense manifest state factories
 //
 // These are used by IntelliSense unit tests to create manifest states that
-// include the extended artifact-folder / artifact-name / artifact-suffix
+// include the extended artifactFolder / artifactName / artifactSuffix
 // fields required by the IntelliSense slice.
 // ---------------------------------------------------------------------------
 

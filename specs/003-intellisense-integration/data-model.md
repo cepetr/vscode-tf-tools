@@ -6,11 +6,11 @@
 - **Fields**:
   - `artifactsRoot`: resolved absolute path from `tfTools.artifactsPath`
   - `modelId`: active model id
-  - `artifactFolder`: selected model's required `artifact-folder`
+  - `artifactFolder`: selected model's required `artifactFolder`
   - `componentId`: active component id
-  - `artifactName`: selected component's required `artifact-name`
+  - `artifactName`: selected component's required `artifactName`
   - `targetId`: active target id
-  - `artifactSuffix`: selected target's optional `artifact-suffix` or empty string
+  - `artifactSuffix`: selected target's optional `artifactSuffix` or empty string
   - `artifactType`: currently `compile-commands`
 - **Validation rules**:
   - `artifactFolder` and `artifactName` must be non-empty because they come from required manifest fields

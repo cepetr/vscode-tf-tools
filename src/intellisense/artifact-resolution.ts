@@ -285,10 +285,10 @@ function buildMissingReasonForUnresolvablePath(
     return "tfTools.artifactsPath is not configured; cannot resolve the compile-commands artifact.";
   }
   if (!inputs.artifactFolder) {
-    return `The active model does not define an artifact-folder in the manifest; cannot resolve the compile-commands artifact.`;
+    return `The active model does not define artifactFolder in the manifest; cannot resolve the compile-commands artifact.`;
   }
   if (!inputs.artifactName) {
-    return `The active component does not define an artifact-name in the manifest; cannot resolve the compile-commands artifact.`;
+    return `The active component does not define artifactName in the manifest; cannot resolve the compile-commands artifact.`;
   }
   return "Cannot resolve the compile-commands artifact path.";
 }
@@ -298,10 +298,10 @@ function buildBinaryMissingReason(inputs: ArtifactResolutionInputs): string {
     return "tfTools.artifactsPath is not configured; cannot resolve the binary artifact.";
   }
   if (!inputs.artifactFolder) {
-    return "The active model does not define an artifact-folder in the manifest; cannot resolve the binary artifact.";
+    return "The active model does not define artifactFolder in the manifest; cannot resolve the binary artifact.";
   }
   if (!inputs.artifactName) {
-    return "The active component does not define an artifact-name in the manifest; cannot resolve the binary artifact.";
+    return "The active component does not define artifactName in the manifest; cannot resolve the binary artifact.";
   }
   return "Cannot resolve the binary artifact path.";
 }
@@ -311,10 +311,10 @@ function buildMapMissingReason(inputs: ArtifactResolutionInputs): string {
     return "tfTools.artifactsPath is not configured; cannot resolve the map artifact.";
   }
   if (!inputs.artifactFolder) {
-    return "The active model does not define an artifact-folder in the manifest; cannot resolve the map artifact.";
+    return "The active model does not define artifactFolder in the manifest; cannot resolve the map artifact.";
   }
   if (!inputs.artifactName) {
-    return "The active component does not define an artifact-name in the manifest; cannot resolve the map artifact.";
+    return "The active component does not define artifactName in the manifest; cannot resolve the map artifact.";
   }
   return "Cannot resolve the map artifact path.";
 }

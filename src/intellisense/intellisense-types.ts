@@ -15,15 +15,15 @@ export interface ArtifactResolutionInputs {
   readonly artifactsRoot: string;
   /** Active model id. */
   readonly modelId: string;
-  /** Selected model's required artifact-folder manifest field, or undefined. */
+  /** Selected model's required artifactFolder manifest field, or undefined. */
   readonly artifactFolder: string | undefined;
   /** Active component id. */
   readonly componentId: string;
-  /** Selected component's required artifact-name manifest field, or undefined. */
+  /** Selected component's required artifactName manifest field, or undefined. */
   readonly artifactName: string | undefined;
   /** Active target id. */
   readonly targetId: string;
-  /** Selected target's optional artifact-suffix manifest field. Defaults to "". */
+  /** Selected target's optional artifactSuffix manifest field. Defaults to "". */
   readonly artifactSuffix: string;
 }
 

@@ -152,25 +152,6 @@ suite("ManifestService - health states", () => {
 // T021: Compile-commands status and tooltip refresh (real filesystem checks)
 // ---------------------------------------------------------------------------
 
-const INTELLISENSE_MANIFEST = `
-models:
-  - id: T2T1
-    name: Trezor Model T
-    artifact-folder: model-t
-targets:
-  - id: hw
-    name: Hardware
-    shortName: HW
-  - id: emu
-    name: Emulator
-    shortName: EMU
-    artifact-suffix: _emu
-components:
-  - id: core
-    name: Core
-    artifact-name: compile_commands_core
-`.trim();
-
 function makeIntellisenseLoadedState(overrides: Partial<ManifestStateLoaded> = {}): ManifestStateLoaded {
   return {
     status: "loaded",
@@ -254,7 +235,7 @@ suite("resolveActiveArtifact – filesystem integration (T021)", () => {
     assert.strictEqual(after.status, "valid");
   });
 
-  test("path contains artifact-folder in directory, not model id", async () => {
+  test("path contains artifactFolder in directory, not model id", async () => {
     const manifest = makeIntellisenseLoadedState();
     const config = makeActiveConfig("T2T1", "hw", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
@@ -263,7 +244,7 @@ suite("resolveActiveArtifact – filesystem integration (T021)", () => {
     assert.ok(derivedPath, "expected derived path");
     assert.ok(
       derivedPath!.includes("model-t"),
-      `path should contain artifact-folder 'model-t': ${derivedPath}`
+      `path should contain artifactFolder 'model-t': ${derivedPath}`
     );
     assert.ok(
       !derivedPath!.includes("T2T1"),
@@ -271,7 +252,7 @@ suite("resolveActiveArtifact – filesystem integration (T021)", () => {
     );
   });
 
-  test("path contains artifact-suffix for suffixed target", async () => {
+  test("path contains artifactSuffix for suffixed target", async () => {
     const manifest = makeIntellisenseLoadedState();
     const config = makeActiveConfig("T2T1", "emu", "core");
     const inputs = buildResolutionInputs(manifest, config, tmpDir);
@@ -280,7 +261,7 @@ suite("resolveActiveArtifact – filesystem integration (T021)", () => {
     assert.ok(derivedPath, "expected derived path for emu target");
     assert.ok(
       derivedPath!.includes("_emu"),
-      `path should contain artifact-suffix '_emu': ${derivedPath}`
+      `path should contain artifactSuffix '_emu': ${derivedPath}`
     );
   });
 
