@@ -34,7 +34,7 @@
 - [X] T006 [P] Extend manifest debug-profile types and validation state in `src/manifest/manifest-types.ts`
 - [X] T007 Parse and validate manifest `debug` entries, priorities, executables, templates, and optional vars in `src/manifest/validate-manifest.ts`
 - [ ] T008 [P] Create shared debug profile resolution, template loading, and tf-tools substitution helpers in `src/commands/debug-launch.ts`
-- [ ] T009 [P] Extend executable artifact path and status helpers in `src/intellisense/artifact-resolution.ts`
+- [X] T009 [P] Extend executable artifact path and status helpers in `src/intellisense/artifact-resolution.ts`
 
 **Checkpoint**: Debug profile parsing, template-path resolution, substitution scaffolding, and executable artifact state are ready; user stories can now proceed.
 
@@ -50,7 +50,7 @@
 
 > **NOTE: Write these tests first and ensure they fail before implementation.**
 
-- [ ] T010 [P] [US1] Add unit tests for profile matching, priority selection, relative and absolute executable resolution, per-invocation template reload, single-pass tf-tools substitution, and non-tf-tools variable pass-through in `src/test/unit/workflow/debug-launch.test.ts`
+- [X] T010 [P] [US1] Add unit tests for profile matching, priority selection, relative and absolute executable resolution, per-invocation template reload, single-pass tf-tools substitution, and non-tf-tools variable pass-through in `src/test/unit/workflow/debug-launch.test.ts`
 - [ ] T011 [P] [US1] Add integration tests for successful Start Debugging launch from the header, overflow, Executable row, and Command Palette in `src/test/integration/debug-launch.integration.test.ts`
 
 ### Implementation for User Story 1
