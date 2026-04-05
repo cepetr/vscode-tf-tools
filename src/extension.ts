@@ -530,6 +530,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
         refreshBuildArtifacts("artifacts-path-change");
       }
+      if (e.affectsConfiguration("tfTools.debug.templatesPath", workspaceFolder.uri)) {
+        // The templates path does not affect startDebuggingEnabled (templates are validated
+        // at invocation time, not pre-checked). Trigger a context refresh to keep the tree
+        // and context keys consistent with the new setting if future logic depends on it.
+        refreshArtifactActionState();
+      }
       if (e.affectsConfiguration("tfTools.showConfigurationInStatusBar", workspaceFolder.uri)) {
         refreshStatusBar();
       }

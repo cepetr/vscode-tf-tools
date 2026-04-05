@@ -78,7 +78,7 @@
 
 - [X] T017 [P] [US2] Implement the `Executable` artifact row, tooltip text, and row context values in `src/ui/configuration-tree.ts`
 - [X] T018 [P] [US2] Contribute header, overflow, and Executable-row Start Debugging menu entries with ordered enablement in `package.json`
-- [ ] T019 [US2] Wire executable artifact refresh, startability context keys, and recomputation after active model, target, component, manifest, `tfTools.artifactsPath`, and `tfTools.debug.templatesPath` changes in `src/extension.ts` and `src/workspace/settings.ts`
+- [X] T019 [US2] Wire executable artifact refresh, startability context keys, and recomputation after active model, target, component, manifest, `tfTools.artifactsPath`, and `tfTools.debug.templatesPath` changes in `src/extension.ts` and `src/workspace/settings.ts`
 
 **Checkpoint**: User Story 2 is fully functional and independently testable from the Configuration view and Command Palette.
 
