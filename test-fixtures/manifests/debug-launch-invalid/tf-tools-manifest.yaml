@@ -1,0 +1,49 @@
+# Debug Launch: manifest containing invalid debug profile entries.
+#
+# This manifest has valid models, targets, and components but debug profiles
+# with various validation errors (missing required fields, invalid when
+# expressions). The manifest loads successfully with status "loaded" but
+# validation issues are reported for each invalid debug entry.
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifactFolder: model-t
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+    artifactFolder: model-t3
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+
+components:
+  - id: core
+    name: Core
+    artifactName: compile_commands_core
+
+debug:
+  # invalid: missing required "template" field
+  - when: model(T2T1)
+    priority: 5
+    executable: firmware.elf
+
+  # invalid: missing required "executable" field
+  - when: model(T2T1)
+    priority: 5
+    template: gdb-remote.json
+
+  # invalid: bad "when" expression (unknown function name)
+  - when: "unknownFunc(T2T1)"
+    priority: 5
+    template: gdb-remote.json
+    executable: firmware.elf
+
+  # invalid: "when" expression references unknown model id
+  - when: "model(UNKNOWN_MODEL)"
+    priority: 5
+    template: gdb-remote.json
+    executable: firmware.elf
