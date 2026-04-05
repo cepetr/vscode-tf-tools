@@ -62,6 +62,7 @@ import {
   ActiveExecutableArtifact,
 } from "./intellisense/artifact-resolution";
 import { executeDebugLaunch } from "./commands/debug-launch";
+import { logDebugLaunchFailure } from "./observability/log-channel";
 import { EvalContext } from "./manifest/when-expressions";
 
 let _manifestService: ManifestService | undefined;
@@ -320,7 +321,15 @@ function registerUnsupportedWorkspaceCommands(
     registerBlockedArtifact("tfTools.flash", "flash"),
     registerBlockedArtifact("tfTools.upload", "upload"),
     registerNoop("tfTools.openMapFile"),
-    registerNoop("tfTools.startDebugging"),
+    vscode.commands.registerCommand("tfTools.startDebugging", () => {
+      logDebugLaunchFailure("unsupported-workspace", {
+        detail: "workspace is not supported",
+      });
+      revealLogs();
+      void vscode.window.showErrorMessage(
+        "Cannot start debugging: workspace is not supported."
+      );
+    }),
     registerNoop("tfTools.selectModel"),
     registerNoop("tfTools.selectTarget"),
     registerNoop("tfTools.selectComponent"),
@@ -683,6 +692,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const config = _activeConfig;
       const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
       if (!loaded || !config) {
+        logDebugLaunchFailure("unsupported-workspace", {
+          detail: "manifest not loaded or no active configuration",
+        });
+        revealLogs();
         void vscode.window.showErrorMessage("Cannot start debugging: manifest not loaded.");
         return;
       }

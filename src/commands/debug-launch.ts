@@ -12,7 +12,7 @@ import * as vscode from "vscode";
 import { ManifestDebugProfile, ManifestStateLoaded } from "../manifest/manifest-types";
 import { EvalContext, evaluateWhenExpression } from "../manifest/when-expressions";
 import { ActiveConfig } from "../configuration/active-config";
-import { logDebugLaunchFailure } from "../observability/log-channel";
+import { logDebugLaunchFailure, revealLogs } from "../observability/log-channel";
 
 // ---------------------------------------------------------------------------
 // Profile resolution
@@ -414,6 +414,7 @@ export async function executeDebugLaunch(
       componentId: config.componentId,
       detail: "manifest has debug profile validation errors",
     });
+    revealLogs();
     void vscode.window.showErrorMessage(
       "Cannot start debugging: the manifest has debug profile validation errors."
     );
@@ -434,6 +435,7 @@ export async function executeDebugLaunch(
       targetId: config.targetId,
       componentId: config.componentId,
     });
+    revealLogs();
     void vscode.window.showErrorMessage(
       "Cannot start debugging: no debug profile matches the active build context."
     );
@@ -447,6 +449,7 @@ export async function executeDebugLaunch(
       componentId: config.componentId,
       detail: `${resolution.matchedProfiles.length} profiles tied at priority ${resolution.highestPriority}`,
     });
+    revealLogs();
     void vscode.window.showErrorMessage(
       `Cannot start debugging: ${resolution.matchedProfiles.length} debug profiles are tied at highest priority ${resolution.highestPriority}. Resolve the ambiguity by assigning distinct priorities.`
     );
@@ -467,6 +470,7 @@ export async function executeDebugLaunch(
       componentId: config.componentId,
       detail: executablePath,
     });
+    revealLogs();
     void vscode.window.showErrorMessage(
       `Cannot start debugging: executable not found at ${executablePath}`
     );
@@ -483,6 +487,7 @@ export async function executeDebugLaunch(
       componentId: config.componentId,
       detail: templateResult.error,
     });
+    revealLogs();
     void vscode.window.showErrorMessage(
       `Cannot start debugging: ${templateResult.error}`
     );
@@ -496,6 +501,7 @@ export async function executeDebugLaunch(
       componentId: config.componentId,
       detail: templateResult.error,
     });
+    revealLogs();
     void vscode.window.showErrorMessage(
       `Cannot start debugging: template file not found — ${templateResult.error}`
     );
@@ -509,6 +515,7 @@ export async function executeDebugLaunch(
       componentId: config.componentId,
       detail: templateResult.error,
     });
+    revealLogs();
     void vscode.window.showErrorMessage(
       `Cannot start debugging: template is invalid — ${templateResult.error}`
     );
@@ -534,6 +541,7 @@ export async function executeDebugLaunch(
       componentId: config.componentId,
       detail: varMap.resolutionErrors.join("; "),
     });
+    revealLogs();
     void vscode.window.showErrorMessage(
       `Cannot start debugging: variable resolution failed — ${varMap.resolutionErrors.join("; ")}`
     );
@@ -553,6 +561,7 @@ export async function executeDebugLaunch(
       componentId: config.componentId,
       detail: unknownVars.map((v) => `\${${v}}`).join(", "),
     });
+    revealLogs();
     void vscode.window.showErrorMessage(
       `Cannot start debugging: unknown tf-tools variable(s) in template: ${unknownVars.map((v) => `\${${v}}`).join(", ")}`
     );

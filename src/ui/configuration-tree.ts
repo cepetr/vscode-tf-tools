@@ -118,6 +118,12 @@ export class ExecutableArtifactItem extends vscode.TreeItem {
     );
     this.description = artifact.status;
     this.tooltip = artifact.tooltip;
+    // Clicking the row also invokes Start Debugging, surfacing blocked-launch
+    // errors even when the row action icon is disabled (T023).
+    this.command = {
+      title: "Start Debugging",
+      command: "tfTools.startDebugging",
+    };
   }
 }
 

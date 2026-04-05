@@ -98,7 +98,7 @@
 ### Implementation for User Story 3
 
 - [X] T022 [P] [US3] Implement explicit debug failure logging for no-match, ambiguous-profile, unsupported-workspace, template, variable, and missing-executable errors in `src/commands/debug-launch.ts` and `src/observability/log-channel.ts`
-- [ ] T023 [US3] Surface blocked-launch errors for no-match, unsupported-workspace, missing-executable, and invocation-time template failures from visible Start Debugging actions in `src/extension.ts` and `src/ui/configuration-tree.ts`
+- [X] T023 [US3] Surface blocked-launch errors for no-match, unsupported-workspace, missing-executable, and invocation-time template failures from visible Start Debugging actions in `src/extension.ts` and `src/ui/configuration-tree.ts`
 
 **Checkpoint**: All user stories are independently functional, and blocked debug launches fail visibly with persistent logs.
 
