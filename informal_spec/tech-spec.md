@@ -206,9 +206,9 @@ The Build Options section preserves YAML order while consolidating repeated grou
 
 Option availability is evaluated against the active build context before rendering. Options whose `when` expression evaluates to `false` are omitted from the visible tree, but their persisted values remain stored in workspace state.
 
-Debug availability is evaluated against the active build context from the manifest-defined `debug` profiles together with the resolved executable artifact state. The side-bar header `Start Debugging` action, the overflow-menu `Start Debugging` action, and the `Executable` row action are enabled only when exactly one valid debug profile can be resolved for the active build context and the resolved executable artifact exists.
+Debug availability is evaluated against the active build context from the manifest-defined `debug` profiles together with the resolved executable artifact state. The side-bar header `Start Debugging` action, the overflow-menu `Start Debugging` action, and the `Executable` row action are enabled only when exactly one valid debug profile can be resolved for the active build context and the resolved executable artifact exists. The Command Palette contribution for `Trezor: Start Debugging` is shown only under that same condition.
 
-The `Start Debugging` actions remain visible even when disabled so the user can discover debugger support from the main configuration view. Disabled-state tooltips explain whether debugging is unavailable because no profile matched, matching profiles were ambiguous, the template could not be loaded, required substitutions could not be resolved, or the executable artifact is missing.
+The `Start Debugging` actions remain visible even when disabled so the user can discover debugger support from the main configuration view. Disabled-state tooltips explain whether debugging is unavailable because no profile matched, matching profiles were ambiguous, or the executable artifact is missing.
 
 The resolved debug executable path is part of Build Artifacts state and Start Debugging action enablement. When the executable artifact is missing, the `Executable` row reports the missing path and all visible Start Debugging actions stay disabled until the artifact becomes available.
 
@@ -254,6 +254,7 @@ Additional command behavior:
 - `Flash` is available only when the selected component's `flashWhen` expression evaluates to `true`
 - `Upload` is available only when the selected component's `uploadWhen` expression evaluates to `true`
 - `Start Debugging` is available only when exactly one valid debug profile can be resolved for the active build context
+- `Trezor: Start Debugging` is contributed to the Command Palette only when exactly one valid debug profile can be resolved for the active build context and the executable artifact exists
 - omitted `flashWhen` and `uploadWhen` values make the corresponding action unavailable
 - artifact-row actions remain visible whenever their action is applicable
 - applicable `Flash` and `Upload` actions are also contributed to the Configuration view overflow menu and stay visible there, but disabled, when the binary artifact is missing
@@ -273,6 +274,7 @@ Debug-template behavior:
 - template loading: read the referenced template file from the configured template root and reject path traversal outside that root
 - template path semantics: `debug.template` is a relative file path under the configured template root and may include subdirectories
 - template reload timing: read the template file fresh on each `Trezor: Start Debugging` invocation rather than preloading or caching the whole template set
+- enablement boundary: missing templates or malformed template content do not pre-disable otherwise available visible `Start Debugging` actions; those failures are detected when invocation attempts to load or parse the template
 - template format: the template file must parse as a JSONC object representing one VS Code debug configuration
 - variable expansion: apply built-in tf-tools variables and selected `debug.vars` entries to string-valued template fields before launch
 - substitution scope: inspect the full JSON object, including nested objects and arrays, and apply tf-tools substitution only to string values while leaving non-string values unchanged

@@ -11,8 +11,16 @@
 
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
 - **Selected Slice**: `6. Debug Launch`
-- **Scope Guard**: This feature includes debug-profile matching from manifest-defined `debug` entries, priority-based resolution, debugger-template loading from the configured templates path, tf-tools substitution-variable expansion, executable artifact resolution and status reporting, the `Executable` row and its `Start Debugging` row action, the Configuration view header and overflow `Start Debugging` actions, debug launch through the VS Code debug API, and debug-specific user feedback and logging. This feature excludes Build, Clippy, Check, and Clean behaviors; Flash and Upload execution; `Binary` and `Map File` row ownership; compile-commands provider behavior; excluded-file visibility; and any manifest or tree redesign unrelated to debug launch.
-- **Critical Informal Details**: Every build context is considered debuggable only through manifest-defined debug profiles; the extension must resolve the active build context to exactly one matching profile before launch; higher `priority` wins, but equal highest-priority matches remain ambiguous and must block launch; the selected template is loaded from `tfTools.debug.templatesPath` on each debug attempt; the `Executable` artifact path comes from the selected profile's required `executable` value and is resolved relative to the active model artifact folder when not already absolute; the `Build Artifacts` section must always include an `Executable` row that shows `valid` or `missing` and exposes the expected path in its tooltip; the `Executable` row must expose an icon-only `Start Debugging` action backed by `Trezor: Start Debugging`; the Configuration view must expose `Start Debugging` as both a visible header action and an overflow action; those visible Start Debugging actions must remain discoverable but disabled when no unique valid debug profile is available or when the executable artifact is missing; tf-tools substitution must inspect nested string fields in the template, replace supported tf-tools variables without re-expanding results, leave non-tf-tools variables untouched, and fail visibly for unknown variables, unresolved required values, invalid template content, or missing templates; debug-specific failures must produce user-visible errors and persistent log entries.
+- **Scope Guard**: This feature includes debug-profile matching from manifest-defined `debug` entries, priority-based resolution, debugger-template loading from the configured templates path, tf-tools substitution-variable expansion, executable artifact resolution and status reporting, the `Executable` row and its `Start Debugging` row action, the Configuration view header and overflow `Start Debugging` actions, the Command Palette `Trezor: Start Debugging` action, debug launch through the VS Code debug API, and debug-specific user feedback and logging. This feature excludes Build, Clippy, Check, and Clean behaviors; Flash and Upload execution; `Binary` and `Map File` row ownership; compile-commands provider behavior; excluded-file visibility; and any manifest or tree redesign unrelated to debug launch.
+- **Critical Informal Details**: Every build context is considered debuggable only through manifest-defined debug profiles; the extension must resolve the active build context to exactly one matching profile before launch; higher `priority` wins, but equal highest-priority matches remain ambiguous and must block launch; the selected template is loaded from `tfTools.debug.templatesPath` on each debug attempt; the `Executable` artifact path comes from the selected profile's required `executable` value and is resolved relative to the active model artifact folder when not already absolute; the `Build Artifacts` section must always include an `Executable` row that shows `valid` or `missing` and exposes the expected path in its tooltip; the `Executable` row must expose an icon-only `Start Debugging` action backed by `Trezor: Start Debugging`; the Configuration view must expose `Start Debugging` as a visible header action and an overflow action; the Command Palette must expose `Trezor: Start Debugging` only when exactly one valid debug profile is resolved and the executable artifact exists; the visible Start Debugging actions in the Configuration view must remain discoverable but disabled when no unique valid debug profile is available or when the executable artifact is missing; missing or malformed templates must fail at invocation time rather than preemptively disabling visible Start Debugging actions; tf-tools substitution must inspect nested string fields in the template, replace supported tf-tools variables without re-expanding results, leave non-tf-tools variables untouched, and fail visibly for unknown variables, unresolved required values, invalid template content, or missing templates; debug-specific failures must produce user-visible errors and persistent log entries.
+
+## Clarifications
+
+### Session 2026-04-05
+
+- Q: What surfaces should expose Start Debugging? → A: Expose Start Debugging from the header action, overflow menu, `Executable` row, and Command Palette.
+- Q: When should Start Debugging appear in the Command Palette? → A: Show it only when exactly one valid debug profile is resolved and the executable artifact exists.
+- Q: Should missing or malformed templates disable Start Debugging before invocation? → A: No. Keep Start Debugging enabled when profile resolution and executable checks pass, and fail only when invocation loads or parses the template.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -28,8 +36,9 @@ As a firmware developer, I want the extension to resolve the correct debug profi
 
 1. **Given** the active build context matches exactly one debug profile and its executable artifact exists, **When** the user invokes `Trezor: Start Debugging` from the Configuration view header, **Then** the extension launches the resolved debug configuration for that active context.
 2. **Given** the active build context matches exactly one debug profile and its executable artifact exists, **When** the user invokes `Start Debugging` from the `Executable` row, **Then** the extension launches the same resolved debug configuration.
-3. **Given** multiple debug profiles match the active build context and one has a higher priority than the others, **When** the user invokes `Trezor: Start Debugging`, **Then** the extension launches the higher-priority profile.
-4. **Given** a matching debug profile defines tf-tools variables in its executable path, template fields, or additional variables, **When** the user invokes `Trezor: Start Debugging`, **Then** the launched debug configuration uses the resolved values for the active build context.
+3. **Given** the active build context matches exactly one debug profile and its executable artifact exists, **When** the user invokes `Trezor: Start Debugging` from the Command Palette, **Then** the extension launches the same resolved debug configuration.
+4. **Given** multiple debug profiles match the active build context and one has a higher priority than the others, **When** the user invokes `Trezor: Start Debugging`, **Then** the extension launches the higher-priority profile.
+5. **Given** a matching debug profile defines tf-tools variables in its executable path, template fields, or additional variables, **When** the user invokes `Trezor: Start Debugging`, **Then** the launched debug configuration uses the resolved values for the active build context.
 
 ---
 
@@ -47,6 +56,7 @@ As a firmware developer, I want the Configuration view to show whether the activ
 2. **Given** the active build context resolves to a unique debug profile but its executable artifact is missing, **When** the user views the `Build Artifacts` section or Configuration view actions, **Then** the `Executable` row reports `missing` and the visible Start Debugging actions remain shown but disabled.
 3. **Given** no debug profile matches the active build context, **When** the user views the Configuration view, **Then** the visible Start Debugging actions remain shown but disabled.
 4. **Given** multiple matching debug profiles remain tied at the highest priority, **When** the user views the Configuration view, **Then** the visible Start Debugging actions remain shown but disabled and debugging does not start automatically.
+5. **Given** no unique valid debug profile is resolved or the executable artifact is missing, **When** the user opens the Command Palette, **Then** `Trezor: Start Debugging` is not shown there.
 
 ---
 
@@ -63,6 +73,7 @@ As a firmware developer, I want explicit errors and persistent logs when debug l
 1. **Given** the selected debug template file cannot be loaded or is malformed, **When** the user invokes `Trezor: Start Debugging`, **Then** the extension blocks launch, shows an explicit error, and records the failure in the log output.
 2. **Given** the selected debug template references an unknown or invalid tf-tools substitution variable, **When** the user invokes `Trezor: Start Debugging`, **Then** the extension blocks launch, shows an explicit error, and records the unresolved variable in the log output.
 3. **Given** no unique valid debug profile can be resolved for the active build context, **When** the user invokes `Trezor: Start Debugging`, **Then** the extension blocks launch, shows an explicit error, and records the resolution failure in the log output.
+4. **Given** exactly one valid debug profile is resolved and the executable artifact exists but the selected template is missing or malformed, **When** the user inspects the Configuration view before invoking Start Debugging, **Then** the visible Start Debugging actions remain enabled until invocation attempts to load the template.
 
 ### Edge Cases
 
@@ -106,8 +117,11 @@ As a firmware developer, I want explicit errors and persistent logs when debug l
 - **FR-020**: When the executable is missing, the `Executable` row tooltip MUST also explain why the artifact is unavailable.
 - **FR-021**: The `Executable` row MUST expose an icon-only `Start Debugging` action backed by `Trezor: Start Debugging`.
 - **FR-022**: The Configuration view MUST expose `Trezor: Start Debugging` as a visible header action and as an overflow action.
+- **FR-022A**: The Command Palette MUST expose `Trezor: Start Debugging` only when exactly one valid debug profile is resolved for the active build context and the resolved executable artifact exists.
+- **FR-022B**: The Command Palette MUST NOT show `Trezor: Start Debugging` when no unique valid debug profile is resolved for the active build context or when the resolved executable artifact is missing.
 - **FR-023**: The visible Start Debugging actions MUST remain shown but disabled when no unique valid debug profile can be resolved for the active build context.
 - **FR-024**: The visible Start Debugging actions MUST remain shown but disabled when the resolved executable artifact is missing.
+- **FR-024A**: Missing templates or malformed template content MUST NOT by themselves disable visible Start Debugging actions before invocation when exactly one valid debug profile is resolved and the executable artifact exists.
 - **FR-025**: Invoking any enabled Start Debugging action for the active build context MUST launch the resolved configuration through the VS Code debug API.
 - **FR-026**: If no debug profile matches, if multiple highest-priority matches remain, if the template cannot be loaded, if the template content is invalid, if required variables cannot be resolved, if the executable artifact is missing, or if the workspace is unsupported, the system MUST block launch and show an explicit error instead of starting debugging.
 - **FR-027**: Debug-launch failures MUST create persistent log entries that identify the resolution, template, variable, or artifact problem that blocked launch.
@@ -132,19 +146,19 @@ As a firmware developer, I want explicit errors and persistent logs when debug l
 ## Failure Modes & Diagnostics *(mandatory)*
 
 - **Trigger**: No debug profile matches the active build context.
-  - **User-visible response**: The visible Start Debugging actions remain disabled, and an explicit error is shown if the user attempts to start debugging.
+  - **User-visible response**: The visible Start Debugging actions in the Configuration view remain disabled, `Trezor: Start Debugging` is absent from the Command Palette, and an explicit error is shown if the user attempts to start debugging from a visible surface.
   - **Persistent signal**: Output-channel log entry describing the resolution failure.
 - **Trigger**: Multiple debug profiles remain tied at the highest priority for the active build context.
-  - **User-visible response**: The visible Start Debugging actions remain disabled, and an explicit error is shown if the user attempts to start debugging.
+  - **User-visible response**: The visible Start Debugging actions in the Configuration view remain disabled, `Trezor: Start Debugging` is absent from the Command Palette, and an explicit error is shown if the user attempts to start debugging from a visible surface.
   - **Persistent signal**: Output-channel log entry describing the ambiguous profile match.
 - **Trigger**: The selected template cannot be found, escapes the configured templates root, or contains invalid content.
-  - **User-visible response**: The extension blocks launch and shows an explicit error.
+  - **User-visible response**: Visible Start Debugging actions remain enabled before invocation when profile resolution and executable checks pass, but the extension blocks launch and shows an explicit error when invocation attempts to load or parse the template.
   - **Persistent signal**: Output-channel log entry including the template path and failure detail.
 - **Trigger**: A required tf-tools substitution variable is unknown, invalid, unresolved, or cyclic.
   - **User-visible response**: The extension blocks launch and shows an explicit error.
   - **Persistent signal**: Output-channel log entry identifying the unresolved variable problem.
 - **Trigger**: The resolved executable artifact is missing.
-  - **User-visible response**: The `Executable` row reports `missing`, the visible Start Debugging actions remain shown but disabled, and an explicit error is shown if the user attempts to start debugging.
+  - **User-visible response**: The `Executable` row reports `missing`, the visible Start Debugging actions in the Configuration view remain shown but disabled, `Trezor: Start Debugging` is absent from the Command Palette, and an explicit error is shown if the user attempts to start debugging from a visible surface.
   - **Persistent signal**: Output-channel log entry for the blocked launch attempt; no separate manifest diagnostic is required for a missing runtime artifact.
 - **Trigger**: The workspace is unsupported or the manifest is invalid at launch time.
   - **User-visible response**: The extension blocks launch and shows an explicit error.
