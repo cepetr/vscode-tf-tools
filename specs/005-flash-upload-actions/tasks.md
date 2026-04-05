@@ -48,12 +48,12 @@
 
 > **NOTE: Write these tests first and ensure they fail before implementation.**
 
-- [ ] T008 [P] [US1] Add unit tests for Flash/Upload applicability, task request building, blocked-start rules, and no-auto-refresh outcomes in `src/test/unit/workflow/flash-upload-actions.test.ts`
-- [ ] T009 [P] [US1] Add integration tests for dynamic Flash/Upload Command Palette titles, Binary-row action launch, blocked starts, and output-channel logging in `src/test/integration/flash-upload-actions.integration.test.ts` and `src/test/integration/configuration-scope.integration.test.ts`
+- [X] T008 [P] [US1] Add unit tests for Flash/Upload applicability, task request building, blocked-start rules, and no-auto-refresh outcomes in `src/test/unit/workflow/flash-upload-actions.test.ts`
+- [X] T009 [P] [US1] Add integration tests for dynamic Flash/Upload Command Palette titles, Binary-row action launch, blocked starts, and output-channel logging in `src/test/integration/flash-upload-actions.integration.test.ts` and `src/test/integration/configuration-scope.integration.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T010 [P] [US1] Contribute `tfTools.flash` and `tfTools.upload` commands plus dynamic title support and conditional `menus.commandPalette` visibility in `package.json` and `src/extension.ts`
+- [X] T010 [P] [US1] Contribute `tfTools.flash` and `tfTools.upload` commands plus dynamic title support and conditional `menus.commandPalette` visibility in `package.json` and `src/extension.ts`
 - [ ] T011 [US1] Implement Flash/Upload task creation, blocked-start handling, failure logging, and no-auto-refresh behavior in `src/commands/artifact-actions.ts` and `src/observability/log-channel.ts`
 - [ ] T012 [US1] Wire `tfTools.flash` and `tfTools.upload` command registration, applicability context keys, and task execution in `src/extension.ts`
 
