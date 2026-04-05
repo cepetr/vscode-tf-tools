@@ -12,7 +12,14 @@
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
 - **Selected Slice**: `5. Flash/Upload Actions`
 - **Scope Guard**: This feature includes the `Binary` and `Map File` operational behavior in the `Build Artifacts` section, action applicability from component `flashWhen` and `uploadWhen` rules, disabled-state handling when artifacts are missing, task-backed Flash and Upload execution, map-file opening behavior, and visible failure reporting. This feature excludes compile-commands status behavior, cpptools integration, excluded-file visibility, build/clippy/check/clean behavior, debug-profile resolution and launch, and any automatic post-action refresh beyond the existing static artifact rows.
-- **Critical Informal Details**: The `Binary` row must expose Flash and Upload icon actions only when the selected component's action rules evaluate to `true` for the active model, target, and component; omitted or false action rules make the corresponding action unavailable; both actions may appear at the same time; applicable Flash and Upload actions remain visible but disabled when the binary artifact is missing; the `Map File` row must expose an icon-only action that opens the resolved map file in the current editor and is disabled when the map artifact is missing; Flash and Upload execute as task-backed workflows for the active configuration; successful Flash and Upload completion does not trigger an automatic extension refresh; blocked starts and post-start failures must fail visibly.
+- **Critical Informal Details**: The `Binary` row must expose Flash and Upload icon actions only when the selected component's action rules evaluate to `true` for the active model, target, and component; Flash and Upload must also be invokable from the Command Palette, but only when each action is applicable for the active build context; omitted or false action rules make the corresponding action unavailable; both actions may appear at the same time; applicable Flash and Upload actions remain visible but disabled when the binary artifact is missing; the `Map File` row must expose an icon-only action that opens the resolved map file in the current editor and is disabled when the map artifact is missing; Flash and Upload execute as task-backed workflows for the active configuration; successful Flash and Upload completion does not trigger an automatic extension refresh; blocked starts and post-start failures must fail visibly.
+
+## Clarifications
+
+### Session 2026-04-05
+
+- Q: What surfaces should expose Flash and Upload? → A: Expose Flash and Upload from both the `Binary` row and the Command Palette.
+- Q: When should Flash and Upload appear in the Command Palette? → A: Show each Command Palette entry only when that action is applicable for the active build context.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -29,6 +36,8 @@ As a firmware developer, I want to start Flash or Upload directly from the activ
 1. **Given** the selected component makes `Flash` applicable for the active build context and the binary artifact is present, **When** the user invokes the Flash action from the `Binary` row, **Then** the extension starts the Flash workflow for the active model and component.
 2. **Given** the selected component makes `Upload` applicable for the active build context and the binary artifact is present, **When** the user invokes the Upload action from the `Binary` row, **Then** the extension starts the Upload workflow for the active component.
 3. **Given** the selected component makes both `Flash` and `Upload` applicable for the active build context, **When** the user views the `Binary` row, **Then** both actions are available from that row.
+4. **Given** the selected component makes Flash or Upload applicable for the active build context, **When** the user opens the Command Palette, **Then** only the corresponding applicable `Trezor:` command is available there.
+5. **Given** Flash or Upload is not applicable for the active build context, **When** the user opens the Command Palette, **Then** that inapplicable command is not shown there.
 
 ---
 
@@ -93,6 +102,8 @@ As a firmware developer, I want to open the resolved map file directly from the 
 - **FR-010**: The system MUST allow Flash and Upload to be available on the same `Binary` row at the same time when both action rules evaluate to `true`.
 - **FR-011**: When Flash or Upload is applicable but the binary artifact is missing, the corresponding action MUST remain visible but disabled.
 - **FR-012**: Invoking Flash or Upload from an applicable state MUST start the corresponding task-backed workflow for the active configuration.
+- **FR-012A**: Flash and Upload MUST each be available from the Command Palette in addition to the `Binary` row.
+- **FR-012B**: The Command Palette MUST show each Flash or Upload command only when that specific action is applicable for the active build context.
 - **FR-013**: Flash MUST use the user-facing title `Trezor: Flash {model-id}-{component-name}`.
 - **FR-014**: Upload MUST use the user-facing title `Trezor: Upload {model-id}-{component-name}`.
 - **FR-015**: The system MUST block Flash or Upload from starting and show an explicit error when the manifest is missing, the manifest is invalid, the workspace is unsupported, the action is not applicable for the active context, or the binary artifact is missing.
