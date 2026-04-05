@@ -18,7 +18,7 @@
 **Purpose**: Prepare fixtures and shared test seams for Debug Launch scenarios.
 
 - [ ] T001 Add Debug Launch manifest fixtures for valid, ambiguous, unmatched, and invalid debug-profile scenarios in `test-fixtures/manifests/debug-launch-valid/tf-tools-manifest.yaml` and `test-fixtures/manifests/debug-launch-invalid/tf-tools-manifest.yaml`
-- [ ] T002 [P] Add workspace fixtures for executable-present, missing-executable, missing-template, malformed-template, traversal, and variable-error scenarios in `test-fixtures/workspaces/debug-launch-valid/.vscode/settings.json` and `test-fixtures/workspaces/debug-launch-failures/.vscode/settings.json`
+- [ ] T002 [P] Add workspace fixtures for executable-present, missing-executable, missing-template, malformed-template, traversal, variable-error, and unsupported-workspace scenarios in `test-fixtures/workspaces/debug-launch-valid/.vscode/settings.json`, `test-fixtures/workspaces/debug-launch-failures/.vscode/settings.json`, and `test-fixtures/workspaces/unsupported-workflow/.vscode/settings.json`
 - [ ] T003 [P] Extend shared VS Code and debug-launch test helpers for `vscode.debug.startDebugging`, output-channel assertions, and settings-driven refresh coverage in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
 
 ---
@@ -50,13 +50,13 @@
 
 > **NOTE: Write these tests first and ensure they fail before implementation.**
 
-- [ ] T010 [P] [US1] Add unit tests for profile matching, priority selection, relative and absolute executable resolution, and tf-tools substitution in `src/test/unit/workflow/debug-launch.test.ts`
+- [ ] T010 [P] [US1] Add unit tests for profile matching, priority selection, relative and absolute executable resolution, per-invocation template reload, single-pass tf-tools substitution, and non-tf-tools variable pass-through in `src/test/unit/workflow/debug-launch.test.ts`
 - [ ] T011 [P] [US1] Add integration tests for successful Start Debugging launch from the header, overflow, Executable row, and Command Palette in `src/test/integration/debug-launch.integration.test.ts`
 
 ### Implementation for User Story 1
 
 - [ ] T012 [P] [US1] Contribute the `tfTools.startDebugging` command and Command Palette visibility rule in `package.json`
-- [ ] T013 [US1] Implement JSONC template resolution, tf-tools variable application, and `vscode.debug.startDebugging` launch flow in `src/commands/debug-launch.ts`
+- [ ] T013 [US1] Implement per-invocation JSONC template resolution, single-pass tf-tools variable application without re-expansion, non-tf-tools variable pass-through, and `vscode.debug.startDebugging` launch flow in `src/commands/debug-launch.ts`
 - [ ] T014 [US1] Register `tfTools.startDebugging` and wire successful debug-launch execution through `src/extension.ts`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable from all supported Start Debugging surfaces.
@@ -72,13 +72,13 @@
 ### Tests for User Story 2 ⚠️
 
 - [ ] T015 [P] [US2] Add unit tests for Executable artifact status, missing-reason messaging, tooltip content, and tree-row disabled-state behavior in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts` and `src/test/unit/ui/configuration-tree.test.ts`
-- [ ] T016 [P] [US2] Add integration tests for Executable row rendering, header and overflow enablement, Command Palette hiding, and settings-driven availability refresh in `src/test/integration/debug-launch-artifacts.integration.test.ts`
+- [ ] T016 [P] [US2] Add integration tests for Executable row rendering, header and overflow enablement, Command Palette hiding, and availability refresh after model, target, component, manifest, artifacts-path, and templates-path changes in `src/test/integration/debug-launch-artifacts.integration.test.ts`
 
 ### Implementation for User Story 2
 
 - [ ] T017 [P] [US2] Implement the `Executable` artifact row, tooltip text, and row context values in `src/ui/configuration-tree.ts`
 - [ ] T018 [P] [US2] Contribute header, overflow, and Executable-row Start Debugging menu entries with ordered enablement in `package.json`
-- [ ] T019 [US2] Wire executable artifact refresh, startability context keys, and `tfTools.debug.templatesPath` change handling in `src/extension.ts` and `src/workspace/settings.ts`
+- [ ] T019 [US2] Wire executable artifact refresh, startability context keys, and recomputation after active model, target, component, manifest, `tfTools.artifactsPath`, and `tfTools.debug.templatesPath` changes in `src/extension.ts` and `src/workspace/settings.ts`
 
 **Checkpoint**: User Story 2 is fully functional and independently testable from the Configuration view and Command Palette.
 
@@ -86,19 +86,19 @@
 
 ## Phase 5: User Story 3 - Diagnose Debug Launch Failures Quickly (Priority: P3)
 
-**Goal**: Block invalid debug launches with specific errors and persistent log entries for profile-resolution, template, variable, and missing-executable failures.
+**Goal**: Block invalid debug launches with specific errors and persistent log entries for no-match, ambiguous, unsupported-workspace, template, variable, and missing-executable failures.
 
-**Independent Test**: Trigger missing-template, malformed-template, unresolved-variable, ambiguous-profile, traversal, and missing-executable failures and verify each blocked launch shows an explicit error and records a persistent output-channel entry.
+**Independent Test**: Trigger no-match, missing-template, malformed-template, unresolved-variable, ambiguous-profile, traversal, unsupported-workspace, and missing-executable failures and verify each blocked launch shows an explicit error and records a persistent output-channel entry.
 
 ### Tests for User Story 3 ⚠️
 
 - [ ] T020 [P] [US3] Add unit tests for template-root traversal rejection, JSONC parse failures, unknown variables, and cyclic debug vars in `src/test/unit/workflow/debug-template-resolution.test.ts`
-- [ ] T021 [P] [US3] Add integration tests for missing-template, malformed-template, unresolved-variable, ambiguous-profile, traversal, and missing-executable failures in `src/test/integration/debug-launch-failures.integration.test.ts`
+- [ ] T021 [P] [US3] Add integration tests for no-match, missing-template, malformed-template, unresolved-variable, ambiguous-profile, traversal, unsupported-workspace, and missing-executable failures in `src/test/integration/debug-launch-failures.integration.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T022 [P] [US3] Implement explicit debug failure logging for profile-resolution, template, and variable errors in `src/commands/debug-launch.ts` and `src/observability/log-channel.ts`
-- [ ] T023 [US3] Surface blocked-launch errors and invocation-time template-failure behavior from visible Start Debugging actions in `src/extension.ts` and `src/ui/configuration-tree.ts`
+- [ ] T022 [P] [US3] Implement explicit debug failure logging for no-match, ambiguous-profile, unsupported-workspace, template, variable, and missing-executable errors in `src/commands/debug-launch.ts` and `src/observability/log-channel.ts`
+- [ ] T023 [US3] Surface blocked-launch errors for no-match, unsupported-workspace, missing-executable, and invocation-time template failures from visible Start Debugging actions in `src/extension.ts` and `src/ui/configuration-tree.ts`
 
 **Checkpoint**: All user stories are independently functional, and blocked debug launches fail visibly with persistent logs.
 
