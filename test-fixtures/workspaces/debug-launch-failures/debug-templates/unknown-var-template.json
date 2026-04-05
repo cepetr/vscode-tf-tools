@@ -1,0 +1,7 @@
+{
+  // Template referencing an unknown tf-tools variable
+  "type": "gdb",
+  "request": "launch",
+  "program": "${tfTools.executablePath}",
+  "unknownArg": "${tfTools.nonExistentVariable}"
+}

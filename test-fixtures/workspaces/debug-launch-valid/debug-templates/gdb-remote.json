@@ -1,0 +1,21 @@
+{
+  // GDB remote debug template for firmware debugging
+  "type": "gdb",
+  "request": "launch",
+  "name": "Debug ${tfTools.model} ${tfTools.component}",
+  "program": "${tfTools.executablePath}",
+  "miDebuggerPath": "/usr/bin/arm-none-eabi-gdb",
+  "miDebuggerServerAddress": "localhost:3333",
+  "cwd": "${workspaceFolder}",
+  "environment": [
+    {
+      "name": "TARGET",
+      "value": "${tfTools.target}"
+    }
+  ],
+  "stopAtEntry": false,
+  "hardwareBreakpoints": {
+    "require": true,
+    "limit": 8
+  }
+}

@@ -1,0 +1,25 @@
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifactFolder: model-t
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+    artifactFolder: model-t3
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+  - id: emu
+    name: Emulator
+
+components:
+  - id: core
+    name: Core
+    artifactName: compile_commands_core
+
+debug:
+  - when: model(T2T1)
+    priority: 10
+    template: gdb-remote.json
+    executable: firmware.elf

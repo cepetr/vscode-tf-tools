@@ -1,0 +1,6 @@
+// This template file is intentionally malformed JSONC (missing closing brace)
+{
+  "type": "gdb",
+  "request": "launch",
+  "program": "${tfTools.executablePath}"
+  // missing closing brace

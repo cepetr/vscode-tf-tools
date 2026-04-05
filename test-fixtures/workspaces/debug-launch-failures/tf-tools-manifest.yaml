@@ -1,0 +1,27 @@
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifactFolder: model-t
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+
+components:
+  - id: core
+    name: Core
+    artifactName: compile_commands_core
+
+debug:
+  # Unique match — triggers missing-template failure since template file doesn't exist
+  - when: model(T2T1)
+    priority: 10
+    template: missing-template.json
+    executable: firmware_missing.elf
+
+  # Profile with traversal-attempt template path
+  - when: all(model(T2T1), target(hw))
+    priority: 5
+    template: ../escaped/template.json
+    executable: firmware_traversal.elf
