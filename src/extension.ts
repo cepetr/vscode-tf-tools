@@ -210,11 +210,13 @@ function updateArtifactActionContext(
     _mapArtifact = map;
     binaryExists = binary.exists;
     mapExists = map.exists;
-    // Tree row updates for Binary/Map rows are wired in T015 (US2).
+    _treeProvider?.updateBinaryArtifact(binary, workspaceFolder);
+    _treeProvider?.updateMapArtifact(map, workspaceFolder);
   } else {
     _binaryArtifact = undefined;
     _mapArtifact = undefined;
-    // Tree row updates for Binary/Map rows are wired in T015 (US2).
+    _treeProvider?.updateBinaryArtifact(null, workspaceFolder);
+    _treeProvider?.updateMapArtifact(null, workspaceFolder);
   }
 
   vscode.commands.executeCommand("setContext", "tfTools.flashApplicable", flashApplicable);

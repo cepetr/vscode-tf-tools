@@ -69,14 +69,14 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T013 [P] [US2] Add unit tests for Binary/Map artifact derivation, row status, missing-reason messaging, and dual-action visibility in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts` and `src/test/unit/ui/configuration-tree.test.ts`
+- [X] T013 [P] [US2] Add unit tests for Binary/Map artifact derivation, row status, missing-reason messaging, and dual-action visibility in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts` and `src/test/unit/ui/configuration-tree.test.ts`
 - [ ] T014 [P] [US2] Add integration tests for Binary and Map File row rendering, Binary-row action visibility, and disabled-state behavior in `src/test/integration/flash-upload-artifacts.integration.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T015 [P] [US2] Implement Binary and Map File artifact row items, tooltip text, and row-scoped action context values in `src/ui/configuration-tree.ts`
-- [ ] T016 [P] [US2] Contribute `menus.view/item/context` actions and enablement rules for Binary-row Flash/Upload actions in `package.json`
-- [ ] T017 [US2] Wire Binary and Map File artifact state updates plus action enablement context keys in `src/extension.ts` and `src/ui/configuration-tree.ts`
+- [X] T015 [P] [US2] Implement Binary and Map File artifact row items, tooltip text, and row-scoped action context values in `src/ui/configuration-tree.ts`
+- [X] T016 [P] [US2] Contribute `menus.view/item/context` actions and enablement rules for Binary-row Flash/Upload actions in `package.json`
+- [X] T017 [US2] Wire Binary and Map File artifact state updates plus action enablement context keys in `src/extension.ts` and `src/ui/configuration-tree.ts`
 
 **Checkpoint**: User Story 2 is fully functional and independently testable from the Build Artifacts section.
 
