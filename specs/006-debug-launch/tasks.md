@@ -92,7 +92,7 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T020 [P] [US3] Add unit tests for template-root traversal rejection, JSONC parse failures, unknown variables, and cyclic debug vars in `src/test/unit/workflow/debug-template-resolution.test.ts`
+- [X] T020 [P] [US3] Add unit tests for template-root traversal rejection, JSONC parse failures, unknown variables, and cyclic debug vars in `src/test/unit/workflow/debug-template-resolution.test.ts`
 - [ ] T021 [P] [US3] Add integration tests for no-match, missing-template, malformed-template, unresolved-variable, ambiguous-profile, traversal, unsupported-workspace, and missing-executable failures in `src/test/integration/debug-launch-failures.integration.test.ts`
 
 ### Implementation for User Story 3
