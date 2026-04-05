@@ -49,7 +49,7 @@
         "command": "tfTools.build",
         "title": "Build",
         "category": "Trezor",
-        "icon": "$(play)"
+        "icon": "$(tools)"
       },
       {
         "command": "tfTools.clippy",
@@ -137,27 +137,33 @@
           "enablement": "!tfTools.workflowBlocked"
         },
         {
-          "command": "tfTools.clippy",
+          "command": "tfTools.build",
           "when": "view == tfTools.configuration",
           "group": "overflow@1",
           "enablement": "!tfTools.workflowBlocked"
         },
         {
-          "command": "tfTools.check",
+          "command": "tfTools.clippy",
           "when": "view == tfTools.configuration",
           "group": "overflow@2",
           "enablement": "!tfTools.workflowBlocked"
         },
         {
-          "command": "tfTools.clean",
+          "command": "tfTools.check",
           "when": "view == tfTools.configuration",
           "group": "overflow@3",
           "enablement": "!tfTools.workflowBlocked"
         },
         {
+          "command": "tfTools.clean",
+          "when": "view == tfTools.configuration",
+          "group": "overflow@4",
+          "enablement": "!tfTools.workflowBlocked"
+        },
+        {
           "command": "tfTools.refreshIntelliSense",
           "when": "view == tfTools.configuration",
-          "group": "overflow@4"
+          "group": "overflow@5"
         }
       ]
     },

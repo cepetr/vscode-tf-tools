@@ -245,7 +245,8 @@ Additional command behavior:
 
 - command titles use the `Trezor:` prefix
 - Build Workflow command titles are `Trezor: Build`, `Trezor: Run Clippy`, `Trezor: Run Check`, and `Trezor: Run Clean`
-- the Configuration view title area keeps `Build` as the only primary header action; `Run Clippy`, `Run Check`, and `Run Clean` are contributed to overflow ahead of `Refresh IntelliSense`
+- the Build command uses the VS Code `tools` codicon
+- the Configuration view title area keeps `Build` as the primary header action; `Build`, `Run Clippy`, `Run Check`, and `Run Clean` are contributed to overflow ahead of `Refresh IntelliSense`
 - `Flash` uses the user-facing title `Trezor: Flash {model-name} | {target-display} | {component-name}` and executes `xtask flash <component-id> -m <model-id>`
 - `Upload` uses the user-facing title `Trezor: Upload {model-name} | {target-display} | {component-name}` and executes `xtask upload <component-id> -m <model-id>`
 - `Flash` and `Upload` are launched through VS Code task execution rather than direct process spawning

@@ -20,6 +20,7 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 
 - **Actions contributed by this feature**:
   - `Build`
+  - `Build` (overflow duplicate)
   - `Run Clippy`
   - `Run Check`
   - `Run Clean`
@@ -37,7 +38,10 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
   - `Trezor: Run Check`
   - `Trezor: Run Clean`
   - `Trezor: Show Logs`
+- **Codicons**:
+  - `Build` uses `tools`
 - **Overflow ordering**:
+  - `Build`
   - `Run Clippy`
   - `Run Check`
   - `Run Clean`

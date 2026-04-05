@@ -186,7 +186,7 @@ suite("Build Workflow – blocked manifest (T030)", () => {
     assert.ok(msg.toLowerCase().includes("folder"));
   });
 
-  test("package.json keeps Build as the only primary view/title action", () => {
+  test("package.json keeps Build as the primary view/title action", () => {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
       return; // Skip gracefully when not installed
@@ -206,11 +206,11 @@ suite("Build Workflow – blocked manifest (T030)", () => {
     assert.deepStrictEqual(
       primaryCommands,
       ["tfTools.build"],
-      `expected only tfTools.build as a primary view/title action, found: ${primaryCommands.join(", ")}`
+      `expected tfTools.build as the primary view/title action, found: ${primaryCommands.join(", ")}`
     );
   });
 
-  test("package.json exposes Clippy/Check/Clean in the view/title overflow menu", () => {
+  test("package.json exposes Build/Clippy/Check/Clean in the view/title overflow menu", () => {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
       return; // Skip gracefully when not installed
@@ -227,9 +227,25 @@ suite("Build Workflow – blocked manifest (T030)", () => {
       .map((entry) => entry.command)
       .filter((command): command is string => Boolean(command));
 
+    assert.ok(overflowCommands.includes("tfTools.build"), "expected tfTools.build in overflow");
     assert.ok(overflowCommands.includes("tfTools.clippy"), "expected tfTools.clippy in overflow");
     assert.ok(overflowCommands.includes("tfTools.check"), "expected tfTools.check in overflow");
     assert.ok(overflowCommands.includes("tfTools.clean"), "expected tfTools.clean in overflow");
+  });
+
+  test("package.json uses the tools icon for Build", () => {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    if (!ext) {
+      return;
+    }
+    const commands = ((ext.packageJSON?.contributes?.commands as Array<{
+      command?: string;
+      icon?: string;
+    }>) ?? []);
+
+    const buildCommand = commands.find((entry) => entry.command === "tfTools.build");
+    assert.ok(buildCommand, "expected tfTools.build command contribution");
+    assert.strictEqual(buildCommand?.icon, "$(tools)");
   });
 
   test("package.json uses Run-prefixed titles for Clippy/Check/Clean commands", () => {
@@ -270,7 +286,7 @@ suite("Build Workflow – blocked manifest (T030)", () => {
 
     assert.deepStrictEqual(
       overflowEntries.map((entry) => entry.command),
-      ["tfTools.clippy", "tfTools.check", "tfTools.clean", "tfTools.refreshIntelliSense"]
+      ["tfTools.build", "tfTools.clippy", "tfTools.check", "tfTools.clean", "tfTools.refreshIntelliSense"]
     );
   });
 });

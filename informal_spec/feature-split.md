@@ -16,7 +16,7 @@ This feature should produce the first usable UI slice. After it is implemented, 
 ### 2. Build Workflow
 Build Options behavior, `when` parsing/validation/evaluation, build, clippy, check, and clean actions; dynamic task labels; command argument derivation; build-artifact status refresh.
 
-This feature adds the first runtime behaviors driven by the full active configuration. It should implement Build Options rendering and selection in the tree view from the manifest, `when` parsing/validation/evaluation and option gating against the active model/target/component, VS Code tasks and command execution for `Build`, `Clippy`, `Check`, and `Clean`, dynamic task labels, command argument derivation from the effective configuration, and Configuration view title actions with `Build` kept as the only primary header action while `Clippy`, `Check`, and `Clean` move to the view overflow menu.
+This feature adds the first runtime behaviors driven by the full active configuration. It should implement Build Options rendering and selection in the tree view from the manifest, `when` parsing/validation/evaluation and option gating against the active model/target/component, VS Code tasks and command execution for `Build`, `Clippy`, `Check`, and `Clean`, dynamic task labels, command argument derivation from the effective configuration, and Configuration view title actions with `Build` kept as the primary header action while `Build`, `Clippy`, `Check`, and `Clean` are also available from the view overflow menu.
 
 This feature should not implement Build Artifacts section behavior or artifact-status refresh, Flash/Upload actions, or IntelliSense integration and compile-commands refresh behavior.
 

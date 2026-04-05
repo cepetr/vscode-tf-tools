@@ -35,7 +35,7 @@ Verify Build Workflow end-to-end in a VS Code Extension Development Host: Build 
 
 1. Launch against a workspace whose manifest contains an invalid build-option `when` expression.
 2. Confirm the manifest problem appears in the Problems view and the manifest editor.
-3. Confirm `Build` remains visible in the Configuration view header while `Run Clippy`, `Run Check`, and `Run Clean` remain visible in the overflow menu and are disabled.
+3. Confirm `Build` remains visible in the Configuration view header and also appears in the overflow menu, while `Run Clippy`, `Run Check`, and `Run Clean` remain visible in the overflow menu and are disabled.
 4. Attempt to run one of those actions and confirm the user receives visible failure feedback.
 5. Run `Trezor: Show Logs` and confirm the output channel records the blocking manifest failure.
 
@@ -49,7 +49,7 @@ Verify Build Workflow end-to-end in a VS Code Extension Development Host: Build 
 ## Scenario 5: Unsupported workspace blocks all workflow actions
 
 1. Launch against a workspace that violates the supported workspace guard.
-2. Confirm `Build` remains visible but disabled in the primary header, `Run Clippy`, `Run Check`, and `Run Clean` remain visible but disabled in the overflow menu, and `Refresh IntelliSense` appears after them.
+2. Confirm `Build` remains visible but disabled in the primary header, `Build`, `Run Clippy`, `Run Check`, and `Run Clean` remain visible but disabled in the overflow menu, and `Refresh IntelliSense` appears after them.
 3. Attempt to invoke any workflow action and confirm a visible unsupported-workspace error is shown.
 4. Confirm the output channel contains the failure details.
 
