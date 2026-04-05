@@ -288,6 +288,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const workspaceFolder = requireWorkspaceFolder();
   const manifestUri = resolveManifestUri(workspaceFolder);
+  const refreshArtifactActionState = (): void => {
+    if (!_manifestState) {
+      return;
+    }
+
+    updateArtifactActionContext(
+      _manifestState,
+      _activeConfig,
+      resolveArtifactsPath(workspaceFolder),
+      workspaceFolder
+    );
+  };
 
   // --- Status-bar presenter (T031) ---
   _statusBar = new StatusBarPresenter();
@@ -376,6 +388,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
         _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
+        refreshArtifactActionState();
         _intelliSenseService?.scheduleRefresh("artifacts-path-change");
       }
       if (
@@ -549,6 +562,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _activeConfig = config;
       _resolvedOptions = computeResolvedOptions(state, config, context);
       _treeProvider?.update(state, config, _resolvedOptions);
+      refreshArtifactActionState();
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
       _intelliSenseService?.setActiveConfig(config);
       _intelliSenseService?.scheduleRefresh("active-config-change");
@@ -563,6 +577,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _activeConfig = config;
       _resolvedOptions = computeResolvedOptions(state, config, context);
       _treeProvider?.update(state, config, _resolvedOptions);
+      refreshArtifactActionState();
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
       _intelliSenseService?.setActiveConfig(config);
       _intelliSenseService?.scheduleRefresh("active-config-change");
@@ -577,6 +592,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _activeConfig = config;
       _resolvedOptions = computeResolvedOptions(state, config, context);
       _treeProvider?.update(state, config, _resolvedOptions);
+      refreshArtifactActionState();
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
       _intelliSenseService?.setActiveConfig(config);
       _intelliSenseService?.scheduleRefresh("active-config-change");

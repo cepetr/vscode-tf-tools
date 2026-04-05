@@ -1,6 +1,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import {
+  ConfigurationTreeProvider,
   SectionItem,
   SectionId,
   SelectorChoiceItem,
@@ -560,5 +561,97 @@ suite("MapArtifactItem – missing artifact", () => {
       String(item.tooltip).includes("firmware_core.map"),
       `expected path in fallback tooltip, got: ${item.tooltip}`
     );
+  });
+});
+
+suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  teardown(() => {
+    provider.dispose();
+  });
+
+  function getBuildArtifactsChildren(): vscode.TreeItem[] {
+    return provider.getChildren(new SectionItem("build-artifacts", "Build Artifacts"));
+  }
+
+  test("switching artifact context replaces Binary and Map rows with the new paths", () => {
+    provider.updateArtifact(
+      makeValidArtifact({
+        path: "/build/model-t/compile_commands_core.cc.json",
+        contextKey: "T2T1::hw::core",
+      })
+    );
+    provider.updateBinaryArtifact(
+      makeValidBinaryArtifact({
+        path: "/build/model-t/firmware_core.bin",
+        contextKey: "T2T1::hw::core",
+      })
+    );
+    provider.updateMapArtifact(
+      makeValidMapArtifact({
+        path: "/build/model-t/firmware_core.map",
+        contextKey: "T2T1::hw::core",
+      })
+    );
+
+    provider.updateArtifact(
+      makeValidArtifact({
+        path: "/build/model-t3/compile_commands_boot_emu.cc.json",
+        contextKey: "T3W1::emu::bootloader",
+      })
+    );
+    provider.updateBinaryArtifact(
+      makeValidBinaryArtifact({
+        path: "/build/model-t3/firmware_boot_emu.bin",
+        contextKey: "T3W1::emu::bootloader",
+      })
+    );
+    provider.updateMapArtifact(
+      makeValidMapArtifact({
+        path: "/build/model-t3/firmware_boot_emu.map",
+        contextKey: "T3W1::emu::bootloader",
+      })
+    );
+
+    const children = getBuildArtifactsChildren();
+    assert.strictEqual(children.length, 3);
+
+    const binary = children[1] as BinaryArtifactItem;
+    const map = children[2] as MapArtifactItem;
+
+    assert.ok(
+      String(binary.tooltip).includes("/build/model-t3/firmware_boot_emu.bin"),
+      `binary tooltip should reference the new context path, got: ${binary.tooltip}`
+    );
+    assert.ok(
+      !String(binary.tooltip).includes("/build/model-t/firmware_core.bin"),
+      `binary tooltip must not retain the previous context path, got: ${binary.tooltip}`
+    );
+    assert.ok(
+      String(map.tooltip).includes("/build/model-t3/firmware_boot_emu.map"),
+      `map tooltip should reference the new context path, got: ${map.tooltip}`
+    );
+    assert.ok(
+      !String(map.tooltip).includes("/build/model-t/firmware_core.map"),
+      `map tooltip must not retain the previous context path, got: ${map.tooltip}`
+    );
+  });
+
+  test("clearing Binary and Map artifacts removes stale rows", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateBinaryArtifact(makeValidBinaryArtifact());
+    provider.updateMapArtifact(makeValidMapArtifact());
+
+    provider.updateBinaryArtifact(null);
+    provider.updateMapArtifact(null);
+
+    const children = getBuildArtifactsChildren();
+    assert.strictEqual(children.length, 1, "only compile-commands row should remain");
+    assert.ok(children[0] instanceof CompileCommandsArtifactItem);
   });
 });
