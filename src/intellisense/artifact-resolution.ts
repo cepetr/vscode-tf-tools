@@ -11,6 +11,11 @@ import {
   ManifestComponent,
 } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
+import {
+  DebugProfileResolutionState,
+  resolveDebugProfile,
+  deriveExecutablePath,
+} from "../commands/debug-launch";
 
 // ---------------------------------------------------------------------------
 // Context key
@@ -317,4 +322,121 @@ function buildMapMissingReason(inputs: ArtifactResolutionInputs): string {
     return "The active component does not define artifactName in the manifest; cannot resolve the map artifact.";
   }
   return "Cannot resolve the map artifact path.";
+}
+
+// ---------------------------------------------------------------------------
+// Executable artifact state resolution (feature 006)
+// ---------------------------------------------------------------------------
+
+export type ExecutableArtifactStatus = "valid" | "missing";
+
+/** User-visible executable artifact state for the active build context. */
+export interface ActiveExecutableArtifact {
+  readonly contextKey: string;
+  readonly profileResolutionState: DebugProfileResolutionState | "manifest-invalid";
+  readonly expectedPath: string;
+  readonly exists: boolean;
+  readonly status: ExecutableArtifactStatus;
+  readonly missingReason?: string;
+  readonly tooltip: string;
+}
+
+/**
+ * Resolves the active executable artifact state for the given manifest, config,
+ * and artifacts root.
+ *
+ * - Returns `status: "valid"` only when exactly one debug profile matches the
+ *   active context, its executable file exists on disk, and the manifest has no
+ *   debug-blocking validation errors.
+ * - Returns `status: "missing"` for all other cases with an explanatory reason.
+ */
+export function resolveActiveExecutableArtifact(
+  manifest: ManifestStateLoaded,
+  config: ActiveConfig,
+  artifactsRoot: string
+): ActiveExecutableArtifact {
+  const contextKey = makeContextKey(config);
+
+  if (manifest.hasDebugBlockingIssues) {
+    return {
+      contextKey,
+      profileResolutionState: "manifest-invalid",
+      expectedPath: "",
+      exists: false,
+      status: "missing",
+      missingReason: "The manifest has debug profile validation errors; cannot resolve an executable.",
+      tooltip: "The manifest has debug profile validation errors; cannot resolve an executable.",
+    };
+  }
+
+  const evalCtx = { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId };
+  const resolution = resolveDebugProfile(manifest.debugProfiles, evalCtx);
+
+  if (resolution.resolutionState === "no-match") {
+    return {
+      contextKey,
+      profileResolutionState: "no-match",
+      expectedPath: "",
+      exists: false,
+      status: "missing",
+      missingReason: "No debug profile matches the active build context.",
+      tooltip: "No debug profile matches the active build context.",
+    };
+  }
+
+  if (resolution.resolutionState === "ambiguous") {
+    return {
+      contextKey,
+      profileResolutionState: "ambiguous",
+      expectedPath: "",
+      exists: false,
+      status: "missing",
+      missingReason: `${resolution.matchedProfiles.length} debug profiles are tied at priority ${resolution.highestPriority}; the active context is ambiguous.`,
+      tooltip: `${resolution.matchedProfiles.length} debug profiles are tied at priority ${resolution.highestPriority}; the active context is ambiguous.`,
+    };
+  }
+
+  // Unique profile resolved — derive executable path
+  const selectedProfile = resolution.selectedProfile!;
+  const model: ManifestModel | undefined = manifest.models.find((m) => m.id === config.modelId);
+  const artifactFolder = model?.artifactFolder ?? "";
+
+  if (!artifactsRoot || !artifactFolder) {
+    const reason = !artifactsRoot
+      ? "tfTools.artifactsPath is not configured; cannot resolve the executable artifact."
+      : "The active model does not define artifactFolder in the manifest; cannot resolve the executable artifact.";
+    return {
+      contextKey,
+      profileResolutionState: "selected",
+      expectedPath: "",
+      exists: false,
+      status: "missing",
+      missingReason: reason,
+      tooltip: reason,
+    };
+  }
+
+  const expectedPath = deriveExecutablePath(selectedProfile.executable, artifactFolder, artifactsRoot);
+
+  const exists = checkFileExists(expectedPath);
+  if (exists) {
+    return {
+      contextKey,
+      profileResolutionState: "selected",
+      expectedPath,
+      exists: true,
+      status: "valid",
+      tooltip: expectedPath,
+    };
+  }
+
+  return {
+    contextKey,
+    profileResolutionState: "selected",
+    expectedPath,
+    exists: false,
+    status: "missing",
+    missingReason: `Executable artifact not found at the expected path: ${expectedPath}`,
+    tooltip: `Executable not found: ${expectedPath}`,
+  };
 }
