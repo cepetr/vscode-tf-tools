@@ -782,3 +782,183 @@ components:
     assert.strictEqual(result.models[0].artifactFolder, undefined);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T023: flashWhen / uploadWhen regression tests
+// ---------------------------------------------------------------------------
+
+suite("parseManifest – flashWhen and uploadWhen (T023)", () => {
+  function makeBaseManifest(components: string): string {
+    return `
+models:
+  - id: T2T1
+    name: Trezor Model T
+    artifact-folder: model-t
+  - id: T3W1
+    name: Trezor Model T3
+    artifact-folder: model-t3
+targets:
+  - id: hw
+    name: Hardware
+  - id: emu
+    name: Emulator
+${components}
+`.trim();
+  }
+
+  test("valid flashWhen expression is parsed and stored on component", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+    flashWhen: model(T2T1)
+`);
+    const result = parseManifest(source);
+    const core = result.components.find((c) => c.id === "core");
+    assert.ok(core, "expected core component");
+    assert.ok(core.flashWhen, "expected flashWhen to be set");
+  });
+
+  test("valid uploadWhen expression is parsed and stored on component", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+    uploadWhen: any(model(T2T1), model(T3W1))
+`);
+    const result = parseManifest(source);
+    const core = result.components.find((c) => c.id === "core");
+    assert.ok(core, "expected core component");
+    assert.ok(core.uploadWhen, "expected uploadWhen to be set");
+  });
+
+  test("absent flashWhen leaves component.flashWhen undefined", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+`);
+    const result = parseManifest(source);
+    const core = result.components.find((c) => c.id === "core");
+    assert.ok(core, "expected core component");
+    assert.strictEqual(core.flashWhen, undefined);
+  });
+
+  test("absent uploadWhen leaves component.uploadWhen undefined", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+`);
+    const result = parseManifest(source);
+    const core = result.components.find((c) => c.id === "core");
+    assert.ok(core, "expected core component");
+    assert.strictEqual(core.uploadWhen, undefined);
+  });
+
+  test("invalid flashWhen syntax surfaces as invalid-when issue", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+    flashWhen: "not a valid expression"
+`);
+    const result = parseManifest(source);
+    const invalidWhenIssues = result.issues.filter((i) => i.code === "invalid-when");
+    assert.ok(
+      invalidWhenIssues.length > 0,
+      "expected at least one invalid-when issue for bad flashWhen syntax"
+    );
+  });
+
+  test("invalid uploadWhen syntax surfaces as invalid-when issue", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+    uploadWhen: "not a valid expression"
+`);
+    const result = parseManifest(source);
+    const invalidWhenIssues = result.issues.filter((i) => i.code === "invalid-when");
+    assert.ok(
+      invalidWhenIssues.length > 0,
+      "expected at least one invalid-when issue for bad uploadWhen syntax"
+    );
+  });
+
+  test("unknown model id in flashWhen surfaces as invalid-when issue", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+    flashWhen: model(UNKNOWN_MODEL)
+`);
+    const result = parseManifest(source);
+    const invalidWhenIssues = result.issues.filter((i) => i.code === "invalid-when");
+    assert.ok(
+      invalidWhenIssues.length > 0,
+      "expected invalid-when issue for unknown model id in flashWhen"
+    );
+    assert.ok(
+      invalidWhenIssues.some((i) => i.message.includes("UNKNOWN_MODEL") || i.message.includes("unknown")),
+      `expected issue message to mention unknown id, got: ${invalidWhenIssues.map((i) => i.message).join("; ")}`
+    );
+  });
+
+  test("invalid flashWhen does NOT set hasWorkflowBlockingIssues", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+    flashWhen: "not a valid expression"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(
+      result.hasWorkflowBlockingIssues,
+      false,
+      "invalid flashWhen must NOT block Build/Clippy/Check/Clean workflow"
+    );
+  });
+
+  test("invalid uploadWhen does NOT set hasWorkflowBlockingIssues", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+    uploadWhen: "not a valid expression"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(
+      result.hasWorkflowBlockingIssues,
+      false,
+      "invalid uploadWhen must NOT block Build/Clippy/Check/Clean workflow"
+    );
+  });
+
+  test("non-string flashWhen (integer) surfaces as invalid-when issue", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+    flashWhen: 42
+`);
+    const result = parseManifest(source);
+    const invalidWhenIssues = result.issues.filter((i) => i.code === "invalid-when");
+    assert.ok(
+      invalidWhenIssues.length > 0,
+      "expected invalid-when issue for non-string flashWhen value"
+    );
+  });
+
+  test("component without flashWhen/uploadWhen sees no new issues from action rules pass", () => {
+    const source = makeBaseManifest(`
+components:
+  - id: core
+    name: Core
+`);
+    const result = parseManifest(source);
+    // No action-rule issues expected for a component with no when fields
+    const actionIssues = result.issues.filter((i) => i.code === "invalid-when");
+    assert.strictEqual(actionIssues.length, 0);
+  });
+});
