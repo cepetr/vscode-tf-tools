@@ -264,7 +264,7 @@ suite("Build Workflow – blocked manifest (T030)", () => {
     assert.strictEqual(byId.get("tfTools.clean"), "Run Clean");
   });
 
-  test("package.json orders overflow actions with Refresh IntelliSense last", () => {
+  test("package.json orders overflow actions with Flash/Upload before Refresh IntelliSense", () => {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
       return;
@@ -286,7 +286,15 @@ suite("Build Workflow – blocked manifest (T030)", () => {
 
     assert.deepStrictEqual(
       overflowEntries.map((entry) => entry.command),
-      ["tfTools.build", "tfTools.clippy", "tfTools.check", "tfTools.clean", "tfTools.refreshIntelliSense"]
+      [
+        "tfTools.build",
+        "tfTools.clippy",
+        "tfTools.check",
+        "tfTools.clean",
+        "tfTools.flash",
+        "tfTools.upload",
+        "tfTools.refreshIntelliSense",
+      ]
     );
   });
 });

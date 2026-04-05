@@ -144,6 +144,15 @@ suite("Flash/Upload Actions – package.json menu contributions (T009)", () => {
     );
   });
 
+  test("package.json uses device-oriented titles for flash and upload commands", () => {
+    const pkg = getExtPackageJson();
+    const commands = (pkg.contributes as { commands: Array<{ command: string; title?: string }> }).commands;
+    const byId = new Map(commands.map((entry) => [entry.command, entry.title]));
+
+    assert.strictEqual(byId.get("tfTools.flash"), "Flash to Device");
+    assert.strictEqual(byId.get("tfTools.upload"), "Upload to Device");
+  });
+
   test("commandPalette entry for tfTools.openMapFile has when: false (row-only)", () => {
     const pkg = getExtPackageJson();
     const menus = pkg.contributes as { menus: Record<string, unknown[]> };
@@ -206,6 +215,44 @@ suite("Flash/Upload Actions – package.json menu contributions (T009)", () => {
       mapEntry,
       "expected view/item/context entry for tfTools.openMapFile scoped to artifact-map"
     );
+  });
+
+  test("view/title has conditional overflow entry for tfTools.flash", () => {
+    const pkg = getExtPackageJson();
+    const menus = pkg.contributes as { menus: Record<string, unknown[]> };
+    const titleEntries = (menus.menus["view/title"] ?? []) as Array<{
+      command: string;
+      when?: string;
+      group?: string;
+      enablement?: string;
+    }>;
+    const entry = titleEntries.find((e) => e.command === "tfTools.flash");
+    assert.ok(entry, "expected view/title entry for tfTools.flash");
+    assert.strictEqual(
+      entry?.when,
+      "view == tfTools.configuration && tfTools.flashApplicable"
+    );
+    assert.strictEqual(entry?.group, "overflow@5");
+    assert.strictEqual(entry?.enablement, "tfTools.binaryExists");
+  });
+
+  test("view/title has conditional overflow entry for tfTools.upload", () => {
+    const pkg = getExtPackageJson();
+    const menus = pkg.contributes as { menus: Record<string, unknown[]> };
+    const titleEntries = (menus.menus["view/title"] ?? []) as Array<{
+      command: string;
+      when?: string;
+      group?: string;
+      enablement?: string;
+    }>;
+    const entry = titleEntries.find((e) => e.command === "tfTools.upload");
+    assert.ok(entry, "expected view/title entry for tfTools.upload");
+    assert.strictEqual(
+      entry?.when,
+      "view == tfTools.configuration && tfTools.uploadApplicable"
+    );
+    assert.strictEqual(entry?.group, "overflow@6");
+    assert.strictEqual(entry?.enablement, "tfTools.binaryExists");
   });
 });
 

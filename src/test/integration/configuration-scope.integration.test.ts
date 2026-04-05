@@ -110,5 +110,7 @@ suite("Scope guard — no cross-slice commands (FR-026)", () => {
     assert.ok(!primaryCommands.includes("tfTools.clippy"), "tfTools.clippy must stay out of the primary header");
     assert.ok(!primaryCommands.includes("tfTools.check"), "tfTools.check must stay out of the primary header");
     assert.ok(!primaryCommands.includes("tfTools.clean"), "tfTools.clean must stay out of the primary header");
+    assert.ok(!primaryCommands.includes("tfTools.flash"), "tfTools.flash must stay out of the primary header");
+    assert.ok(!primaryCommands.includes("tfTools.upload"), "tfTools.upload must stay out of the primary header");
   });
 });

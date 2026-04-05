@@ -123,13 +123,13 @@ export function resolveArtifactActionContext(
  * Formats the user-facing task label for Flash or Upload.
  *
  * Format: `{Action} {model-name} | {target-display} | {component-name}`
- * Example: `Flash Trezor Model T (v1) | HW | Core`
+ * Example: `Flash to Device Trezor Model T (v1) | HW | Core`
  */
 export function formatArtifactTaskLabel(
   kind: ArtifactActionKind,
   ctx: ArtifactActionContext
 ): string {
-  const actionWord = kind === "flash" ? "Flash" : "Upload";
+  const actionWord = kind === "flash" ? "Flash to Device" : "Upload to Device";
   return `${actionWord} ${ctx.modelName} | ${ctx.targetDisplay} | ${ctx.componentName}`;
 }
 

@@ -9,13 +9,13 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 - **`tfTools.flash`**:
   - Public command
   - Category: `Trezor`
-  - Uses the dynamic title `Trezor: Flash {model-name} | {target-display} | {component-name}` for the active build context
+  - Uses the dynamic title `Trezor: Flash to Device {model-name} | {target-display} | {component-name}` for the active build context
   - Appears in the Command Palette only when Flash is applicable for the active build context
   - Launches the Flash workflow as a VS Code task
 - **`tfTools.upload`**:
   - Public command
   - Category: `Trezor`
-  - Uses the dynamic title `Trezor: Upload {model-name} | {target-display} | {component-name}` for the active build context
+  - Uses the dynamic title `Trezor: Upload to Device {model-name} | {target-display} | {component-name}` for the active build context
   - Appears in the Command Palette only when Upload is applicable for the active build context
   - Launches the Upload workflow as a VS Code task
 - **`tfTools.openMapFile`**:
@@ -33,6 +33,18 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 - **Execution contract**:
   - selecting an applicable command starts the corresponding VS Code task
   - blocked starts show an explicit error instead of starting a task
+
+## Configuration View Overflow Surface
+
+- **Visibility contract**:
+  - `tfTools.flash` is shown only when Flash is applicable for the active model, target, and component
+  - `tfTools.upload` is shown only when Upload is applicable for the active model, target, and component
+  - inapplicable Flash or Upload commands are not shown in the Configuration view overflow menu
+- **Ordering contract**:
+  - applicable Flash and Upload entries appear after `Build`, `Run Clippy`, `Run Check`, and `Run Clean`
+  - `Refresh IntelliSense` remains the last Configuration view overflow entry
+- **Enablement contract**:
+  - applicable Flash and Upload overflow entries remain visible but disabled when the binary artifact is missing
 
 ## Build Artifacts Tree Surface
 
@@ -55,6 +67,10 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 - **`menus.commandPalette`**:
   - uses derived context keys so only applicable Flash or Upload commands appear
   - excludes the internal `tfTools.openMapFile` command from the Command Palette
+- **`menus.view/title`**:
+  - adds conditional overflow entries for Flash and Upload in the Configuration view
+  - uses the same applicability keys as the Command Palette and binary row actions
+  - uses binary-presence enablement so missing artifacts disable rather than hide applicable overflow actions
 - **`menus.view/item/context`**:
   - adds Binary-row action buttons for Flash and Upload
   - adds a Map File row action button for file open

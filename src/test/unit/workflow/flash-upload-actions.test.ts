@@ -147,14 +147,14 @@ suite("formatArtifactTaskLabel", () => {
   test("formats Flash label correctly", () => {
     assert.strictEqual(
       formatArtifactTaskLabel("flash", ctx),
-      "Flash Trezor Model T (v1) | HW | Core"
+      "Flash to Device Trezor Model T (v1) | HW | Core"
     );
   });
 
   test("formats Upload label correctly", () => {
     assert.strictEqual(
       formatArtifactTaskLabel("upload", ctx),
-      "Upload Trezor Model T (v1) | HW | Core"
+      "Upload to Device Trezor Model T (v1) | HW | Core"
     );
   });
 
@@ -162,7 +162,7 @@ suite("formatArtifactTaskLabel", () => {
     const ctxNoShort: ArtifactActionContext = { ...ctx, targetDisplay: "Emulator" };
     assert.strictEqual(
       formatArtifactTaskLabel("flash", ctxNoShort),
-      "Flash Trezor Model T (v1) | Emulator | Core"
+      "Flash to Device Trezor Model T (v1) | Emulator | Core"
     );
   });
 });
@@ -297,7 +297,7 @@ suite("createFlashTask", () => {
 
   test("task name matches dynamic label", () => {
     const task = createFlashTask(ctx, MOCK_WORKSPACE_FOLDER);
-    assert.strictEqual(task.name, "Flash Trezor Model T (v1) | HW | Core");
+    assert.strictEqual(task.name, "Flash to Device Trezor Model T (v1) | HW | Core");
   });
 
   test("task shell execution includes xtask flash with component-id and model-id", () => {
@@ -326,7 +326,7 @@ suite("createUploadTask", () => {
 
   test("task name matches dynamic label", () => {
     const task = createUploadTask(ctx, MOCK_WORKSPACE_FOLDER);
-    assert.strictEqual(task.name, "Upload Trezor Model T (v1) | HW | Core");
+    assert.strictEqual(task.name, "Upload to Device Trezor Model T (v1) | HW | Core");
   });
 
   test("task shell execution includes xtask upload with component-id and model-id", () => {

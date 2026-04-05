@@ -77,13 +77,13 @@
       },
       {
         "command": "tfTools.flash",
-        "title": "Flash",
+        "title": "Flash to Device",
         "category": "Trezor",
         "icon": "$(zap)"
       },
       {
         "command": "tfTools.upload",
-        "title": "Upload",
+        "title": "Upload to Device",
         "category": "Trezor",
         "icon": "$(arrow-up)"
       },
@@ -161,9 +161,21 @@
           "enablement": "!tfTools.workflowBlocked"
         },
         {
+          "command": "tfTools.flash",
+          "when": "view == tfTools.configuration && tfTools.flashApplicable",
+          "group": "overflow@5",
+          "enablement": "tfTools.binaryExists"
+        },
+        {
+          "command": "tfTools.upload",
+          "when": "view == tfTools.configuration && tfTools.uploadApplicable",
+          "group": "overflow@6",
+          "enablement": "tfTools.binaryExists"
+        },
+        {
           "command": "tfTools.refreshIntelliSense",
           "when": "view == tfTools.configuration",
-          "group": "overflow@5"
+          "group": "overflow@7"
         }
       ]
     },

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Verify Flash/Upload Actions end to end in a VS Code Extension Development Host: manifest-driven action applicability, Binary and Map File row state, conditional Command Palette exposure, task-backed Flash and Upload execution, map-file open behavior, explicit failures, and the absence of automatic post-success refresh.
+Verify Flash/Upload Actions end to end in a VS Code Extension Development Host: manifest-driven action applicability, Binary and Map File row state, conditional Command Palette and Configuration view overflow exposure, task-backed Flash and Upload execution, map-file open behavior, explicit failures, and the absence of automatic post-success refresh.
 
 ## Prerequisites
 
@@ -34,7 +34,16 @@ Verify Flash/Upload Actions end to end in a VS Code Extension Development Host: 
 5. Change to a component where both actions are applicable and confirm both commands are listed with the active context in their titles.
 6. Change to a component where neither action is applicable and confirm neither command is listed.
 
-## Scenario 3: Missing artifacts disable row actions and block starts
+## Scenario 3: Configuration view overflow visibility matches applicability
+
+1. Start with a context where Flash is applicable and Upload is inapplicable.
+2. Open the Configuration view overflow menu and confirm `Flash` appears after `Run Clean` and before `Refresh IntelliSense`, while `Upload` is absent.
+3. Change to a context where Upload is applicable and Flash is inapplicable and confirm the overflow visibility flips accordingly.
+4. Change to a context where both actions are applicable and confirm both appear before `Refresh IntelliSense`.
+5. Change to a context where an applicable action has a missing binary artifact and confirm the overflow entry remains visible but disabled.
+6. Change to a context where neither action is applicable and confirm neither overflow entry is shown.
+
+## Scenario 4: Missing artifacts disable row actions and block starts
 
 1. Start with a context where Flash or Upload is applicable but the binary artifact is missing.
 2. Confirm the applicable action remains visible on the `Binary` row but is disabled.
@@ -42,7 +51,7 @@ Verify Flash/Upload Actions end to end in a VS Code Extension Development Host: 
 4. Attempt to invoke the applicable command from another surface and confirm the extension blocks the start with an explicit error.
 5. With the map artifact missing, confirm the `Map File` row shows `missing` and its open action is disabled.
 
-## Scenario 4: Flash and Upload execute as VS Code tasks
+## Scenario 5: Flash and Upload execute as VS Code tasks
 
 1. Start from a context where Flash is applicable and the binary artifact exists.
 2. Invoke Flash from the `Binary` row and confirm a VS Code task starts in the configured cargo workspace.
@@ -50,7 +59,7 @@ Verify Flash/Upload Actions end to end in a VS Code Extension Development Host: 
 4. Switch to an Upload-applicable context with a present binary and confirm Upload starts as a VS Code task from both supported surfaces.
 5. Confirm successful completion does not trigger automatic artifact or IntelliSense refresh.
 
-## Scenario 5: Map file action opens the resolved file
+## Scenario 6: Map file action opens the resolved file
 
 1. Start from a context where the resolved map artifact exists.
 2. Invoke the `Map File` row action.
@@ -58,7 +67,7 @@ Verify Flash/Upload Actions end to end in a VS Code Extension Development Host: 
 4. Open the Command Palette and confirm no standalone Map File command is listed.
 5. Change to a context where the map file is missing and confirm the row action becomes disabled.
 
-## Scenario 6: Failures stay visible
+## Scenario 7: Failures stay visible
 
 1. Make the manifest invalid with an invalid `flashWhen` or `uploadWhen` expression.
 2. Confirm manifest diagnostics appear and Flash/Upload commands do not become startable.
@@ -68,5 +77,5 @@ Verify Flash/Upload Actions end to end in a VS Code Extension Development Host: 
 ## Automated Test Expectations
 
 - Unit tests cover manifest parsing for `flashWhen` and `uploadWhen`, generalized artifact path derivation for `.bin` and `.map`, action applicability, blocked-start rules, and tree-item row state.
-- Integration tests cover Binary and Map File row rendering, Command Palette visibility, row-action enablement, task launch, map-file opening, failure logging, and the no-auto-refresh rule after successful Flash or Upload completion.
+- Integration tests cover Binary and Map File row rendering, Command Palette visibility, Configuration view overflow visibility and ordering, row-action enablement, task launch, map-file opening, failure logging, and the no-auto-refresh rule after successful Flash or Upload completion.
 - Regression tests confirm compile-commands row behavior, excluded-file features, Build/Clippy/Check/Clean workflows, and Debug remain unchanged while Flash/Upload Actions are added.
