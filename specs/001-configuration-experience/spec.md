@@ -9,14 +9,14 @@
 
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
 - **Selected Slice**: `1. Configuration Experience`
-- **Scope Guard**: This feature includes manifest discovery, manifest validation feedback, the configuration activity-bar surface, build-context selection for model/target/component, workspace-scoped persistence and normalization of the active selection, status-bar visibility of the active selection, and persistent diagnostics/log output for configuration-related failures. This feature does not expose `Build Options` behavior, `Build Artifacts` behavior, or `Build` and `Debug` view-title actions. This feature explicitly excludes build, clippy, check, clean, build-option editing, `when` handling, build-artifact status evaluation, IntelliSense integration, excluded-file visibility, flash/upload actions, and debug launch.
+- **Scope Guard**: This feature includes manifest discovery, manifest validation feedback, the configuration activity-bar surface, build-context selection for model/target/component, workspace-scoped persistence and normalization of the active selection, status-bar visibility of the active selection, and persistent diagnostics/log output for configuration-related failures. This feature does not expose `Build Options` behavior, `Build Artifacts` behavior, or `Build` and `Start Debugging` view-title actions. This feature explicitly excludes build, clippy, check, clean, build-option editing, `when` handling, build-artifact status evaluation, IntelliSense integration, excluded-file visibility, flash/upload actions, and debug launch.
 
 ## Clarifications
 
 ### Session 2026-04-03
 
 - Q: What exact format should the status-bar item use for the active configuration? → A: `{model-name} | {target-display} | {component-name}`.
-- Q: Should this feature expose `Build` or `Debug` actions in the view title bar? → A: No. This feature does not expose `Build` or `Debug` view-title actions.
+- Q: Should this feature expose `Build` or `Start Debugging` actions in the view title bar? → A: No. This feature does not expose `Build` or `Start Debugging` view-title actions.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -95,7 +95,7 @@ As a firmware developer, I want the chosen configuration to remain visible after
 - **FR-013**: The system MUST produce persistent diagnostics for actionable manifest validation problems so users can inspect them after transient notifications disappear.
 - **FR-014**: The system MUST record configuration-related runtime warnings and errors in a dedicated persistent log surface.
 - **FR-015**: The system MUST fail visibly when the manifest is missing, unreadable, or invalid by combining immediate user feedback with at least one persistent signal.
-- **FR-016**: The configuration view for this feature MUST not expose `Build` or `Debug` actions in the view title bar.
+- **FR-016**: The configuration view for this feature MUST not expose `Build` or `Start Debugging` actions in the view title bar.
 - **FR-017**: This feature MUST not expose build execution, build-option behavior, `when` handling, build-artifact status evaluation, IntelliSense state, excluded-file markers, flash/upload actions, or debug launch controls.
 - **FR-018**: The configuration tree MUST render `Build Selection`, `Build Options`, and `Build Artifacts` as plain-text top-level group headers without dedicated icons, and it MUST use the following VS Code theme icons for selector rows in this slice: `circuit-board` for the `Model` selector, `target` for the `Target` selector, and `extensions` for the `Component` selector.
 - **FR-019**: Expanded selector choice rows in this slice MUST rely on selection state rather than dedicated semantic inactive icons; the active choice may use a `check` icon, and inactive choices MUST render with an empty spacer icon so choice labels remain aligned.

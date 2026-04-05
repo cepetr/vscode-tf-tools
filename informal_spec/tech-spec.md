@@ -206,11 +206,11 @@ The Build Options section preserves YAML order while consolidating repeated grou
 
 Option availability is evaluated against the active build context before rendering. Options whose `when` expression evaluates to `false` are omitted from the visible tree, but their persisted values remain stored in workspace state.
 
-Debug availability is evaluated against the active build context from the manifest-defined `debug` profiles. The view-title `Debug` action is enabled only when exactly one valid debug profile can be resolved for the active build context.
+Debug availability is evaluated against the active build context from the manifest-defined `debug` profiles together with the resolved executable artifact state. The side-bar header `Start Debugging` action, the overflow-menu `Start Debugging` action, and the `Executable` row action are enabled only when exactly one valid debug profile can be resolved for the active build context and the resolved executable artifact exists.
 
-The `Debug` action remains visible even when disabled so the user can discover debugger support from the main configuration view. Disabled-state tooltips explain whether debugging is unavailable because no profile matched, matching profiles were ambiguous, the template could not be loaded, or required substitutions could not be resolved.
+The `Start Debugging` actions remain visible even when disabled so the user can discover debugger support from the main configuration view. Disabled-state tooltips explain whether debugging is unavailable because no profile matched, matching profiles were ambiguous, the template could not be loaded, required substitutions could not be resolved, or the executable artifact is missing.
 
-The existence of the resolved debug executable path is not part of enablement. Missing executable files may still cause the downstream debugger to fail, but they do not by themselves disable the `Debug` action or block the launch attempt before handing off to VS Code.
+The resolved debug executable path is part of Build Artifacts state and Start Debugging action enablement. When the executable artifact is missing, the `Executable` row reports the missing path and all visible Start Debugging actions stay disabled until the artifact becomes available.
 
 ## Command And Task Execution
 
@@ -246,18 +246,20 @@ Additional command behavior:
 - command titles use the `Trezor:` prefix
 - Build Workflow command titles are `Trezor: Build`, `Trezor: Run Clippy`, `Trezor: Run Check`, and `Trezor: Run Clean`
 - the Build command uses the VS Code `tools` codicon
-- the Configuration view title area keeps `Build` as the primary header action; `Build`, `Run Clippy`, `Run Check`, and `Run Clean` are contributed to overflow ahead of any applicable `Flash` and `Upload` actions, and `Refresh IntelliSense` remains last in overflow
+- the Configuration view title area keeps `Build` as the primary header action; `Build`, `Run Clippy`, `Run Check`, and `Run Clean` are contributed to overflow ahead of any applicable `Flash` and `Upload` actions; `Start Debugging` is also contributed as a visible side-bar header action and overflow action; `Refresh IntelliSense` remains last in overflow
 - `Flash` uses the user-facing title `Trezor: Flash to Device {model-name} | {target-display} | {component-name}` and executes `xtask flash <component-id> -m <model-id>`
 - `Upload` uses the user-facing title `Trezor: Upload to Device {model-name} | {target-display} | {component-name}` and executes `xtask upload <component-id> -m <model-id>`
 - `Flash` and `Upload` are launched through VS Code task execution rather than direct process spawning
-- `Debug` uses the user-facing title `Trezor: Debug` and launches the resolved debugger template for the active build context
+- `Start Debugging` uses the user-facing title `Trezor: Start Debugging` and launches the resolved debugger template for the active build context
 - `Flash` is available only when the selected component's `flashWhen` expression evaluates to `true`
 - `Upload` is available only when the selected component's `uploadWhen` expression evaluates to `true`
-- `Debug` is available only when exactly one valid debug profile can be resolved for the active build context
+- `Start Debugging` is available only when exactly one valid debug profile can be resolved for the active build context
 - omitted `flashWhen` and `uploadWhen` values make the corresponding action unavailable
 - artifact-row actions remain visible whenever their action is applicable
 - applicable `Flash` and `Upload` actions are also contributed to the Configuration view overflow menu and stay visible there, but disabled, when the binary artifact is missing
+- the visible `Start Debugging` header and overflow actions stay disabled when the executable artifact is missing
 - artifact-row actions that require the binary artifact are disabled when the binary artifact is missing
+- the executable-row action is disabled when the executable artifact is missing
 - the map-file action is disabled when the map artifact is missing
 - the internal command backing the map-file row action is not shown in the Command Palette
 - successful `Flash` and `Upload` completion does not trigger an automatic extension refresh
@@ -270,7 +272,7 @@ Debug-template behavior:
 - tie-breaking: prefer the highest `priority`; equal highest-priority matches are treated as ambiguous and block launch
 - template loading: read the referenced template file from the configured template root and reject path traversal outside that root
 - template path semantics: `debug.template` is a relative file path under the configured template root and may include subdirectories
-- template reload timing: read the template file fresh on each `Trezor: Debug` invocation rather than preloading or caching the whole template set
+- template reload timing: read the template file fresh on each `Trezor: Start Debugging` invocation rather than preloading or caching the whole template set
 - template format: the template file must parse as a JSONC object representing one VS Code debug configuration
 - variable expansion: apply built-in tf-tools variables and selected `debug.vars` entries to string-valued template fields before launch
 - substitution scope: inspect the full JSON object, including nested objects and arrays, and apply tf-tools substitution only to string values while leaving non-string values unchanged
@@ -393,15 +395,19 @@ The Build Artifacts section supports row-scoped actions in addition to artifact 
 
 Design:
 
+- the Executable row is always rendered and resolves from the selected debug profile's `executable` value, interpreted relative to `<artifacts-root>/<artifactFolder>/` when the value is relative
 - the Binary and Map File rows are rendered only when at least one of the selected component's `flashWhen` or `uploadWhen` expressions evaluates to `true` for the active build context
+- the Executable row appears after Map File when Binary and Map File are present, and immediately after Compile Commands otherwise
 - when both `flashWhen` and `uploadWhen` are unavailable for the active build context, the Binary and Map File rows are omitted entirely
+- the Executable row exposes an icon-only `Start Debugging` action backed by the `Trezor: Start Debugging` command
+- the Executable row action remains present but is disabled when the executable artifact is missing
 - the Map File row exposes an icon-only action that opens the resolved map file in the current editor
 - the Map File row action opens the resolved map file in the current editor with normal editable file behavior
 - the Binary row exposes icon-only actions backed by `Trezor: Flash to Device {model-name} | {target-display} | {component-name}` and `Trezor: Upload to Device {model-name} | {target-display} | {component-name}` commands according to the selected component action conditions evaluated against the active build context
 - the Binary row actions remain present when applicable but are disabled when the binary artifact is missing
-- action icons use VS Code theme icons: `go-to-file` for map reveal, `zap` for flash, and `arrow-up` for upload
+- action icons use VS Code theme icons: `play` for debug start, `go-to-file` for map reveal, `zap` for flash, and `arrow-up` for upload
 - where VS Code requires tree actions to be command-backed, the Map File action may use an internal implementation command and should not be exposed as a standalone Command Palette entry
-- the Flash/Upload slice owns the `Binary` row actions and the `Map File` row action, while compile-commands status remains owned by the IntelliSense slice
+- the Debug Launch slice owns the `Executable` row action, the Flash/Upload slice owns the `Binary` row actions and the `Map File` row action, while compile-commands status remains owned by the IntelliSense slice
 
 ## Excluded-File Detection And Presentation
 

@@ -41,7 +41,7 @@ This feature is intentionally separate from debug. It is an operational command-
 This feature owns the operational behavior in the `Build Artifacts` section other than compile-commands status: the `Binary` row, its `Flash` and `Upload` action buttons, the applicable `Flash` and `Upload` entries in the Configuration view overflow menu, and the `Map File` row action for opening the resolved map file. `Flash` and `Upload` run as VS Code tasks rather than ad hoc process execution. Successful `Flash` and `Upload` completion does not trigger an automatic extension refresh.
 
 ### 6. Debug Launch
-Debug profile resolution, priority handling, template loading, substitution variables, debug API launch, and debug-specific errors and logging.
+Debug profile resolution, priority handling, template loading, executable artifact handling, `Executable` row behavior, header and overflow `Start Debugging` actions, substitution variables, debug API launch, and debug-specific errors and logging.
 
 This feature is intentionally separate from flash/upload. It is a debug-configuration resolution and launch slice with distinct validation paths and failure modes.
 
