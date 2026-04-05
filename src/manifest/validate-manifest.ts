@@ -9,6 +9,7 @@ import {
   BuildOptionState,
   ValidationIssue,
   ValidationCode,
+  WhenExpression,
 } from "./manifest-types";
 import {
   parseWhenExpression,
@@ -262,6 +263,118 @@ function validateComponents(
     components.push({ kind: "component", id, name, artifactName });
   }
   return components;
+}
+
+// ---------------------------------------------------------------------------
+// Component action rules (flashWhen / uploadWhen) — second-pass validator
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses `flashWhen` and `uploadWhen` from the manifest components section and
+ * returns a new array of `ManifestComponent` objects enriched with those fields.
+ *
+ * Must be called after `whenContext` is built from all models, targets, and
+ * components so that id references inside the expressions can be validated.
+ *
+ * Invalid expressions surface as `invalid-when` validation issues but do NOT
+ * set `hasWorkflowBlockingIssues` — they only block Flash/Upload, not
+ * Build/Clippy/Check/Clean.
+ */
+function parseComponentActionRules(
+  doc: YAMLMap,
+  lineCounter: LineCounter,
+  issues: ValidationIssue[],
+  components: ManifestComponent[],
+  whenContext: WhenContext
+): ManifestComponent[] {
+  const seqNode = doc.get("components", true);
+  if (!(seqNode instanceof YAMLSeq)) {
+    return components;
+  }
+
+  // Build a lookup by id so we can enrich in order.
+  const byId = new Map<string, ManifestComponent>(components.map((c) => [c.id, c]));
+
+  const parseActionWhen = (
+    item: YAMLMap,
+    field: string,
+    label: string
+  ): WhenExpression | undefined => {
+    const node = item.get(field, true);
+    if (node === undefined || node === null) {
+      return undefined;
+    }
+    if (!(node instanceof Scalar) || typeof node.value !== "string") {
+      const nodeRange = node as unknown as { range?: [number, number, number] };
+      issues.push(
+        issue(
+          "error",
+          "invalid-when",
+          `components entry "${label}": "${field}" must be a string expression`,
+          toVsRange(lineCounter, nodeRange?.range)
+        )
+      );
+      return undefined;
+    }
+    const parseResult = parseWhenExpression(node.value);
+    if (!parseResult.ok) {
+      const nodeRange = node as unknown as { range?: [number, number, number] };
+      issues.push(
+        issue(
+          "error",
+          "invalid-when",
+          `components entry "${label}": invalid "${field}" expression — ${parseResult.error}`,
+          toVsRange(lineCounter, nodeRange?.range)
+        )
+      );
+      return undefined;
+    }
+    const unknownIds = findUnknownIds(parseResult.expr, whenContext);
+    if (unknownIds.length > 0) {
+      const nodeRange = node as unknown as { range?: [number, number, number] };
+      issues.push(
+        issue(
+          "error",
+          "invalid-when",
+          `components entry "${label}": "${field}" expression references unknown ids: ${unknownIds.join(", ")}`,
+          toVsRange(lineCounter, nodeRange?.range)
+        )
+      );
+      return undefined;
+    }
+    return parseResult.expr;
+  };
+
+  const enriched: ManifestComponent[] = [];
+  for (const item of seqNode.items) {
+    if (!(item instanceof YAMLMap)) {
+      continue;
+    }
+    const idNode = item.get("id", true);
+    const id =
+      idNode instanceof Scalar && typeof idNode.value === "string" ? idNode.value : undefined;
+    if (!id || !byId.has(id)) {
+      continue;
+    }
+    const base = byId.get(id)!;
+    const flashWhen = parseActionWhen(item, "flashWhen", base.name);
+    const uploadWhen = parseActionWhen(item, "uploadWhen", base.name);
+    enriched.push({
+      ...base,
+      ...(flashWhen !== undefined ? { flashWhen } : {}),
+      ...(uploadWhen !== undefined ? { uploadWhen } : {}),
+    });
+  }
+
+  // Any components not found in the YAML (shouldn't happen) pass through unchanged.
+  const enrichedIds = new Set(enriched.map((c) => c.id));
+  for (const c of components) {
+    if (!enrichedIds.has(c.id)) {
+      enriched.push(c);
+    }
+  }
+
+  return enriched;
 }
 
 // ---------------------------------------------------------------------------
@@ -662,7 +775,16 @@ export function parseManifest(source: string): {
     whenContext
   );
 
-  return { models, targets, components, buildOptions, hasWorkflowBlockingIssues, issues };
+  // Second pass: enrich components with parsed flashWhen / uploadWhen rules.
+  const enrichedComponents = parseComponentActionRules(
+    root,
+    lineCounter,
+    issues,
+    components,
+    whenContext
+  );
+
+  return { models, targets, components: enrichedComponents, buildOptions, hasWorkflowBlockingIssues, issues };
 }
 
 /**

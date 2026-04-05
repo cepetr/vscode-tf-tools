@@ -31,6 +31,10 @@ export interface ManifestComponent {
   readonly name: string;
   /** Required artifact basename stem for this component's compile-commands artifact. */
   readonly artifactName?: string;
+  /** Parsed Flash availability rule. Absent means Flash is never available for this component. */
+  readonly flashWhen?: WhenExpression;
+  /** Parsed Upload availability rule. Absent means Upload is never available for this component. */
+  readonly uploadWhen?: WhenExpression;
 }
 
 // --- Validation issues ---

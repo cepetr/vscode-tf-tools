@@ -1,0 +1,22 @@
+# Flash/Upload actions manifest: invalid flashWhen/uploadWhen expressions.
+# Used to verify that invalid action rules surface as validation issues.
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifact-folder: model-t
+
+targets:
+  - id: hw
+    name: Hardware
+
+components:
+  - id: core
+    name: Core
+    artifact-name: compile_commands_core
+    flashWhen: "model(UNKNOWN_MODEL)"
+    uploadWhen: "not a valid expression"
+  - id: prodtest
+    name: Prodtest
+    artifact-name: compile_commands_prodtest
+    flashWhen: 42
