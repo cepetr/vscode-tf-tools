@@ -38,6 +38,25 @@ import { ExcludedFilesService } from "./intellisense/excluded-files-service";
 import { ExcludedFilesRefreshCoordinator } from "./intellisense/excluded-files-refresh";
 import { ExcludedFileDecorationsProvider } from "./ui/excluded-file-decorations";
 import { ExcludedFileOverlaysManager } from "./ui/excluded-file-overlays";
+import {
+  evaluateArtifactActionPreconditions,
+  isFlashApplicable,
+  isUploadApplicable,
+  resolveArtifactActionContext,
+  createFlashTask,
+  createUploadTask,
+  executeArtifactTask,
+  reportArtifactActionBlocked,
+  openMapFile,
+} from "./commands/artifact-actions";
+import {
+  buildResolutionInputs,
+  resolveActiveBinaryArtifact,
+  resolveActiveMapArtifact,
+  ActiveBinaryArtifact,
+  ActiveMapArtifact,
+} from "./intellisense/artifact-resolution";
+import { EvalContext } from "./manifest/when-expressions";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
@@ -54,6 +73,9 @@ let _excludedFileOverlays: ExcludedFileOverlaysManager | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
+/** Binary and Map artifact state for Flash/Upload/openMapFile context keys. */
+let _binaryArtifact: ActiveBinaryArtifact | undefined;
+let _mapArtifact: ActiveMapArtifact | undefined;
 
 // ---------------------------------------------------------------------------
 // Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense
@@ -144,6 +166,61 @@ function updateWorkflowBlockedContext(state: ManifestState): void {
       workspaceSupported: isWorkflowWorkspaceSupported(),
     }) !== "no-block";
   vscode.commands.executeCommand("setContext", "tfTools.workflowBlocked", blocked);
+}
+
+/**
+ * Updates the four Flash/Upload/map VS Code context keys based on the current
+ * manifest state, active configuration, and artifact-resolution results.
+ */
+function updateArtifactActionContext(
+  state: ManifestState,
+  config: ActiveConfig | undefined,
+  artifactsRoot: string,
+  workspaceFolder: vscode.WorkspaceFolder
+): void {
+  if (state.status !== "loaded" || !config) {
+    _binaryArtifact = undefined;
+    _mapArtifact = undefined;
+    vscode.commands.executeCommand("setContext", "tfTools.flashApplicable", false);
+    vscode.commands.executeCommand("setContext", "tfTools.uploadApplicable", false);
+    vscode.commands.executeCommand("setContext", "tfTools.binaryExists", false);
+    vscode.commands.executeCommand("setContext", "tfTools.mapExists", false);
+    return;
+  }
+
+  const loaded = state as ManifestStateLoaded;
+  const component = loaded.components.find((c) => c.id === config.componentId);
+  const evalCtx: EvalContext = {
+    modelId: config.modelId,
+    targetId: config.targetId,
+    componentId: config.componentId,
+  };
+
+  const flashApplicable = component ? isFlashApplicable(component, evalCtx) : false;
+  const uploadApplicable = component ? isUploadApplicable(component, evalCtx) : false;
+
+  const inputs = buildResolutionInputs(loaded, config, artifactsRoot);
+  let binaryExists = false;
+  let mapExists = false;
+
+  if (inputs) {
+    const binary = resolveActiveBinaryArtifact(inputs, config);
+    const map = resolveActiveMapArtifact(inputs, config);
+    _binaryArtifact = binary;
+    _mapArtifact = map;
+    binaryExists = binary.exists;
+    mapExists = map.exists;
+    // Tree row updates for Binary/Map rows are wired in T015 (US2).
+  } else {
+    _binaryArtifact = undefined;
+    _mapArtifact = undefined;
+    // Tree row updates for Binary/Map rows are wired in T015 (US2).
+  }
+
+  vscode.commands.executeCommand("setContext", "tfTools.flashApplicable", flashApplicable);
+  vscode.commands.executeCommand("setContext", "tfTools.uploadApplicable", uploadApplicable);
+  vscode.commands.executeCommand("setContext", "tfTools.binaryExists", binaryExists);
+  vscode.commands.executeCommand("setContext", "tfTools.mapExists", mapExists);
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -353,6 +430,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _intelliSenseService?.setManifest(loadedState);
     _intelliSenseService?.setActiveConfig(activeConfig);
     _intelliSenseService?.scheduleRefresh("manifest-change");
+
+    // Update Flash/Upload/openMapFile action context keys
+    updateArtifactActionContext(
+      state,
+      activeConfig,
+      resolveArtifactsPath(workspaceFolder),
+      workspaceFolder
+    );
   };
 
   _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
@@ -368,6 +453,81 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.refreshIntelliSense", () => {
       _intelliSenseService?.scheduleRefresh("manual-refresh");
+    })
+  );
+
+  // --- Flash command (FR-005 Feature 5) ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.flash", async () => {
+      const state = _manifestState;
+      const config = _activeConfig;
+      const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+      const component = loaded?.components.find((c) => c.id === config?.componentId);
+      const evalCtx: EvalContext | undefined = config
+        ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
+        : undefined;
+
+      const blockReason = evaluateArtifactActionPreconditions({
+        workspaceSupported: isWorkflowWorkspaceSupported(),
+        manifestStatus: state?.status ?? "missing",
+        actionApplicable: !!(component && evalCtx && isFlashApplicable(component, evalCtx)),
+        binaryExists: _binaryArtifact?.exists ?? false,
+      });
+
+      if (blockReason !== "no-block") {
+        reportArtifactActionBlocked("flash", blockReason);
+        return;
+      }
+
+      const ctx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
+      if (!ctx) { return; }
+
+      const task = createFlashTask(ctx, workspaceFolder);
+      await executeArtifactTask(task, "flash");
+    })
+  );
+
+  // --- Upload command (FR-005 Feature 5) ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.upload", async () => {
+      const state = _manifestState;
+      const config = _activeConfig;
+      const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+      const component = loaded?.components.find((c) => c.id === config?.componentId);
+      const evalCtx: EvalContext | undefined = config
+        ? { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId }
+        : undefined;
+
+      const blockReason = evaluateArtifactActionPreconditions({
+        workspaceSupported: isWorkflowWorkspaceSupported(),
+        manifestStatus: state?.status ?? "missing",
+        actionApplicable: !!(component && evalCtx && isUploadApplicable(component, evalCtx)),
+        binaryExists: _binaryArtifact?.exists ?? false,
+      });
+
+      if (blockReason !== "no-block") {
+        reportArtifactActionBlocked("upload", blockReason);
+        return;
+      }
+
+      const ctx = loaded && config ? resolveArtifactActionContext(loaded, config) : undefined;
+      if (!ctx) { return; }
+
+      const task = createUploadTask(ctx, workspaceFolder);
+      await executeArtifactTask(task, "upload");
+    })
+  );
+
+  // --- openMapFile command (FR-005 Feature 5, row-only) ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.openMapFile", async () => {
+      const mapArtifact = _mapArtifact;
+      if (!mapArtifact?.exists) {
+        // Action is disabled in the UI when the map file is missing;
+        // silently return if somehow invoked without a valid path.
+        return;
+      }
+      await openMapFile(mapArtifact.path);
     })
   );
 
@@ -558,6 +718,8 @@ export function deactivate(): void {
   _manifestState = undefined;
   _activeConfig = undefined;
   _resolvedOptions = [];
+  _binaryArtifact = undefined;
+  _mapArtifact = undefined;
   disposeDiagnostics();
   disposeLogChannel();
 }
