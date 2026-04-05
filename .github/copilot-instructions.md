@@ -15,6 +15,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-05
 - Resource-scoped VS Code settings for `tfTools.excludedFiles.grayInTree`, `tfTools.excludedFiles.showEditorOverlay`, `tfTools.excludedFiles.fileNamePatterns`, and `tfTools.excludedFiles.folderGlobs`; existing active compile-database payload held in extension memory; no new persisted workspace state (004-excluded-file-visibility)
 - TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing manifest parser and when-expression evaluator, existing task-execution helpers, existing artifact-resolution helper module, Node.js `fs` and `path` APIs, Mocha test runner, `@vscode/test-electron` integration harness (005-flash-upload-actions)
 - Existing manifest file and resource-scoped settings (`tfTools.artifactsPath`, `tfTools.manifestPath`, `tfTools.cargoWorkspacePath`), existing workspace-state active configuration, and extension-memory artifact/action state; no new persisted workspace state required (005-flash-upload-actions)
+- TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml`-backed manifest parser and `when` evaluator, existing artifact-resolution and log-channel helpers, Node.js `fs` and `path` APIs, `jsonc-parser` for debugger template files, Mocha test runner, `@vscode/test-electron` integration harness (006-debug-launch)
+- Existing manifest file plus new `debug` entries, existing workspace-state active model/target/component selection, resource-scoped VS Code settings for `tfTools.manifestPath`, `tfTools.artifactsPath`, and `tfTools.debug.templatesPath`, and extension-memory debug availability and artifact state; no new persisted workspace state required (006-debug-launch)
 
 - TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, `yaml` for range-aware manifest parsing, Node.js filesystem APIs, Mocha test runner, `@vscode/test-electron` for integration tests (001-configuration-experience)
 
@@ -34,9 +36,9 @@ npm test && npm run lint
 TypeScript 5.x targeting VS Code 1.110+ desktop extension host: Follow standard conventions
 
 ## Recent Changes
+- 006-debug-launch: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml`-backed manifest parser and `when` evaluator, existing artifact-resolution and log-channel helpers, Node.js `fs` and `path` APIs, `jsonc-parser` for debugger template files, Mocha test runner, `@vscode/test-electron` integration harness
+- 006-debug-launch: Added [VS Code Extension API, existing extension libraries, and feature-specific packages]
 - 005-flash-upload-actions: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing manifest parser and when-expression evaluator, existing task-execution helpers, existing artifact-resolution helper module, Node.js `fs` and `path` APIs, Mocha test runner, `@vscode/test-electron` integration harness
-- 004-excluded-file-visibility: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing IntelliSense payload parser and service, existing manifest/settings helpers, Node.js `path` APIs, `minimatch` for constrained glob evaluation, Mocha test runner, `@vscode/test-electron` integration harness
-- 003-intellisense-integration: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml` parser-backed manifest model, Node.js `fs` and `path` APIs, cpptools custom configuration provider API exposed by `ms-vscode.cpptools`, Mocha test runner, `@vscode/test-electron` integration harness
 
 
 <!-- MANUAL ADDITIONS START -->
