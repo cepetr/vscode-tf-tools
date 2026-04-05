@@ -8,8 +8,10 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as jsonc from "jsonc-parser";
-import { ManifestDebugProfile } from "../manifest/manifest-types";
+import * as vscode from "vscode";
+import { ManifestDebugProfile, ManifestStateLoaded } from "../manifest/manifest-types";
 import { EvalContext, evaluateWhenExpression } from "../manifest/when-expressions";
+import { ActiveConfig } from "../configuration/active-config";
 
 // ---------------------------------------------------------------------------
 // Profile resolution
@@ -375,4 +377,141 @@ export function applyTfToolsSubstitution(
   }
 
   return { value: walk(value), unknownVars };
+}
+
+// ---------------------------------------------------------------------------
+// Command handler
+// ---------------------------------------------------------------------------
+
+/**
+ * Executes the Start Debugging flow for the active build context.
+ *
+ * On each invocation:
+ *  1. Validates manifest debug state and resolves a unique matching profile.
+ *  2. Derives and verifies the executable artifact path.
+ *  3. Loads and parses the JSONC debug template from `templatesRoot`.
+ *  4. Builds the tf-tools variable map (built-ins + profile vars).
+ *  5. Applies single-pass tf-tools substitution to the template.
+ *  6. Starts the resolved configuration via `vscode.debug.startDebugging`.
+ *
+ * All blocked states (no-match, ambiguous, missing executable, template
+ * errors, variable errors) surface an error message and return early.
+ * Persistent output-channel logging is added by T022.
+ */
+export async function executeDebugLaunch(
+  workspaceFolder: vscode.WorkspaceFolder,
+  manifest: ManifestStateLoaded,
+  config: ActiveConfig,
+  artifactsRoot: string,
+  templatesRoot: string
+): Promise<void> {
+  // 1. Validate manifest debug state
+  if (manifest.hasDebugBlockingIssues) {
+    void vscode.window.showErrorMessage(
+      "Cannot start debugging: the manifest has debug profile validation errors."
+    );
+    return;
+  }
+
+  // 2. Resolve debug profile
+  const evalCtx: EvalContext = {
+    modelId: config.modelId,
+    targetId: config.targetId,
+    componentId: config.componentId,
+  };
+  const resolution = resolveDebugProfile(manifest.debugProfiles, evalCtx);
+
+  if (resolution.resolutionState === "no-match") {
+    void vscode.window.showErrorMessage(
+      "Cannot start debugging: no debug profile matches the active build context."
+    );
+    return;
+  }
+
+  if (resolution.resolutionState === "ambiguous") {
+    void vscode.window.showErrorMessage(
+      `Cannot start debugging: ${resolution.matchedProfiles.length} debug profiles are tied at highest priority ${resolution.highestPriority}. Resolve the ambiguity by assigning distinct priorities.`
+    );
+    return;
+  }
+
+  const profile = resolution.selectedProfile!;
+
+  // 3. Derive executable path and verify existence
+  const model = manifest.models.find((m) => m.id === config.modelId);
+  const artifactFolder = model?.artifactFolder ?? "";
+  const executablePath = deriveExecutablePath(profile.executable, artifactFolder, artifactsRoot);
+
+  if (!fs.existsSync(executablePath)) {
+    void vscode.window.showErrorMessage(
+      `Cannot start debugging: executable not found at ${executablePath}`
+    );
+    return;
+  }
+
+  // 4. Load debug template (per-invocation — no caching)
+  const templateResult = loadDebugTemplate(profile.template, templatesRoot);
+
+  if (templateResult.parseState === "traversal-blocked") {
+    void vscode.window.showErrorMessage(
+      `Cannot start debugging: ${templateResult.error}`
+    );
+    return;
+  }
+
+  if (templateResult.parseState === "missing") {
+    void vscode.window.showErrorMessage(
+      `Cannot start debugging: template file not found — ${templateResult.error}`
+    );
+    return;
+  }
+
+  if (templateResult.parseState === "invalid") {
+    void vscode.window.showErrorMessage(
+      `Cannot start debugging: template is invalid — ${templateResult.error}`
+    );
+    return;
+  }
+
+  const configuration = templateResult.configuration!;
+
+  // 5. Build tf-tools variable map
+  const varMap = buildDebugVariableMap(
+    config.modelId,
+    config.targetId,
+    config.componentId,
+    artifactFolder,
+    executablePath,
+    profile.vars
+  );
+
+  if (varMap.resolutionErrors.length > 0) {
+    void vscode.window.showErrorMessage(
+      `Cannot start debugging: variable resolution failed — ${varMap.resolutionErrors.join("; ")}`
+    );
+    return;
+  }
+
+  // 6. Apply single-pass tf-tools substitution
+  const { value: resolvedConfig, unknownVars } = applyTfToolsSubstitution(
+    configuration,
+    varMap.resolvedVars
+  );
+
+  if (unknownVars.length > 0) {
+    void vscode.window.showErrorMessage(
+      `Cannot start debugging: unknown tf-tools variable(s) in template: ${unknownVars.map((v) => `\${${v}}`).join(", ")}`
+    );
+    return;
+  }
+
+  // 7. Launch via VS Code debug API
+  const launched = await vscode.debug.startDebugging(
+    workspaceFolder,
+    resolvedConfig as vscode.DebugConfiguration
+  );
+
+  if (!launched) {
+    void vscode.window.showErrorMessage("Debugging failed to start.");
+  }
 }
