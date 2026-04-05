@@ -19,7 +19,7 @@
 
 - [ ] T001 Add Debug Launch manifest fixtures for valid, ambiguous, unmatched, and invalid debug-profile scenarios in `test-fixtures/manifests/debug-launch-valid/tf-tools-manifest.yaml` and `test-fixtures/manifests/debug-launch-invalid/tf-tools-manifest.yaml`
 - [ ] T002 [P] Add workspace fixtures for executable-present, missing-executable, missing-template, malformed-template, traversal, variable-error, and unsupported-workspace scenarios in `test-fixtures/workspaces/debug-launch-valid/.vscode/settings.json`, `test-fixtures/workspaces/debug-launch-failures/.vscode/settings.json`, and `test-fixtures/workspaces/unsupported-workflow/.vscode/settings.json`
-- [ ] T003 [P] Extend shared VS Code and debug-launch test helpers for `vscode.debug.startDebugging`, output-channel assertions, and settings-driven refresh coverage in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
+- [X] T003 [P] Extend shared VS Code and debug-launch test helpers for `vscode.debug.startDebugging`, output-channel assertions, and settings-driven refresh coverage in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
 
 ---
 
@@ -31,8 +31,8 @@
 
 - [ ] T004 Add the `jsonc-parser` dependency and contribute the `tfTools.debug.templatesPath` setting in `package.json`
 - [ ] T005 [P] Add debug-template path resolution helpers to `src/workspace/settings.ts`
-- [ ] T006 [P] Extend manifest debug-profile types and validation state in `src/manifest/manifest-types.ts`
-- [ ] T007 Parse and validate manifest `debug` entries, priorities, executables, templates, and optional vars in `src/manifest/validate-manifest.ts`
+- [X] T006 [P] Extend manifest debug-profile types and validation state in `src/manifest/manifest-types.ts`
+- [X] T007 Parse and validate manifest `debug` entries, priorities, executables, templates, and optional vars in `src/manifest/validate-manifest.ts`
 - [ ] T008 [P] Create shared debug profile resolution, template loading, and tf-tools substitution helpers in `src/commands/debug-launch.ts`
 - [ ] T009 [P] Extend executable artifact path and status helpers in `src/intellisense/artifact-resolution.ts`
 

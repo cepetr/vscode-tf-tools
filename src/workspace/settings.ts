@@ -102,6 +102,28 @@ export function readExcludedFilesSettings(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Debug launch settings (feature 006)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the resolved absolute path to the debug templates directory for the
+ * given workspace folder. Uses `tfTools.debug.templatesPath` when set (resolved
+ * relative to the workspace root when it is not an absolute path); falls back to
+ * the default `"core/embed/.tf-tools"` joined to the workspace root.
+ */
+export function resolveDebugTemplatesPath(
+  workspaceFolder: vscode.WorkspaceFolder
+): string {
+  const cfg = vscode.workspace.getConfiguration("tfTools", workspaceFolder.uri);
+  const value: string | undefined = cfg.get<string>("debug.templatesPath");
+  const relative = value && value.trim() ? value.trim() : "core/embed/.tf-tools";
+  if (path.isAbsolute(relative)) {
+    return relative;
+  }
+  return vscode.Uri.joinPath(workspaceFolder.uri, relative).fsPath;
+}
+
 /**
  * Returns true when a configuration change event affects any of the four
  * excluded-file settings for the given workspace folder.
