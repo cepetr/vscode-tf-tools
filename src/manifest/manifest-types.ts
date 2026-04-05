@@ -117,6 +117,42 @@ export interface BuildOption {
 
 export type ManifestStatus = "loaded" | "missing" | "invalid";
 
+// ---------------------------------------------------------------------------
+// Debug Profile
+// ---------------------------------------------------------------------------
+
+/**
+ * A single manifest-defined debug profile entry.
+ * Parsed during manifest validation and stored on ManifestStateLoaded.
+ */
+export interface ManifestDebugProfile {
+  /**
+   * Declaration-order based identifier for logging and test assertions.
+   * Format: "debug[N]" where N is the 0-based index.
+   */
+  readonly id: string;
+  /**
+   * Parsed availability expression. When absent the profile always matches
+   * the active build context.
+   */
+  readonly when?: WhenExpression;
+  /** Integer priority used for tie-breaking. Defaults to 0 when omitted. */
+  readonly priority: number;
+  /** Relative path under tfTools.debug.templatesPath to the JSONC template file. */
+  readonly template: string;
+  /**
+   * Profile-defined executable path.
+   * Relative to the active model artifact folder unless already absolute.
+   */
+  readonly executable: string;
+  /**
+   * Optional profile-defined tf-tools substitution variables.
+   * Keys are variable names (used as ${tfTools.<key>} in templates).
+   * Values are raw string templates that may reference built-in tf-tools variables.
+   */
+  readonly vars?: Readonly<Record<string, string>>;
+}
+
 export interface ManifestStateLoaded {
   readonly status: "loaded";
   readonly manifestUri: vscode.Uri;
@@ -129,6 +165,19 @@ export interface ManifestStateLoaded {
    * When true, Build/Clippy/Check/Clean must be blocked.
    */
   readonly hasWorkflowBlockingIssues: boolean;
+  /**
+   * Parsed and validated debug profiles from the manifest `debug` section.
+   * Only profiles that pass validation are included; invalid entries are
+   * reported in validationIssues and skipped.
+   */
+  readonly debugProfiles: ReadonlyArray<ManifestDebugProfile>;
+  /**
+   * True when any debug profile entry has a validation error that would
+   * prevent reliable debug profile resolution.
+   * When true, the Start Debugging action should be considered blocked
+   * due to a manifest issue.
+   */
+  readonly hasDebugBlockingIssues: boolean;
   readonly validationIssues: ReadonlyArray<ValidationIssue>;
   readonly loadedAt: Date;
 }
