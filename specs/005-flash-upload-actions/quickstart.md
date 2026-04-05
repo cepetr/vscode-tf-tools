@@ -28,10 +28,10 @@ Verify Flash/Upload Actions end to end in a VS Code Extension Development Host: 
 ## Scenario 2: Command Palette visibility matches applicability
 
 1. With Flash applicable and Upload inapplicable, open the Command Palette.
-2. Confirm the Flash command is listed and Upload is absent.
+2. Confirm the Flash command is listed with the active `{model-name} | {target-display} | {component-name}` context in its title and Upload is absent.
 3. Change the active component so Upload becomes applicable and Flash becomes inapplicable.
-4. Reopen the Command Palette and confirm the visibility flips accordingly.
-5. Change to a component where both actions are applicable and confirm both commands are listed.
+4. Reopen the Command Palette and confirm the visibility and titles flip accordingly.
+5. Change to a component where both actions are applicable and confirm both commands are listed with the active context in their titles.
 6. Change to a component where neither action is applicable and confirm neither command is listed.
 
 ## Scenario 3: Missing artifacts disable row actions and block starts
@@ -55,7 +55,8 @@ Verify Flash/Upload Actions end to end in a VS Code Extension Development Host: 
 1. Start from a context where the resolved map artifact exists.
 2. Invoke the `Map File` row action.
 3. Confirm the resolved `.map` file opens in the current editor as a normal editable file.
-4. Change to a context where the map file is missing and confirm the row action becomes disabled.
+4. Open the Command Palette and confirm no standalone Map File command is listed.
+5. Change to a context where the map file is missing and confirm the row action becomes disabled.
 
 ## Scenario 6: Failures stay visible
 

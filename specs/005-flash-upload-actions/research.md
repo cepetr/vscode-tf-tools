@@ -32,13 +32,13 @@
   - Always show Flash and Upload in the Command Palette and block at runtime: rejected because the clarified spec requires hiding inapplicable commands from that surface.
   - Hide Binary-row actions when the binary artifact is missing: rejected because the informal spec requires applicable actions to remain visible but disabled.
 
-## Decision 5: Keep contributed Command Palette labels stable and carry active context through row location, task labels, and runtime messaging
+## Decision 5: Use dynamic Flash and Upload Command Palette titles aligned to the active build context
 
-- **Decision**: Contribute stable `tfTools.flash` and `tfTools.upload` command labels in `package.json`, while carrying the active model/component context through the Binary-row location, task labels or task execution messages, and failure text.
-- **Rationale**: VS Code command contribution titles are manifest-defined and are the labels shown in the Command Palette. Conditional exposure is supported through `menus.commandPalette`, but per-invocation dynamic renaming is not part of the stable contribution model. Preserving one command id per action keeps the design simple and compatible with Command Palette filtering.
+- **Decision**: Treat dynamic Flash and Upload Command Palette titles as an explicit product requirement and keep them aligned to the active `{model-name} | {target-display} | {component-name}` context so they match the other configuration-dependent commands users see in the palette.
+- **Rationale**: The selected slice explicitly prioritizes consistency with the rest of the active-context command surface. Users should be able to identify exactly which build context Flash or Upload will use before launching the task.
 - **Alternatives considered**:
-  - Generate dynamic command ids or titles per active configuration: rejected because it would require volatile contribution surfaces that VS Code does not support through runtime registration alone.
-  - Remove Command Palette exposure to preserve fully dynamic row-only labels: rejected because the clarification explicitly requires Command Palette availability.
+  - Use stable, context-free command labels in the Command Palette: rejected because they are less consistent with the rest of the active-context workflow commands.
+  - Remove Command Palette exposure and keep dynamic titles only on the Binary row: rejected because the clarification explicitly requires Command Palette availability.
 
 ## Decision 6: Use one internal command for map-file open and keep it out of the Command Palette
 

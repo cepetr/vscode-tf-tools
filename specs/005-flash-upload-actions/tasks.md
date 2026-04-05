@@ -11,7 +11,7 @@
 
 **Slice Rule**: Include only work that belongs to the Flash/Upload Actions slice.
 
-**Critical Detail Rule**: This file includes explicit tasks for the easy-to-miss behaviors from `spec.md` and `plan.md`: parsing `flashWhen` and `uploadWhen` with the existing condition language, resolving Binary and Map File paths from `<tfTools.artifactsPath>/<artifact-folder>/<artifact-name><artifact-suffix>`, showing both Binary-row actions when both rules are true, hiding inapplicable Flash/Upload commands from the Command Palette, keeping applicable Binary-row actions visible but disabled when the binary artifact is missing, keeping the Map File action visible but disabled when the map artifact is missing, logging blocked and post-start failures, and never auto-refreshing after successful Flash or Upload completion.
+**Critical Detail Rule**: This file includes explicit tasks for the easy-to-miss behaviors from `spec.md` and `plan.md`: parsing `flashWhen` and `uploadWhen` with the existing condition language, resolving Binary and Map File paths from `<tfTools.artifactsPath>/<artifact-folder>/<artifact-name><artifact-suffix>`, showing both Binary-row actions when both rules are true, using dynamic Flash/Upload Command Palette titles aligned to `{model-name} | {target-display} | {component-name}`, hiding inapplicable Flash/Upload commands from the Command Palette, keeping the Map File action row-only and out of the Command Palette, keeping applicable Binary-row actions visible but disabled when the binary artifact is missing, keeping the Map File action visible but disabled when the map artifact is missing, logging blocked and post-start failures, and never auto-refreshing after successful Flash or Upload completion.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
@@ -49,11 +49,11 @@
 > **NOTE: Write these tests first and ensure they fail before implementation.**
 
 - [ ] T008 [P] [US1] Add unit tests for Flash/Upload applicability, task request building, blocked-start rules, and no-auto-refresh outcomes in `src/test/unit/workflow/flash-upload-actions.test.ts`
-- [ ] T009 [P] [US1] Add integration tests for Flash/Upload Command Palette visibility, Binary-row action launch, blocked starts, and output-channel logging in `src/test/integration/flash-upload-actions.integration.test.ts` and `src/test/integration/configuration-scope.integration.test.ts`
+- [ ] T009 [P] [US1] Add integration tests for dynamic Flash/Upload Command Palette titles, Binary-row action launch, blocked starts, and output-channel logging in `src/test/integration/flash-upload-actions.integration.test.ts` and `src/test/integration/configuration-scope.integration.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T010 [P] [US1] Contribute `tfTools.flash` and `tfTools.upload` commands plus conditional `menus.commandPalette` visibility in `package.json`
+- [ ] T010 [P] [US1] Contribute `tfTools.flash` and `tfTools.upload` commands plus dynamic title support and conditional `menus.commandPalette` visibility in `package.json` and `src/extension.ts`
 - [ ] T011 [US1] Implement Flash/Upload task creation, blocked-start handling, failure logging, and no-auto-refresh behavior in `src/commands/artifact-actions.ts` and `src/observability/log-channel.ts`
 - [ ] T012 [US1] Wire `tfTools.flash` and `tfTools.upload` command registration, applicability context keys, and task execution in `src/extension.ts`
 
@@ -91,11 +91,11 @@
 ### Tests for User Story 3 ⚠️
 
 - [ ] T018 [P] [US3] Add unit tests for map-file open requests, missing-file guards, and disabled-state behavior in `src/test/unit/workflow/open-map-file.test.ts`
-- [ ] T019 [P] [US3] Add integration tests for Map File row action enablement and editor open behavior in `src/test/integration/map-file-action.integration.test.ts`
+- [ ] T019 [P] [US3] Add integration tests for Map File row action enablement, editor open behavior, and Command Palette exclusion in `src/test/integration/map-file-action.integration.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T020 [P] [US3] Contribute the internal `tfTools.openMapFile` row action command and `menus.view/item/context` entry in `package.json`
+- [ ] T020 [P] [US3] Contribute the internal `tfTools.openMapFile` row action command, `menus.view/item/context` entry, and explicit Command Palette exclusion in `package.json`
 - [ ] T021 [P] [US3] Implement map-file open execution and missing-file guards in `src/commands/artifact-actions.ts`
 - [ ] T022 [US3] Wire `tfTools.openMapFile` registration and Map File action enablement in `src/extension.ts` and `src/ui/configuration-tree.ts`
 
@@ -156,10 +156,10 @@
 ```bash
 # Launch the User Story 1 tests together:
 Task: "T008 Add unit tests for Flash/Upload applicability, task request building, blocked-start rules, and no-auto-refresh outcomes in src/test/unit/workflow/flash-upload-actions.test.ts"
-Task: "T009 Add integration tests for Flash/Upload Command Palette visibility, Binary-row action launch, blocked starts, and output-channel logging in src/test/integration/flash-upload-actions.integration.test.ts and src/test/integration/configuration-scope.integration.test.ts"
+Task: "T009 Add integration tests for dynamic Flash/Upload Command Palette titles, Binary-row action launch, blocked starts, and output-channel logging in src/test/integration/flash-upload-actions.integration.test.ts and src/test/integration/configuration-scope.integration.test.ts"
 
 # Launch the core implementation together:
-Task: "T010 Contribute tfTools.flash and tfTools.upload commands plus conditional menus.commandPalette visibility in package.json"
+Task: "T010 Contribute tfTools.flash and tfTools.upload commands plus dynamic title support and conditional menus.commandPalette visibility in package.json and src/extension.ts"
 Task: "T011 Implement Flash/Upload task creation, blocked-start handling, failure logging, and no-auto-refresh behavior in src/commands/artifact-actions.ts and src/observability/log-channel.ts"
 ```
 
@@ -184,10 +184,10 @@ Task: "T016 Contribute menus.view/item/context actions and enablement rules for 
 ```bash
 # Launch the User Story 3 tests together:
 Task: "T018 Add unit tests for map-file open requests, missing-file guards, and disabled-state behavior in src/test/unit/workflow/open-map-file.test.ts"
-Task: "T019 Add integration tests for Map File row action enablement and editor open behavior in src/test/integration/map-file-action.integration.test.ts"
+Task: "T019 Add integration tests for Map File row action enablement, editor open behavior, and Command Palette exclusion in src/test/integration/map-file-action.integration.test.ts"
 
 # Launch the core implementation together:
-Task: "T020 Contribute the internal tfTools.openMapFile row action command and menus.view/item/context entry in package.json"
+Task: "T020 Contribute the internal tfTools.openMapFile row action command, menus.view/item/context entry, and explicit Command Palette exclusion in package.json"
 Task: "T021 Implement map-file open execution and missing-file guards in src/commands/artifact-actions.ts"
 ```
 

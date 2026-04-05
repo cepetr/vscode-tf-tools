@@ -9,11 +9,13 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 - **`tfTools.flash`**:
   - Public command
   - Category: `Trezor`
+  - Uses the dynamic title `Trezor: Flash {model-name} | {target-display} | {component-name}` for the active build context
   - Appears in the Command Palette only when Flash is applicable for the active build context
   - Launches the Flash workflow as a VS Code task
 - **`tfTools.upload`**:
   - Public command
   - Category: `Trezor`
+  - Uses the dynamic title `Trezor: Upload {model-name} | {target-display} | {component-name}` for the active build context
   - Appears in the Command Palette only when Upload is applicable for the active build context
   - Launches the Upload workflow as a VS Code task
 - **`tfTools.openMapFile`**:
@@ -26,6 +28,7 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 - **Visibility contract**:
   - `tfTools.flash` is shown only when Flash is applicable for the active model, target, and component
   - `tfTools.upload` is shown only when Upload is applicable for the active model, target, and component
+  - visible Flash and Upload entries include the active `{model-name} | {target-display} | {component-name}` context in the title
   - inapplicable Flash or Upload commands are not shown in the Command Palette
 - **Execution contract**:
   - selecting an applicable command starts the corresponding VS Code task
@@ -51,6 +54,7 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 
 - **`menus.commandPalette`**:
   - uses derived context keys so only applicable Flash or Upload commands appear
+  - excludes the internal `tfTools.openMapFile` command from the Command Palette
 - **`menus.view/item/context`**:
   - adds Binary-row action buttons for Flash and Upload
   - adds a Map File row action button for file open
