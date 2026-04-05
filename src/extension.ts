@@ -33,6 +33,7 @@ import {
   TASK_TYPE,
 } from "./tasks/build-task-provider";
 import { IntelliSenseService } from "./intellisense/intellisense-service";
+import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { applyProviderSettingFix } from "./intellisense/cpptools-provider";
 import { ExcludedFilesService } from "./intellisense/excluded-files-service";
 import { ExcludedFilesRefreshCoordinator } from "./intellisense/excluded-files-refresh";
@@ -76,6 +77,16 @@ let _lastShownProviderFixState: string = "none";
 /** Binary and Map artifact state for Flash/Upload/openMapFile context keys. */
 let _binaryArtifact: ActiveBinaryArtifact | undefined;
 let _mapArtifact: ActiveMapArtifact | undefined;
+
+export interface TaskProcessEndLike {
+  readonly exitCode?: number;
+  readonly execution: {
+    readonly task: {
+      readonly definition: { readonly type?: string };
+      readonly name: string;
+    };
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense
@@ -225,6 +236,14 @@ function updateArtifactActionContext(
   vscode.commands.executeCommand("setContext", "tfTools.mapExists", mapExists);
 }
 
+export function isSuccessfulBuildTaskProcess(event: TaskProcessEndLike): boolean {
+  return (
+    event.exitCode === 0 &&
+    event.execution.task.definition.type === TASK_TYPE &&
+    event.execution.task.name.startsWith("Build ")
+  );
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // --- Scope guard: verify no cross-slice commands are registered (T019) ---
   assertNoUnauthorizedContributions(context);
@@ -299,6 +318,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       resolveArtifactsPath(workspaceFolder),
       workspaceFolder
     );
+  };
+  const refreshBuildArtifacts = (trigger: RefreshTrigger): void => {
+    refreshArtifactActionState();
+    _intelliSenseService?.scheduleRefresh(trigger);
   };
 
   // --- Status-bar presenter (T031) ---
@@ -388,8 +411,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
         _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
-        refreshArtifactActionState();
-        _intelliSenseService?.scheduleRefresh("artifacts-path-change");
+        refreshBuildArtifacts("artifacts-path-change");
       }
       if (
         e.affectsConfiguration("tfTools.excludedFiles.grayInTree", workspaceFolder.uri) ||
@@ -444,15 +466,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const loadedState = state.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
     _intelliSenseService?.setManifest(loadedState);
     _intelliSenseService?.setActiveConfig(activeConfig);
-    _intelliSenseService?.scheduleRefresh("manifest-change");
-
-    // Update Flash/Upload/openMapFile action context keys
-    updateArtifactActionContext(
-      state,
-      activeConfig,
-      resolveArtifactsPath(workspaceFolder),
-      workspaceFolder
-    );
+    refreshBuildArtifacts("manifest-change");
   };
 
   _manifestStateSubscription = _manifestService.onDidChangeState(onManifestStateChange);
@@ -562,10 +576,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _activeConfig = config;
       _resolvedOptions = computeResolvedOptions(state, config, context);
       _treeProvider?.update(state, config, _resolvedOptions);
-      refreshArtifactActionState();
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
       _intelliSenseService?.setActiveConfig(config);
-      _intelliSenseService?.scheduleRefresh("active-config-change");
+      refreshBuildArtifacts("active-config-change");
     })
   );
 
@@ -577,10 +590,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _activeConfig = config;
       _resolvedOptions = computeResolvedOptions(state, config, context);
       _treeProvider?.update(state, config, _resolvedOptions);
-      refreshArtifactActionState();
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
       _intelliSenseService?.setActiveConfig(config);
-      _intelliSenseService?.scheduleRefresh("active-config-change");
+      refreshBuildArtifacts("active-config-change");
     })
   );
 
@@ -592,10 +604,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _activeConfig = config;
       _resolvedOptions = computeResolvedOptions(state, config, context);
       _treeProvider?.update(state, config, _resolvedOptions);
-      refreshArtifactActionState();
       _statusBar?.update(state, config, isStatusBarEnabled(workspaceFolder));
       _intelliSenseService?.setActiveConfig(config);
-      _intelliSenseService?.scheduleRefresh("active-config-change");
+      refreshBuildArtifacts("active-config-change");
     })
   );
 
@@ -687,12 +698,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Trigger IntelliSense refresh after a successful Build task completion (FR-004).
   context.subscriptions.push(
     vscode.tasks.onDidEndTaskProcess((e) => {
-      if (
-        e.exitCode === 0 &&
-        (e.execution.task.definition as { type?: string }).type === TASK_TYPE &&
-        e.execution.task.name.startsWith("Build ")
-      ) {
-        _intelliSenseService?.scheduleRefresh("successful-build");
+      if (isSuccessfulBuildTaskProcess(e)) {
+        refreshBuildArtifacts("successful-build");
       }
     })
   );
