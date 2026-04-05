@@ -70,7 +70,7 @@
 ### Tests for User Story 2 ⚠️
 
 - [X] T013 [P] [US2] Add unit tests for Binary/Map artifact derivation, row status, missing-reason messaging, and dual-action visibility in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts` and `src/test/unit/ui/configuration-tree.test.ts`
-- [ ] T014 [P] [US2] Add integration tests for Binary and Map File row rendering, Binary-row action visibility, and disabled-state behavior in `src/test/integration/flash-upload-artifacts.integration.test.ts`
+- [X] T014 [P] [US2] Add integration tests for Binary and Map File row rendering, Binary-row action visibility, and disabled-state behavior in `src/test/integration/flash-upload-artifacts.integration.test.ts`
 
 ### Implementation for User Story 2
 
