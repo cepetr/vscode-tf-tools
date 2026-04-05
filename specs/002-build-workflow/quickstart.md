@@ -35,21 +35,21 @@ Verify Build Workflow end-to-end in a VS Code Extension Development Host: Build 
 
 1. Launch against a workspace whose manifest contains an invalid build-option `when` expression.
 2. Confirm the manifest problem appears in the Problems view and the manifest editor.
-3. Confirm `Build`, `Clippy`, and `Check` remain visible in the Configuration view header but are disabled.
+3. Confirm `Build` remains visible in the Configuration view header while `Run Clippy`, `Run Check`, and `Run Clean` remain visible in the overflow menu and are disabled.
 4. Attempt to run one of those actions and confirm the user receives visible failure feedback.
 5. Run `Trezor: Show Logs` and confirm the output channel records the blocking manifest failure.
 
 ## Scenario 4: Workflow labels and commands track the active context
 
 1. Launch against a valid workspace and choose a model, target, and component where the target defines a short name.
-2. Confirm the header actions and task labels use `Build {model-id}-{target-display}-{component-name}`, `Clippy ...`, and `Check ...`.
+2. Confirm the title-area actions use `Build`, `Run Clippy`, `Run Check`, and `Run Clean`, while task labels continue to use `Build {model-id}-{target-display}-{component-name}`, `Clippy ...`, and `Check ...`.
 3. Confirm `target-display` uses `shortName` when present and falls back to the full target name when absent.
 4. Run `Clean` and confirm it uses the plain label `Clean`.
 
 ## Scenario 5: Unsupported workspace blocks all workflow actions
 
 1. Launch against a workspace that violates the supported workspace guard.
-2. Confirm `Build`, `Clippy`, `Check`, and `Clean` remain visible but disabled.
+2. Confirm `Build` remains visible but disabled in the primary header, `Run Clippy`, `Run Check`, and `Run Clean` remain visible but disabled in the overflow menu, and `Refresh IntelliSense` appears after them.
 3. Attempt to invoke any workflow action and confirm a visible unsupported-workspace error is shown.
 4. Confirm the output channel contains the failure details.
 

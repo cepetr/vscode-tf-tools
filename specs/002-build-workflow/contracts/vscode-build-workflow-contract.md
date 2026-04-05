@@ -20,9 +20,9 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 
 - **Actions contributed by this feature**:
   - `Build`
-  - `Clippy`
-  - `Check`
-  - `Clean`
+  - `Run Clippy`
+  - `Run Check`
+  - `Run Clean`
 - **Blocked-state contract**:
   - all four actions remain visible when blocked
   - blocked actions are disabled rather than hidden
@@ -33,10 +33,15 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 
 - **User-facing titles**:
   - `Trezor: Build`
-  - `Trezor: Clippy`
-  - `Trezor: Check`
-  - `Trezor: Clean`
+  - `Trezor: Run Clippy`
+  - `Trezor: Run Check`
+  - `Trezor: Run Clean`
   - `Trezor: Show Logs`
+- **Overflow ordering**:
+  - `Run Clippy`
+  - `Run Check`
+  - `Run Clean`
+  - `Refresh IntelliSense`
 - **Execution contract**:
   - `Build`, `Clippy`, and `Check` derive arguments from the active model, target, component, and currently applicable build-option selections
   - `Clean` runs without active build-option arguments

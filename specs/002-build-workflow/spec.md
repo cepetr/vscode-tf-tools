@@ -9,17 +9,19 @@
 
 - **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
 - **Selected Slice**: `2. Build Workflow`
-- **Scope Guard**: This feature includes manifest-driven Build Options rendering and selection, `when` parsing/validation/evaluation against the active model/target/component, task and command execution for `Build`, `Clippy`, `Check`, and `Clean`, dynamic task labels, command argument derivation from the effective configuration, and Configuration view header actions for those four build actions. This feature excludes Build Artifacts section behavior, artifact-status refresh, Flash/Upload actions, Debug launch, IntelliSense integration, compile-commands refresh behavior, and excluded-file visibility.
-- **Critical Informal Details**: Build Options must become user-operable rather than placeholder-only; only options whose `when` logic matches the active build context may influence the UI or effective command arguments; any invalid build-option `when` expression makes the manifest unreliable for Build Workflow and blocks `Build`, `Clippy`, and `Check` until the manifest is fixed; `Build`, `Clippy`, and `Check` must expose context-aware labels so users can tell what will run before starting a task; `Clean` remains part of the workflow but does not depend on effective build-option arguments; and the Configuration view must surface header actions only for behaviors implemented in this slice.
+- **Scope Guard**: This feature includes manifest-driven Build Options rendering and selection, `when` parsing/validation/evaluation against the active model/target/component, task and command execution for `Build`, `Clippy`, `Check`, and `Clean`, dynamic task labels, command argument derivation from the effective configuration, and Configuration view title actions with `Build` as the only primary header action while `Clippy`, `Check`, and `Clean` live in the overflow menu. This feature excludes Build Artifacts section behavior, artifact-status refresh, Flash/Upload actions, Debug launch, IntelliSense integration, compile-commands refresh behavior, and excluded-file visibility.
+- **Critical Informal Details**: Build Options must become user-operable rather than placeholder-only; only options whose `when` logic matches the active build context may influence the UI or effective command arguments; any invalid build-option `when` expression makes the manifest unreliable for Build Workflow and blocks `Build`, `Clippy`, and `Check` until the manifest is fixed; `Build`, `Clippy`, and `Check` must expose context-aware labels so users can tell what will run before starting a task; `Clean` remains part of the workflow but does not depend on effective build-option arguments; the user-facing workflow command titles are `Trezor: Build`, `Trezor: Run Clippy`, `Trezor: Run Check`, and `Trezor: Run Clean`; `Build` stays as the only primary header action in the Configuration view; `Run Clippy`, `Run Check`, and `Run Clean` move to the view overflow menu; and `Refresh IntelliSense` stays after those Build Workflow entries as the last overflow item.
 
 ## Clarifications
 
 ### Session 2026-04-03
 
 - Q: How should invalid build-option `when` expressions affect workflow execution? → A: Any invalid build-option `when` expression makes the manifest invalid for Build Workflow, so `Build`, `Clippy`, and `Check` are blocked until fixed.
-- Q: How should blocked workflow actions appear in the Configuration view header? → A: `Build`, `Clippy`, `Check`, and `Clean` remain visible in the Configuration view header and are disabled when prerequisites are not met.
+- Q: How should blocked workflow actions appear in the Configuration view title area? → A: `Build` remains visible in the primary header, while `Run Clippy`, `Run Check`, and `Run Clean` remain visible in the overflow menu, and blocked actions are disabled when prerequisites are not met.
 - Q: What counts as an unsupported workspace for Build Workflow? → A: Any workspace with no open folder or with more than one open workspace folder is unsupported for Build Workflow.
 - Q: How should `Clean` behave when the workspace is supported but the manifest is missing or invalid? → A: `Clean` still ignores active build-option arguments, but it is blocked when the manifest is missing or invalid so the workflow surface stays disabled for broken manifest state.
+- Q: Where should the Build Workflow commands appear in the Configuration view title area? → A: `Build` stays as the only primary header action, while `Run Clippy`, `Run Check`, and `Run Clean` move to the overflow menu.
+- Q: What user-facing titles should the overflow workflow commands use? → A: Use `Run Clippy`, `Run Check`, and `Run Clean`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -54,7 +56,7 @@ As a firmware developer, I want to run Build, Clippy, Check, and Clean directly 
 2. **Given** the same active configuration, **When** the user starts `Clippy` or `Check`, **Then** each action launches its own task with the same effective configuration as `Build` and with a label that identifies the same active context.
 3. **Given** a supported workspace with a valid manifest, **When** the user starts `Clean`, **Then** VS Code launches the `Clean` task without depending on build-option selections.
 4. **Given** a supported workspace whose manifest is missing or invalid, **When** the user starts `Clean`, **Then** the action does not start and the user receives visible failure feedback because Build Workflow is blocked by broken manifest state.
-5. **Given** the Configuration view is visible, **When** the user looks at the view header actions, **Then** `Build`, `Clippy`, `Check`, and `Clean` are available from that surface, match the currently active build context when runnable, and remain visible but disabled when prerequisites are not met.
+5. **Given** the Configuration view is visible, **When** the user looks at the view title area, **Then** `Build` appears as the only primary header action, `Run Clippy`, `Run Check`, and `Run Clean` are available from the overflow menu, and `Refresh IntelliSense` appears after them as the last overflow item when present, with each action matching the currently active build context when runnable and remaining visible but disabled when prerequisites are not met.
 
 ---
 
@@ -112,8 +114,11 @@ As a firmware developer, I want build actions to derive their arguments from the
 - **FR-019**: The system MUST derive the effective `Build`, `Clippy`, and `Check` workflow arguments from the active model, target, component, and currently applicable build-option selections. Arguments MUST follow the format `<component-id> -m <model-id> [target-flag] [option-flags]`, where `target-flag` is the manifest-defined target `flag` value (omitted when absent or null).
 - **FR-020**: The system MUST use the same effective configuration for `Build`, `Clippy`, and `Check`, differing only by the workflow action being run.
 - **FR-021**: The `Clean` workflow MUST execute as `cargo xtask clean` with no configuration-derived arguments when it is allowed to start.
-- **FR-022**: The Configuration view header MUST expose `Build`, `Clippy`, `Check`, and `Clean` actions only after their behavior is implemented in this slice.
-- **FR-022A**: The Configuration view header MUST keep `Build`, `Clippy`, `Check`, and `Clean` visible when they are blocked, and blocked actions MUST be disabled rather than hidden.
+- **FR-021A**: The user-facing Build Workflow command titles MUST be `Trezor: Build`, `Trezor: Run Clippy`, `Trezor: Run Check`, and `Trezor: Run Clean`.
+- **FR-022**: The Configuration view title area MUST expose `Build`, `Clippy`, `Check`, and `Clean` actions only after their behavior is implemented in this slice.
+- **FR-022A**: The Configuration view MUST keep `Build` as the only primary header action and MUST expose `Run Clippy`, `Run Check`, and `Run Clean` from the view overflow menu.
+- **FR-022C**: When `Refresh IntelliSense` is present in the Configuration view overflow menu, it MUST appear after the Build Workflow overflow entries as the last overflow item.
+- **FR-022B**: Blocked Build Workflow actions MUST remain visible in their contributed surface, and blocked actions MUST be disabled rather than hidden.
 - **FR-023**: If the manifest is missing, invalid, or contains any invalid build-option `when` logic, the system MUST prevent `Build`, `Clippy`, `Check`, and `Clean` from starting and MUST show visible failure feedback.
 - **FR-024**: If the workspace has no open folder or has more than one open workspace folder, the system MUST treat it as unsupported, MUST prevent all four workflow actions from starting, and MUST show visible failure feedback.
 - **FR-025**: If a workflow task fails after starting, the system MUST show a visible failure notification and MUST write a persistent log entry for the failure.
@@ -136,10 +141,10 @@ As a firmware developer, I want build actions to derive their arguments from the
 ## Failure Modes & Diagnostics *(mandatory)*
 
 - **Trigger**: The manifest is missing, invalid, or contains any invalid build-option `when` logic.
-  - **User-visible response**: `Build`, `Clippy`, `Check`, and `Clean` remain visible but disabled in the Configuration view header, do not start, and the user sees a specific error explaining that the manifest is invalid for Build Workflow.
+  - **User-visible response**: `Build` remains visible but disabled in the Configuration view header, `Run Clippy`, `Run Check`, and `Run Clean` remain visible but disabled in the view overflow menu, the actions do not start, and the user sees a specific error explaining that the manifest is invalid for Build Workflow.
   - **Persistent signal**: Manifest diagnostics for actionable manifest problems and a dedicated log entry.
 - **Trigger**: The workspace is unsupported for workflow execution.
-  - **User-visible response**: `Build`, `Clippy`, `Check`, and `Clean` remain visible but disabled in the Configuration view header, do not start, and the user sees a specific unsupported-workspace error explaining that Build Workflow requires exactly one open workspace folder.
+  - **User-visible response**: `Build` remains visible but disabled in the Configuration view header, `Run Clippy`, `Run Check`, and `Run Clean` remain visible but disabled in the view overflow menu, the actions do not start, and the user sees a specific unsupported-workspace error explaining that Build Workflow requires exactly one open workspace folder.
   - **Persistent signal**: Dedicated log entry.
 - **Trigger**: A workflow task starts and then fails.
   - **User-visible response**: The user sees a failure notification tied to the workflow action that ran.

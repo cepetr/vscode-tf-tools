@@ -72,7 +72,7 @@
 
 - [X] T020 [P] [US2] Add unit tests for workflow label formatting in `src/test/unit/workflow/task-labels.test.ts`
 - [X] T021 [P] [US2] Add unit tests for effective argument derivation in `src/test/unit/workflow/build-arguments.test.ts`
-- [X] T022 [P] [US2] Add integration tests for workflow commands and view-header actions in `src/test/integration/build-workflow.integration.test.ts`
+- [X] T022 [P] [US2] Add integration tests for workflow commands and Configuration view title-area placement in `src/test/integration/build-workflow.integration.test.ts`
 - [X] T023 [P] [US2] Add integration tests for VS Code build-task exposure and labels in `src/test/integration/task-provider.integration.test.ts`
 
 ### Implementation for User Story 2
@@ -81,7 +81,7 @@
 - [X] T025 [P] [US2] Implement effective workflow configuration and argument derivation in `src/commands/build-workflow.ts`
 - [X] T026 [P] [US2] Implement VS Code build-task exposure for `Build`, `Clippy`, `Check`, and `Clean` in `src/tasks/build-task-provider.ts`
 - [X] T027 [US2] Wire workflow commands, task provider, and active-context execution through `src/extension.ts`
-- [X] T028 [US2] Keep `Build`, `Clippy`, `Check`, and `Clean` synchronized with the Configuration view header in `package.json` and `src/extension.ts`
+- [X] T028 [US2] Keep `Build` in the primary Configuration view header and keep `Clippy`, `Check`, and `Clean` synchronized in the overflow menu in `package.json` and `src/extension.ts`
 
 **Checkpoint**: User Stories 1 and 2 should both work, and workflow actions should launch from both the Configuration view and standard task entry points.
 
@@ -96,7 +96,7 @@
 ### Tests for User Story 3 ⚠️
 
 - [X] T029 [P] [US3] Add unit tests for blocked-action gating and failure reasons in `src/test/unit/workflow/preconditions.test.ts`
-- [X] T030 [P] [US3] Extend integration tests for invalid manifest and blocked header actions in `src/test/integration/build-workflow.integration.test.ts`
+- [X] T030 [P] [US3] Extend integration tests for invalid manifest and blocked title-area actions in `src/test/integration/build-workflow.integration.test.ts`
 - [X] T031 [P] [US3] Extend integration tests for task failure notifications and logging in `src/test/integration/task-provider.integration.test.ts`
 
 ### Implementation for User Story 3

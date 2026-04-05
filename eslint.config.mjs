@@ -4,6 +4,7 @@ import tsparser from "@typescript-eslint/parser";
 /** @type {import("eslint").Linter.FlatConfig[]} */
 export default [
   {
+    ignores: ["node_modules/**", "out/**", ".vscode-test/**", "dist/**", "build/**"],
     files: ["src/**/*.ts"],
     languageOptions: {
       parser: tsparser,

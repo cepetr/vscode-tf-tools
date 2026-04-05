@@ -53,19 +53,19 @@
       },
       {
         "command": "tfTools.clippy",
-        "title": "Clippy",
+        "title": "Run Clippy",
         "category": "Trezor",
         "icon": "$(checklist)"
       },
       {
         "command": "tfTools.check",
-        "title": "Check",
+        "title": "Run Check",
         "category": "Trezor",
         "icon": "$(check-all)"
       },
       {
         "command": "tfTools.clean",
-        "title": "Clean",
+        "title": "Run Clean",
         "category": "Trezor",
         "icon": "$(trash)"
       },
@@ -139,25 +139,25 @@
         {
           "command": "tfTools.clippy",
           "when": "view == tfTools.configuration",
-          "group": "navigation@2",
+          "group": "overflow@1",
           "enablement": "!tfTools.workflowBlocked"
         },
         {
           "command": "tfTools.check",
           "when": "view == tfTools.configuration",
-          "group": "navigation@3",
+          "group": "overflow@2",
           "enablement": "!tfTools.workflowBlocked"
         },
         {
           "command": "tfTools.clean",
           "when": "view == tfTools.configuration",
-          "group": "navigation@4",
+          "group": "overflow@3",
           "enablement": "!tfTools.workflowBlocked"
         },
         {
           "command": "tfTools.refreshIntelliSense",
           "when": "view == tfTools.configuration",
-          "group": "overflow@1"
+          "group": "overflow@4"
         }
       ]
     },

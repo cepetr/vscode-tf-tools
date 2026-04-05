@@ -186,22 +186,92 @@ suite("Build Workflow – blocked manifest (T030)", () => {
     assert.ok(msg.toLowerCase().includes("folder"));
   });
 
-  test("package.json exposes Build/Clippy/Check/Clean in view/title menus", () => {
+  test("package.json keeps Build as the only primary view/title action", () => {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
       return; // Skip gracefully when not installed
     }
     const menus: Record<string, unknown[]> =
       ext.packageJSON?.contributes?.menus ?? {};
-    const viewTitleMenus: unknown[] = (menus["view/title"] as unknown[]) ?? [];
-    const commands = viewTitleMenus
-      .map((e) => (e as { command?: string }).command)
-      .filter(Boolean);
+    const viewTitleMenus = ((menus["view/title"] as Array<{
+      command?: string;
+      group?: string;
+    }>) ?? []);
 
-    assert.ok(commands.includes("tfTools.build"), "expected tfTools.build in view/title");
-    assert.ok(commands.includes("tfTools.clippy"), "expected tfTools.clippy in view/title");
-    assert.ok(commands.includes("tfTools.check"), "expected tfTools.check in view/title");
-    assert.ok(commands.includes("tfTools.clean"), "expected tfTools.clean in view/title");
+    const primaryCommands = viewTitleMenus
+      .filter((entry) => entry.group?.startsWith("navigation@"))
+      .map((entry) => entry.command)
+      .filter((command): command is string => Boolean(command));
+
+    assert.deepStrictEqual(
+      primaryCommands,
+      ["tfTools.build"],
+      `expected only tfTools.build as a primary view/title action, found: ${primaryCommands.join(", ")}`
+    );
+  });
+
+  test("package.json exposes Clippy/Check/Clean in the view/title overflow menu", () => {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    if (!ext) {
+      return; // Skip gracefully when not installed
+    }
+    const menus: Record<string, unknown[]> =
+      ext.packageJSON?.contributes?.menus ?? {};
+    const viewTitleMenus = ((menus["view/title"] as Array<{
+      command?: string;
+      group?: string;
+    }>) ?? []);
+
+    const overflowCommands = viewTitleMenus
+      .filter((entry) => entry.group?.startsWith("overflow@"))
+      .map((entry) => entry.command)
+      .filter((command): command is string => Boolean(command));
+
+    assert.ok(overflowCommands.includes("tfTools.clippy"), "expected tfTools.clippy in overflow");
+    assert.ok(overflowCommands.includes("tfTools.check"), "expected tfTools.check in overflow");
+    assert.ok(overflowCommands.includes("tfTools.clean"), "expected tfTools.clean in overflow");
+  });
+
+  test("package.json uses Run-prefixed titles for Clippy/Check/Clean commands", () => {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    if (!ext) {
+      return;
+    }
+    const commands = ((ext.packageJSON?.contributes?.commands as Array<{
+      command?: string;
+      title?: string;
+    }>) ?? []);
+
+    const byId = new Map(commands.map((entry) => [entry.command, entry.title]));
+    assert.strictEqual(byId.get("tfTools.clippy"), "Run Clippy");
+    assert.strictEqual(byId.get("tfTools.check"), "Run Check");
+    assert.strictEqual(byId.get("tfTools.clean"), "Run Clean");
+  });
+
+  test("package.json orders overflow actions with Refresh IntelliSense last", () => {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    if (!ext) {
+      return;
+    }
+    const menus: Record<string, unknown[]> =
+      ext.packageJSON?.contributes?.menus ?? {};
+    const viewTitleMenus = ((menus["view/title"] as Array<{
+      command?: string;
+      group?: string;
+    }>) ?? []);
+
+    const overflowEntries = viewTitleMenus
+      .filter((entry) => entry.group?.startsWith("overflow@"))
+      .map((entry) => ({
+        command: entry.command ?? "",
+        order: Number((entry.group ?? "").split("@")[1] ?? Number.NaN),
+      }))
+      .sort((left, right) => left.order - right.order);
+
+    assert.deepStrictEqual(
+      overflowEntries.map((entry) => entry.command),
+      ["tfTools.clippy", "tfTools.check", "tfTools.clean", "tfTools.refreshIntelliSense"]
+    );
   });
 });
 

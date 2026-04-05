@@ -89,4 +89,26 @@ suite("Scope guard — no cross-slice commands (FR-026)", () => {
       "Debug actions must not appear in view/title menus"
     );
   });
+
+  test("configuration view keeps Clippy/Check/Clean out of primary header slots", async () => {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    if (!ext) {
+      return;
+    }
+    const menus: Record<string, unknown[]> =
+      ext.packageJSON?.contributes?.menus ?? {};
+    const viewTitleMenus = ((menus["view/title"] as Array<{
+      command?: string;
+      group?: string;
+    }>) ?? []);
+
+    const primaryCommands = viewTitleMenus
+      .filter((entry) => entry.group?.startsWith("navigation@"))
+      .map((entry) => entry.command)
+      .filter((command): command is string => Boolean(command));
+
+    assert.ok(!primaryCommands.includes("tfTools.clippy"), "tfTools.clippy must stay out of the primary header");
+    assert.ok(!primaryCommands.includes("tfTools.check"), "tfTools.check must stay out of the primary header");
+    assert.ok(!primaryCommands.includes("tfTools.clean"), "tfTools.clean must stay out of the primary header");
+  });
 });
