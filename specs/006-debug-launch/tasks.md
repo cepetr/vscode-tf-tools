@@ -72,12 +72,12 @@
 ### Tests for User Story 2 ⚠️
 
 - [X] T015 [P] [US2] Add unit tests for Executable artifact status, missing-reason messaging, tooltip content, and tree-row disabled-state behavior in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts` and `src/test/unit/ui/configuration-tree.test.ts`
-- [ ] T016 [P] [US2] Add integration tests for Executable row rendering, header and overflow enablement, Command Palette hiding, and availability refresh after model, target, component, manifest, artifacts-path, and templates-path changes in `src/test/integration/debug-launch-artifacts.integration.test.ts`
+- [X] T016 [P] [US2] Add integration tests for Executable row rendering, header and overflow enablement, Command Palette hiding, and availability refresh after model, target, component, manifest, artifacts-path, and templates-path changes in `src/test/integration/debug-launch-artifacts.integration.test.ts`
 
 ### Implementation for User Story 2
 
 - [X] T017 [P] [US2] Implement the `Executable` artifact row, tooltip text, and row context values in `src/ui/configuration-tree.ts`
-- [ ] T018 [P] [US2] Contribute header, overflow, and Executable-row Start Debugging menu entries with ordered enablement in `package.json`
+- [X] T018 [P] [US2] Contribute header, overflow, and Executable-row Start Debugging menu entries with ordered enablement in `package.json`
 - [ ] T019 [US2] Wire executable artifact refresh, startability context keys, and recomputation after active model, target, component, manifest, `tfTools.artifactsPath`, and `tfTools.debug.templatesPath` changes in `src/extension.ts` and `src/workspace/settings.ts`
 
 **Checkpoint**: User Story 2 is fully functional and independently testable from the Configuration view and Command Palette.
