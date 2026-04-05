@@ -164,10 +164,12 @@ function makeIntellisenseLoadedState(overrides: Partial<ManifestStateLoaded> = {
     components: [{ kind: "component", id: "core", name: "Core", artifactName: "compile_commands_core" }],
     buildOptions: [],
     hasWorkflowBlockingIssues: false,
+    debugProfiles: [],
+    hasDebugBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date(),
     ...overrides,
-  };
+  } as ManifestStateLoaded;
 }
 
 function makeActiveConfig(modelId: string, targetId: string, componentId: string): ActiveConfig {
@@ -582,6 +584,8 @@ suite("IntelliSenseService – artifacts-path change regression (T029/T031)", ()
       components: [{ kind: "component", id: "core", name: "Core", artifactName: "compile_commands_core" }],
       buildOptions: [],
       hasWorkflowBlockingIssues: false,
+      debugProfiles: [],
+      hasDebugBlockingIssues: false,
       validationIssues: [],
       loadedAt: new Date(),
     };

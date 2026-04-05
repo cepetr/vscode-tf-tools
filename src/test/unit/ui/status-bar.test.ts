@@ -28,10 +28,12 @@ function makeLoadedState(
     ],
     buildOptions: [],
     hasWorkflowBlockingIssues: false,
+    debugProfiles: [],
+    hasDebugBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date(),
     ...overrides,
-  };
+  } as ManifestStateLoaded;
 }
 
 function config(

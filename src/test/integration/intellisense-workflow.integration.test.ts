@@ -99,6 +99,8 @@ suite("IntelliSenseService – manual refresh trigger (T025)", () => {
       components: [{ kind: "component", id: "component-core", name: "Core", artifactName: "cc-core" }],
       buildOptions: [],
       hasWorkflowBlockingIssues: false,
+      debugProfiles: [],
+      hasDebugBlockingIssues: false,
       validationIssues: [],
       loadedAt: new Date(),
     };

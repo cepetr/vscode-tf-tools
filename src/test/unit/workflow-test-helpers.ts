@@ -14,6 +14,7 @@ import {
   ManifestStateInvalid,
   BuildOption,
   WhenExpression,
+  ManifestDebugProfile,
 } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
@@ -54,6 +55,8 @@ export function makeLoadedState(
     ],
     buildOptions: [],
     hasWorkflowBlockingIssues: false,
+    debugProfiles: [],
+    hasDebugBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
@@ -175,6 +178,8 @@ export function makeIntelliSenseLoadedState(
     ],
     buildOptions: [],
     hasWorkflowBlockingIssues: false,
+    debugProfiles: [],
+    hasDebugBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
@@ -318,3 +323,60 @@ export function makeExcludedFilesSnapshot(
     ...overrides,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Debug launch profile factories (feature 006)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns a minimal ManifestDebugProfile fixture.
+ * Individual fields can be overridden for specific test scenarios.
+ */
+export function makeDebugProfile(
+  overrides: { template: string; executable: string } & Partial<ManifestDebugProfile>
+): ManifestDebugProfile {
+  return {
+    id: "debug[0]",
+    priority: 0,
+    vars: undefined,
+    when: undefined,
+    ...overrides,
+  };
+}
+
+/**
+ * Returns a loaded manifest state that includes debug profiles.
+ * Extends makeIntelliSenseLoadedState with debug profile entries.
+ */
+export function makeDebugLoadedState(
+  debugProfiles: ManifestDebugProfile[] = [],
+  overrides: Partial<ManifestStateLoaded> = {}
+): ManifestStateLoaded {
+  return makeIntelliSenseLoadedState({
+    debugProfiles,
+    hasDebugBlockingIssues: false,
+    ...overrides,
+  });
+}
+
+/**
+ * Returns the absolute path to the debug-launch-valid workspace fixture root.
+ */
+export function debugLaunchValidWorkspaceRoot(): string {
+  return path.resolve(__dirname, "../../../../test-fixtures/workspaces/debug-launch-valid");
+}
+
+/**
+ * Returns the absolute path to the debug-launch-failures workspace fixture root.
+ */
+export function debugLaunchFailuresWorkspaceRoot(): string {
+  return path.resolve(__dirname, "../../../../test-fixtures/workspaces/debug-launch-failures");
+}
+
+/**
+ * Returns the absolute path to the debug templates root inside the valid workspace fixture.
+ */
+export function debugLaunchValidTemplatesRoot(): string {
+  return path.join(debugLaunchValidWorkspaceRoot(), "debug-templates");
+}
+

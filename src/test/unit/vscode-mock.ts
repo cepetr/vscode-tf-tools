@@ -233,6 +233,18 @@ const extensions = {
   onDidChange: () => ({ dispose: () => {} }),
 };
 
+// ---------------------------------------------------------------------------
+// Debug API stub for debug-launch unit tests
+// ---------------------------------------------------------------------------
+
+const debug = {
+  startDebugging: (_folder: unknown, _config: unknown): Promise<boolean> => {
+    return Promise.resolve(true);
+  },
+  onDidStartDebugSession: () => ({ dispose: () => {} }),
+  onDidTerminateDebugSession: () => ({ dispose: () => {} }),
+};
+
 module.exports = {
   Position,
   Range,
@@ -243,6 +255,7 @@ module.exports = {
   window,
   workspace,
   commands,
+  debug,
   tasks,
   extensions,
   EventEmitter,
