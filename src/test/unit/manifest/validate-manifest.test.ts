@@ -1011,3 +1011,334 @@ components:
     assert.strictEqual(actionIssues.length, 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T024: Debug profile regression coverage
+// ---------------------------------------------------------------------------
+
+suite("parseManifest – debug profiles (T024)", () => {
+  function baseManifest(debugBlock: string): string {
+    return `
+models:
+  - id: T2T1
+    name: Trezor Model T
+    artifactFolder: model-t
+  - id: T3W1
+    name: Trezor Model T3
+    artifactFolder: model-t3
+targets:
+  - id: hw
+    name: Hardware
+  - id: emu
+    name: Emulator
+components:
+  - id: core
+    name: Core
+${debugBlock}
+`.trim();
+  }
+
+  // -------------------------------------------------------------------------
+  // Valid profiles
+  // -------------------------------------------------------------------------
+
+  test("manifest without debug section parses without error and has empty debugProfiles", () => {
+    const source = baseManifest("");
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.length, 0);
+    assert.deepStrictEqual(result.debugProfiles, []);
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  test("valid debug profile with required fields only is parsed", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    assert.strictEqual(result.debugProfiles.length, 1);
+    const p = result.debugProfiles[0];
+    assert.strictEqual(p.template, "gdb-remote.json");
+    assert.strictEqual(p.executable, "firmware.elf");
+    assert.strictEqual(p.priority, 0);
+    assert.strictEqual(p.when, undefined);
+    assert.strictEqual(p.vars, undefined);
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  test("valid debug profile with all optional fields is parsed", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    priority: 10
+    when: model(T2T1)
+    vars:
+      port: "3333"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    assert.strictEqual(result.debugProfiles.length, 1);
+    const p = result.debugProfiles[0];
+    assert.strictEqual(p.priority, 10);
+    assert.deepStrictEqual(p.when, { type: "model", id: "T2T1" });
+    assert.deepStrictEqual(p.vars, { port: "3333" });
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  test("multiple valid debug profiles are all parsed", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    priority: 5
+  - template: openocd.json
+    executable: firmware.elf
+    priority: 0
+    when: model(T3W1)
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    assert.strictEqual(result.debugProfiles.length, 2);
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  test("priority defaults to 0 when absent", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.debugProfiles[0].priority, 0);
+  });
+
+  test("negative priority is accepted", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    priority: -5
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    assert.strictEqual(result.debugProfiles[0].priority, -5);
+  });
+
+  test("vars map with multiple entries is parsed correctly", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb.json
+    executable: fw.elf
+    vars:
+      port: "3333"
+      server: "localhost"
+      gdb: "arm-none-eabi-gdb"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const p = result.debugProfiles[0];
+    assert.deepStrictEqual(p.vars, { port: "3333", server: "localhost", gdb: "arm-none-eabi-gdb" });
+  });
+
+  // -------------------------------------------------------------------------
+  // Missing required fields
+  // -------------------------------------------------------------------------
+
+  test("missing template field sets hasDebugBlockingIssues and does not add the profile", () => {
+    const source = baseManifest(`
+debug:
+  - executable: firmware.elf
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.includes("template")));
+    assert.strictEqual(result.debugProfiles.length, 0);
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  test("missing executable field sets hasDebugBlockingIssues and does not add the profile", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.includes("executable")));
+    assert.strictEqual(result.debugProfiles.length, 0);
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  test("missing both template and executable fields sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`
+debug:
+  - priority: 5
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.filter((i) => i.severity === "error").length >= 2);
+    assert.strictEqual(result.debugProfiles.length, 0);
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  // -------------------------------------------------------------------------
+  // Invalid when expression
+  // -------------------------------------------------------------------------
+
+  test("invalid when expression on debug profile sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    when: "not-a-valid-expression()"
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "invalid-when"));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+    // Profile with invalid when is not added
+    assert.strictEqual(result.debugProfiles.length, 0);
+  });
+
+  test("when expression with unknown model id sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    when: "model(NONEXISTENT_MODEL)"
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "invalid-when"));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  test("valid debug profile with matching model id in when does not set hasDebugBlockingIssues", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    when: model(T2T1)
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.code === "invalid-when").length, 0);
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+    assert.strictEqual(result.debugProfiles.length, 1);
+  });
+
+  // -------------------------------------------------------------------------
+  // Invalid priority
+  // -------------------------------------------------------------------------
+
+  test("non-numeric priority field sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    priority: "high"
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.includes("priority")));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  // -------------------------------------------------------------------------
+  // Invalid vars
+  // -------------------------------------------------------------------------
+
+  test("vars as non-mapping value sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    vars: "not-a-map"
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.includes("vars")));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  test("vars with non-string value sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    vars:
+      port: 3333
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.includes("vars")));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  // -------------------------------------------------------------------------
+  // debug section type validation
+  // -------------------------------------------------------------------------
+
+  test("debug as non-sequence value sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`
+debug: "not-a-list"
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.severity === "error"));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+    assert.strictEqual(result.debugProfiles.length, 0);
+  });
+
+  // -------------------------------------------------------------------------
+  // hasDebugBlockingIssues is independent from hasWorkflowBlockingIssues
+  // -------------------------------------------------------------------------
+
+  test("debug blocking issues do not set hasWorkflowBlockingIssues", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+    assert.strictEqual(result.hasWorkflowBlockingIssues, false);
+  });
+
+  test("workflow blocking issues do not set hasDebugBlockingIssues", () => {
+    const source = baseManifest(`
+buildOptions:
+  - label: "Debug"
+    flag: "--debug"
+    kind: checkbox
+    when: "model(NONEXISTENT)"
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.hasWorkflowBlockingIssues, true);
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  // -------------------------------------------------------------------------
+  // validateManifest propagates hasDebugBlockingIssues
+  // -------------------------------------------------------------------------
+
+  test("validateManifest loaded state has debugProfiles array for valid debug entries", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+    executable: firmware.elf
+    priority: 5
+`);
+    const state = validateManifest(source, vscode.Uri.file("/workspace/manifest.yaml"));
+    assert.strictEqual(state.status, "loaded");
+    if (state.status === "loaded") {
+      assert.strictEqual(state.debugProfiles.length, 1);
+      assert.strictEqual(state.hasDebugBlockingIssues, false);
+    }
+  });
+
+  test("validateManifest loaded state has hasDebugBlockingIssues true for invalid debug entries", () => {
+    const source = baseManifest(`
+debug:
+  - template: gdb-remote.json
+`);
+    const state = validateManifest(source, vscode.Uri.file("/workspace/manifest.yaml"));
+    // Manifest is still "loaded" (debug issues do not make the manifest unloadable)
+    assert.strictEqual(state.status, "loaded");
+    if (state.status === "loaded") {
+      assert.strictEqual(state.hasDebugBlockingIssues, true);
+      assert.strictEqual(state.debugProfiles.length, 0);
+    }
+  });
+});
