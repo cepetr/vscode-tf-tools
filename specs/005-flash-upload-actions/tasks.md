@@ -17,9 +17,9 @@
 
 **Purpose**: Prepare fixtures and shared test seams for Flash/Upload and Map File behavior.
 
-- [ ] T001 Add Flash/Upload manifest fixtures for applicable, inapplicable, dual-action, and invalid-action contexts in `test-fixtures/manifests/flash-upload-valid/tf-tools-manifest.yaml` and `test-fixtures/manifests/flash-upload-invalid/tf-tools-manifest.yaml`
-- [ ] T002 [P] Add workspace fixtures for present and missing binary/map artifact scenarios in `test-fixtures/workspaces/flash-upload-valid/.vscode/settings.json` and `test-fixtures/workspaces/flash-upload-missing-artifacts/.vscode/settings.json`
-- [ ] T003 [P] Extend shared VS Code and task mocks for artifact-row actions, Command Palette menus, and on-demand task execution in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
+- [X] T001 Add Flash/Upload manifest fixtures for applicable, inapplicable, dual-action, and invalid-action contexts in `test-fixtures/manifests/flash-upload-valid/tf-tools-manifest.yaml` and `test-fixtures/manifests/flash-upload-invalid/tf-tools-manifest.yaml`
+- [X] T002 [P] Add workspace fixtures for present and missing binary/map artifact scenarios in `test-fixtures/workspaces/flash-upload-valid/.vscode/settings.json` and `test-fixtures/workspaces/flash-upload-missing-artifacts/.vscode/settings.json`
+- [X] T003 [P] Extend shared VS Code and task mocks for artifact-row actions, Command Palette menus, and on-demand task execution in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
 
 ---
 
@@ -29,10 +29,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Extend component manifest types for parsed `flashWhen` and `uploadWhen` rules in `src/manifest/manifest-types.ts`
-- [ ] T005 [P] Parse and validate component `flashWhen` and `uploadWhen` rules in `src/manifest/validate-manifest.ts`
-- [ ] T006 [P] Generalize artifact-resolution inputs and artifact-state helpers for `.bin` and `.map` files in `src/intellisense/intellisense-types.ts` and `src/intellisense/artifact-resolution.ts`
-- [ ] T007 Create shared artifact action applicability and request helpers in `src/commands/artifact-actions.ts`
+- [X] T004 Extend component manifest types for parsed `flashWhen` and `uploadWhen` rules in `src/manifest/manifest-types.ts`
+- [X] T005 [P] Parse and validate component `flashWhen` and `uploadWhen` rules in `src/manifest/validate-manifest.ts`
+- [X] T006 [P] Generalize artifact-resolution inputs and artifact-state helpers for `.bin` and `.map` files in `src/intellisense/intellisense-types.ts` and `src/intellisense/artifact-resolution.ts`
+- [X] T007 Create shared artifact action applicability and request helpers in `src/commands/artifact-actions.ts`
 
 **Checkpoint**: Manifest action rules, artifact-path derivation, and shared artifact-action helpers are ready; user stories can now proceed.
 
