@@ -1,23 +1,21 @@
 /**
  * Integration tests asserting no cross-slice commands are contributed
- * beyond what is expected in the current slice (Build Workflow / Feature 2).
+ * beyond what is expected in the current slice (Flash/Upload Actions / Feature 5).
  *
- * FR-026 negative-scope tests: Debug, Flash, Upload, IntelliSense, artifact
- * refresh, and related post-build behaviors must not be present.
+ * FR-026 negative-scope tests: Debug and unrelated slice commands must not
+ * be present. Flash, Upload, and openMapFile are now part of the allowed set.
  */
 import * as assert from "assert";
 import * as vscode from "vscode";
 
-/** Commands that must never be registered in the current or earlier slices. */
+/** Commands that must never be registered in any current slice. */
 const BANNED_COMMAND_PATTERNS = [
   /^tfTools\.debug\b/i,
-  /^tfTools\.flash\b/i,
-  /^tfTools\.upload\b/i,
   /^tfTools\.intellisense\b/i,
 ];
 
 suite("Scope guard — no cross-slice commands (FR-026)", () => {
-  test("no Flash/Upload/Debug/IntelliSense commands are registered", async () => {
+  test("no Debug/IntelliSense commands are registered", async () => {
     const allCommands = await vscode.commands.getCommands(true);
     const offenders = allCommands.filter((cmd) =>
       BANNED_COMMAND_PATTERNS.some((re) => re.test(cmd))
@@ -33,7 +31,7 @@ suite("Scope guard — no cross-slice commands (FR-026)", () => {
     const allCommands = await vscode.commands.getCommands(true);
     const tfCommands = allCommands.filter((cmd) => cmd.startsWith("tfTools."));
 
-    // Allowed commands in Build Workflow (Feature 2) and earlier slices
+    // Allowed commands through Flash/Upload Actions (Feature 5) and earlier slices
     const ALLOWED = new Set([
       "tfTools.showLogs",
       "tfTools.selectModel",
@@ -45,6 +43,10 @@ suite("Scope guard — no cross-slice commands (FR-026)", () => {
       "tfTools.clean",
       "tfTools.toggleBuildOption",
       "tfTools.selectBuildOptionState",
+      "tfTools.refreshIntelliSense",
+      "tfTools.flash",
+      "tfTools.upload",
+      "tfTools.openMapFile",
     ]);
 
     const unexpected = tfCommands.filter((cmd) => !ALLOWED.has(cmd));
@@ -64,7 +66,7 @@ suite("Scope guard — no cross-slice commands (FR-026)", () => {
       ext.packageJSON?.contributes?.menus ?? {};
     const viewTitleMenus: unknown[] = (menus["view/title"] as unknown[]) ?? [];
 
-    const BANNED_VIEW_TITLE_COMMANDS = ["tfTools.debug", "tfTools.flash", "tfTools.upload"];
+    const BANNED_VIEW_TITLE_COMMANDS = ["tfTools.debug"];
     const offenders = viewTitleMenus.filter((entry) => {
       const e = entry as { command?: string };
       return BANNED_VIEW_TITLE_COMMANDS.some((banned) => e.command === banned);
@@ -72,7 +74,7 @@ suite("Scope guard — no cross-slice commands (FR-026)", () => {
     assert.deepStrictEqual(
       offenders,
       [],
-      "Debug/Flash/Upload actions must not appear in view/title menus"
+      "Debug actions must not appear in view/title menus"
     );
   });
 });

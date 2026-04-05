@@ -56,11 +56,12 @@ let _manifestStateSubscription: vscode.Disposable | undefined;
 let _lastShownProviderFixState: string = "none";
 
 // ---------------------------------------------------------------------------
-// Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense slices)
+// Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense
+// + Flash/Upload Actions slices)
 //
 // This extension contributes ONLY the commands listed below in these feature
-// slices. Flash, Upload, Debug, and all other cross-slice commands are
-// intentionally absent. Any attempt to register them here is a scope violation.
+// slices. Debug and all other cross-slice commands are intentionally absent.
+// Any attempt to register them here is a scope violation.
 //
 // Allowed commands:
 //   tfTools.showLogs              — reveal the output channel
@@ -69,6 +70,9 @@ let _lastShownProviderFixState: string = "none";
 //   tfTools.check                 — launch Check task
 //   tfTools.clean                 — launch Clean task
 //   tfTools.refreshIntelliSense   — manual IntelliSense refresh
+//   tfTools.flash                 — launch Flash task (Flash/Upload slice)
+//   tfTools.upload                — launch Upload task (Flash/Upload slice)
+//   tfTools.openMapFile           — open resolved map file (Flash/Upload slice)
 // ---------------------------------------------------------------------------
 
 const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
@@ -78,6 +82,9 @@ const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
   "tfTools.check",
   "tfTools.clean",
   "tfTools.refreshIntelliSense",
+  "tfTools.flash",
+  "tfTools.upload",
+  "tfTools.openMapFile",
 ]);
 
 /**
