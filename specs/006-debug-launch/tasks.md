@@ -17,8 +17,8 @@
 
 **Purpose**: Prepare fixtures and shared test seams for Debug Launch scenarios.
 
-- [ ] T001 Add Debug Launch manifest fixtures for valid, ambiguous, unmatched, and invalid debug-profile scenarios in `test-fixtures/manifests/debug-launch-valid/tf-tools-manifest.yaml` and `test-fixtures/manifests/debug-launch-invalid/tf-tools-manifest.yaml`
-- [ ] T002 [P] Add workspace fixtures for executable-present, missing-executable, missing-template, malformed-template, traversal, variable-error, and unsupported-workspace scenarios in `test-fixtures/workspaces/debug-launch-valid/.vscode/settings.json`, `test-fixtures/workspaces/debug-launch-failures/.vscode/settings.json`, and `test-fixtures/workspaces/unsupported-workflow/.vscode/settings.json`
+- [X] T001 Add Debug Launch manifest fixtures for valid, ambiguous, unmatched, and invalid debug-profile scenarios in `test-fixtures/manifests/debug-launch-valid/tf-tools-manifest.yaml` and `test-fixtures/manifests/debug-launch-invalid/tf-tools-manifest.yaml`
+- [X] T002 [P] Add workspace fixtures for executable-present, missing-executable, missing-template, malformed-template, traversal, variable-error, and unsupported-workspace scenarios in `test-fixtures/workspaces/debug-launch-valid/.vscode/settings.json`, `test-fixtures/workspaces/debug-launch-failures/.vscode/settings.json`, and `test-fixtures/workspaces/unsupported-workflow/.vscode/settings.json`
 - [X] T003 [P] Extend shared VS Code and debug-launch test helpers for `vscode.debug.startDebugging`, output-channel assertions, and settings-driven refresh coverage in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
 
 ---
@@ -29,11 +29,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Add the `jsonc-parser` dependency and contribute the `tfTools.debug.templatesPath` setting in `package.json`
-- [ ] T005 [P] Add debug-template path resolution helpers to `src/workspace/settings.ts`
+- [X] T004 Add the `jsonc-parser` dependency and contribute the `tfTools.debug.templatesPath` setting in `package.json`
+- [X] T005 [P] Add debug-template path resolution helpers to `src/workspace/settings.ts`
 - [X] T006 [P] Extend manifest debug-profile types and validation state in `src/manifest/manifest-types.ts`
 - [X] T007 Parse and validate manifest `debug` entries, priorities, executables, templates, and optional vars in `src/manifest/validate-manifest.ts`
-- [ ] T008 [P] Create shared debug profile resolution, template loading, and tf-tools substitution helpers in `src/commands/debug-launch.ts`
+- [X] T008 [P] Create shared debug profile resolution, template loading, and tf-tools substitution helpers in `src/commands/debug-launch.ts`
 - [X] T009 [P] Extend executable artifact path and status helpers in `src/intellisense/artifact-resolution.ts`
 
 **Checkpoint**: Debug profile parsing, template-path resolution, substitution scaffolding, and executable artifact state are ready; user stories can now proceed.
@@ -57,7 +57,7 @@
 
 - [X] T012 [P] [US1] Contribute the `tfTools.startDebugging` command and Command Palette visibility rule in `package.json`
 - [X] T013 [US1] Implement per-invocation JSONC template resolution, single-pass tf-tools variable application without re-expansion, non-tf-tools variable pass-through, and `vscode.debug.startDebugging` launch flow in `src/commands/debug-launch.ts`
-- [ ] T014 [US1] Register `tfTools.startDebugging` and wire successful debug-launch execution through `src/extension.ts`
+- [X] T014 [US1] Register `tfTools.startDebugging` and wire successful debug-launch execution through `src/extension.ts`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable from all supported Start Debugging surfaces.
 
