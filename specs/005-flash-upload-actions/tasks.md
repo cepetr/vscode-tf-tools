@@ -107,9 +107,9 @@
 
 **Purpose**: Final regression coverage, scope validation, and quickstart verification across the completed slice.
 
-- [ ] T023 [P] Expand regression coverage for invalid `flashWhen` and `uploadWhen` expressions plus unknown-id validation in `src/test/unit/manifest/validate-manifest.test.ts`
+- [X] T023 [P] Expand regression coverage for invalid `flashWhen` and `uploadWhen` expressions plus unknown-id validation in `src/test/unit/manifest/validate-manifest.test.ts`
 - [ ] T024 [P] Verify no scope drift into Compile Commands, Excluded Files, Build/Clippy/Check/Clean, or Debug in `src/test/integration/configuration-scope.integration.test.ts` and `package.json`
-- [ ] T025 Validate end-to-end Flash/Upload and Map File scenarios from `specs/005-flash-upload-actions/quickstart.md`
+- [X] T025 Validate end-to-end Flash/Upload and Map File scenarios from `specs/005-flash-upload-actions/quickstart.md`
 
 ---
 
