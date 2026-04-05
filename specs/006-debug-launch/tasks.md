@@ -55,7 +55,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Contribute the `tfTools.startDebugging` command and Command Palette visibility rule in `package.json`
+- [X] T012 [P] [US1] Contribute the `tfTools.startDebugging` command and Command Palette visibility rule in `package.json`
 - [ ] T013 [US1] Implement per-invocation JSONC template resolution, single-pass tf-tools variable application without re-expansion, non-tf-tools variable pass-through, and `vscode.debug.startDebugging` launch flow in `src/commands/debug-launch.ts`
 - [ ] T014 [US1] Register `tfTools.startDebugging` and wire successful debug-launch execution through `src/extension.ts`
 

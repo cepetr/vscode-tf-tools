@@ -92,6 +92,12 @@
         "title": "Open Map File",
         "category": "Trezor",
         "icon": "$(go-to-file)"
+      },
+      {
+        "command": "tfTools.startDebugging",
+        "title": "Start Debugging",
+        "category": "Trezor",
+        "icon": "$(debug-alt)"
       }
     ],
     "menus": {
@@ -107,6 +113,10 @@
         {
           "command": "tfTools.openMapFile",
           "when": "false"
+        },
+        {
+          "command": "tfTools.startDebugging",
+          "when": "tfTools.startDebuggingEnabled"
         }
       ],
       "view/item/context": [
@@ -127,6 +137,12 @@
           "when": "view == tfTools.configuration && viewItem == artifact-map",
           "group": "inline@1",
           "enablement": "tfTools.mapExists"
+        },
+        {
+          "command": "tfTools.startDebugging",
+          "when": "view == tfTools.configuration && viewItem == artifact-executable",
+          "group": "inline@1",
+          "enablement": "tfTools.startDebuggingEnabled"
         }
       ],
       "view/title": [
@@ -135,6 +151,12 @@
           "when": "view == tfTools.configuration",
           "group": "navigation@1",
           "enablement": "!tfTools.workflowBlocked"
+        },
+        {
+          "command": "tfTools.startDebugging",
+          "when": "view == tfTools.configuration",
+          "group": "navigation@2",
+          "enablement": "tfTools.startDebuggingEnabled"
         },
         {
           "command": "tfTools.build",
@@ -173,9 +195,15 @@
           "enablement": "tfTools.binaryExists"
         },
         {
+          "command": "tfTools.startDebugging",
+          "when": "view == tfTools.configuration",
+          "group": "overflow@7",
+          "enablement": "tfTools.startDebuggingEnabled"
+        },
+        {
           "command": "tfTools.refreshIntelliSense",
           "when": "view == tfTools.configuration",
-          "group": "overflow@7"
+          "group": "overflow@8"
         }
       ]
     },
