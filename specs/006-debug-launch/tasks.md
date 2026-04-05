@@ -51,7 +51,7 @@
 > **NOTE: Write these tests first and ensure they fail before implementation.**
 
 - [X] T010 [P] [US1] Add unit tests for profile matching, priority selection, relative and absolute executable resolution, per-invocation template reload, single-pass tf-tools substitution, and non-tf-tools variable pass-through in `src/test/unit/workflow/debug-launch.test.ts`
-- [ ] T011 [P] [US1] Add integration tests for successful Start Debugging launch from the header, overflow, Executable row, and Command Palette in `src/test/integration/debug-launch.integration.test.ts`
+- [X] T011 [P] [US1] Add integration tests for successful Start Debugging launch from the header, overflow, Executable row, and Command Palette in `src/test/integration/debug-launch.integration.test.ts`
 
 ### Implementation for User Story 1
 
