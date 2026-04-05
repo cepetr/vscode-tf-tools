@@ -110,7 +110,7 @@
 
 - [X] T024 [P] Expand manifest regression coverage for valid and invalid `debug` entries in `src/test/unit/manifest/validate-manifest.test.ts`
 - [X] T025 [P] Verify Debug Launch scope boundaries and command or menu contributions in `src/test/integration/configuration-scope.integration.test.ts` and `src/test/integration/debug-launch.integration.test.ts`
-- [ ] T026 Validate end-to-end Debug Launch scenarios from `specs/006-debug-launch/quickstart.md`
+- [X] T026 Validate end-to-end Debug Launch scenarios from `specs/006-debug-launch/quickstart.md`
 
 ---
 

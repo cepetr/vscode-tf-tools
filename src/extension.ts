@@ -59,7 +59,6 @@ import {
   resolveActiveExecutableArtifact,
   ActiveBinaryArtifact,
   ActiveMapArtifact,
-  ActiveExecutableArtifact,
 } from "./intellisense/artifact-resolution";
 import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
@@ -83,8 +82,6 @@ let _lastShownProviderFixState: string = "none";
 /** Binary and Map artifact state for Flash/Upload/openMapFile context keys. */
 let _binaryArtifact: ActiveBinaryArtifact | undefined;
 let _mapArtifact: ActiveMapArtifact | undefined;
-/** Executable artifact state for Start Debugging context key and tree row. */
-let _executableArtifact: ActiveExecutableArtifact | undefined;
 
 export interface TaskProcessEndLike {
   readonly exitCode?: number;
@@ -256,7 +253,6 @@ function updateDebugContext(
   artifactsRoot: string
 ): void {
   if (state.status !== "loaded" || !config) {
-    _executableArtifact = undefined;
     vscode.commands.executeCommand("setContext", "tfTools.startDebuggingEnabled", false);
     _treeProvider?.updateExecutableArtifact(null);
     return;
@@ -264,7 +260,6 @@ function updateDebugContext(
 
   const loaded = state as ManifestStateLoaded;
   const artifact = resolveActiveExecutableArtifact(loaded, config, artifactsRoot);
-  _executableArtifact = artifact;
   const enabled = artifact.status === "valid";
   vscode.commands.executeCommand("setContext", "tfTools.startDebuggingEnabled", enabled);
   _treeProvider?.updateExecutableArtifact(artifact);
@@ -907,7 +902,6 @@ export function deactivate(): void {
   _resolvedOptions = [];
   _binaryArtifact = undefined;
   _mapArtifact = undefined;
-  _executableArtifact = undefined;
   disposeDiagnostics();
   disposeLogChannel();
 }
