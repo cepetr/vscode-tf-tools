@@ -117,7 +117,7 @@
 
 - [X] T031 [P] Extend scope-regression coverage for Debug Launch command and menu boundaries, including no `launch.json` persistence, in `src/test/integration/configuration-scope.integration.test.ts`
 - [X] T032 [P] Add end-to-end quickstart regression coverage for the revised Debug Launch scenarios in `src/test/integration/debug-launch-quickstart.integration.test.ts`
-- [ ] T033 Validate the manual Debug Launch scenarios in `specs/006-debug-launch/quickstart.md`
+- [X] T033 Validate the manual Debug Launch scenarios in `specs/006-debug-launch/quickstart.md`
 
 ---
 

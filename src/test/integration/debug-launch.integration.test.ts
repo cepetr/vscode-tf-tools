@@ -26,7 +26,6 @@ import {
   applyTfToolsSubstitution,
 } from "../../commands/debug-launch";
 import {
-  makeDebugLoadedState,
   makeComponentDebugEntry,
   makeDebugTargetWithExtension,
   makeIntelliSenseLoadedState,
