@@ -592,5 +592,8 @@ export async function executeDebugLaunch(
 
   if (!launched) {
     void vscode.window.showErrorMessage("Debugging failed to start.");
+    return;
   }
+
+  await vscode.commands.executeCommand("workbench.view.debug");
 }

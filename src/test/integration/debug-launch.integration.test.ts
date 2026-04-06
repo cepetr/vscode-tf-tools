@@ -24,6 +24,7 @@ import {
   loadDebugTemplate,
   buildDebugVariableMap,
   applyTfToolsSubstitution,
+  executeDebugLaunch,
 } from "../../commands/debug-launch";
 import {
   makeComponentDebugEntry,
@@ -305,6 +306,42 @@ suite("Debug Launch – command registration (T011)", () => {
       threw = true;
     }
     assert.strictEqual(threw, false, "tfTools.startDebugging must not throw");
+  });
+
+  test("executeDebugLaunch reveals the Run and Debug view after a successful launch", async () => {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      return;
+    }
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-debug-view-"));
+    const originalStartDebugging = vscode.debug.startDebugging;
+    const originalExecuteCommand = vscode.commands.executeCommand;
+    const invokedCommands: string[] = [];
+
+    try {
+      const exeDir = path.join(tmpDir, "model-t");
+      fs.mkdirSync(exeDir, { recursive: true });
+      fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
+
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = async () => true;
+      (vscode.commands as { executeCommand: typeof vscode.commands.executeCommand }).executeCommand = async (command: string, ...args: unknown[]) => {
+        invokedCommands.push(command);
+        return originalExecuteCommand(command, ...args);
+      };
+
+      const entry = makeComponentDebugEntry({ name: "gdb-remote", template: "gdb-remote.json" });
+      const manifest = makeExeManifest([entry]);
+      const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
+
+      await executeDebugLaunch(workspaceFolder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+
+      assert.ok(invokedCommands.includes("workbench.view.debug"));
+    } finally {
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = originalStartDebugging;
+      (vscode.commands as { executeCommand: typeof vscode.commands.executeCommand }).executeCommand = originalExecuteCommand;
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });
 
