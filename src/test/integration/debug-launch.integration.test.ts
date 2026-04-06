@@ -108,6 +108,24 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration (
     assert.ok(result.expectedPath.endsWith("firmware.elf"));
   });
 
+  test("appends artifactSuffix and executableExtension for suffixed targets", () => {
+    const execDir = path.join(tmpDir, "model-t");
+    fs.mkdirSync(execDir, { recursive: true });
+    fs.writeFileSync(path.join(execDir, "firmware_emu.elf"), "");
+
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const manifest = makeExeManifest([entry], {
+      targets: [makeDebugTargetWithExtension("emu", ".elf", "_emu")],
+    });
+    const config = { modelId: "T2T1", targetId: "emu", componentId: "core", persistedAt: "" };
+
+    const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
+    assert.strictEqual(result.status, "valid");
+    assert.strictEqual(result.entryResolutionState, "selected");
+    assert.strictEqual(result.exists, true);
+    assert.ok(result.expectedPath.endsWith("firmware_emu.elf"));
+  });
+
   test("returns status: missing when executable file does not exist", () => {
     const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
     const manifest = makeExeManifest([entry]);
