@@ -11,12 +11,13 @@
 
 [Extract from feature spec: primary requirement + technical approach from research]
 
-## Informal Spec Alignment
+## Product Documentation Alignment
 
-**Selected Slice**: [Name the feature slice carried from spec.md]
-**Source Anchor**: [Quote or cite the relevant section from informal_spec/feature-split.md]
+**Affected Product Areas**: [List the product-spec sections carried from spec.md]
+**Source Anchor**: [Quote or cite the relevant section from specs/product-spec.md]
 **Scope Guard**: [Describe which nearby capabilities remain out of scope for this plan]
-**Critical Informal Details**: [Carry forward the concrete interaction and integration details from spec.md and informal_spec that are easy to omit during implementation]
+**Terminology Guard**: [List the glossary terms that constrain wording, state names, or user-visible labels]
+**Critical Product Details**: [Carry forward the concrete interaction and integration details from spec.md and the consolidated product docs that are easy to omit during implementation]
 
 ## Technical Context
 
@@ -41,8 +42,8 @@
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 - [ ] Host compatibility: scoped to a TypeScript VS Code extension targeting VS Code 1.110+.
-- [ ] Informal-spec alignment: the selected slice is stated, the design stays within it, and cross-slice work is deferred or split.
-- [ ] Informal-spec detail capture: critical user-visible and implementation-sensitive behaviors from the selected slice are explicitly carried into this plan.
+- [ ] Product-spec alignment: affected product areas are stated, the design stays within them, and any behavior change updates the consolidated docs in the same change.
+- [ ] Product-detail capture: critical user-visible and implementation-sensitive behaviors from the consolidated product docs are explicitly carried into this plan.
 - [ ] Manifest authority: build/debug/configuration choices derive from settings and manifest data, not hardcoded matrices.
 - [ ] Test discipline: tests are defined before implementation and cover each changed behavior plus regressions.
 - [ ] Failure visibility: diagnostics, notifications, and log-channel behavior are specified for new failure modes.
@@ -50,7 +51,7 @@
 
 ## Critical Detail Reconciliation
 
-- [List the concrete informal-spec details most likely to be missed during implementation and the files, tests, or validation steps that will enforce them]
+- [List the concrete product-spec or glossary details most likely to be missed during implementation and the files, tests, or validation steps that will enforce them]
 
 ## Project Structure
 

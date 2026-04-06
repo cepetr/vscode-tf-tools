@@ -1,15 +1,20 @@
 <!--
 Sync Impact Report
-Version change: 1.5.1 -> 1.5.2
+Version change: 1.5.2 -> 1.6.0
 Modified principles:
-- None (core principle titles unchanged; Delivery Workflow commit timing and exception rules clarified)
+- None (core principle titles unchanged; Delivery Workflow now anchors automation to consolidated product docs)
 Added sections:
 - None
 Removed sections:
 - None
 Templates requiring updates:
 - ✅ .specify/templates/constitution-template.md
+- ✅ .specify/templates/spec-template.md
+- ✅ .specify/templates/plan-template.md
 - ✅ .specify/templates/tasks-template.md
+- ✅ .github/agents/speckit.specify.agent.md
+- ✅ .github/agents/speckit.plan.agent.md
+- ✅ .github/agents/speckit.tasks.agent.md
 - ✅ .github/agents/speckit.implement.agent.md
 - ✅ .specify/templates/commands/*.md not present in this repository
 Follow-up TODOs:
@@ -78,29 +83,31 @@ concise code and justified complexity keep it maintainable.
 ## Delivery Workflow
 
 - Before `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, or
-	`/speckit.implement` proceeds, the agent MUST read the relevant documents in
-	`informal_spec/`, including `user-spec.md`, `tech-spec.md`, and
-	`feature-split.md`, when those files exist.
+	`/speckit.implement` proceeds, the agent MUST read `specs/product-spec.md`
+	and `specs/glossary.md` when those files exist.
 - Those workflow steps MUST extract the concrete user-visible and
-	implementation-sensitive details from the selected informal-spec slice,
+	implementation-sensitive details from the relevant product-spec sections,
 	including UI interaction rules, ordering constraints, persistence behavior,
-	and VS Code surface expectations that are easy to omit when only a summary is
-	carried forward.
+	command-surface behavior, and VS Code surface expectations that are easy to
+	omit when only a summary is carried forward.
 - Each feature spec MUST describe user-visible behavior, edge cases, operational
 	constraints, and failure or diagnostic behavior.
-- If the selected informal spec contains a concrete required behavior that is
-	not yet represented in `spec.md`, `plan.md`, `tasks.md`, or the intended
-	implementation approach, the agent MUST amend the missing artifact before
-	continuing instead of silently proceeding with a partial interpretation.
+- If the selected product documentation contains a concrete required behavior
+	that is not yet represented in `spec.md`, `plan.md`, `tasks.md`, or the
+	intended implementation approach, the agent MUST amend the missing artifact
+	before continuing instead of silently proceeding with a partial
+	interpretation.
 - Each generated spec, implementation plan, and task list MUST explicitly name
-	the informal-spec slice it implements and MUST stay aligned with that slice.
-	If requested work spans multiple slices from `feature-split.md`, the workflow
-	MUST stop and require the work to be split or the informal spec to be amended
-	before continuing.
-- Each implementation plan MUST record the critical informal-spec details that
+	the affected product areas in `specs/product-spec.md` and any required terms
+	from `specs/glossary.md`, and MUST stay aligned with that documentation.
+- If requested work changes user-visible behavior or terminology that is not yet
+	represented in `specs/product-spec.md` or `specs/glossary.md`, the workflow
+	MUST update the relevant consolidated document in the same change or stop for
+	clarification before continuing.
+- Each implementation plan MUST record the critical product-spec details that
 	are most likely to be missed during coding, especially for tree-view
-	behavior, event ordering, persistence semantics, command visibility, and
-	other editor-integration details.
+	behavior, event ordering, persistence semantics, command visibility,
+	template-resolution rules, and other editor-integration details.
 - Each implementation plan MUST pass a Constitution Check covering host
 	compatibility, manifest-driven design, test coverage, failure visibility, and
 	simplicity.
@@ -108,8 +115,8 @@ concise code and justified complexity keep it maintainable.
 	story and MUST include observability work whenever a feature adds new failure
 	modes or validation paths.
 - Each task list and implementation run MUST include explicit coverage for
-	critical informal-spec details through dedicated test tasks, validation tasks,
-	or both.
+	critical product-spec and glossary details through dedicated test tasks,
+	validation tasks, or both.
 - Agents and generated artifacts MUST use workspace-relative paths whenever they
 	reference files inside the current workspace. Absolute filesystem paths MAY be
 	used only for tool execution, script parsing, or references outside the
@@ -127,8 +134,9 @@ concise code and justified complexity keep it maintainable.
 	such as `T001,T007,T009:`. Approved mixed exceptions MAY combine both forms,
 	for example `T001,T003-T006:`.
 - Before a task is marked complete, self-review MUST compare the changed code
-	against the selected informal-spec slice and confirm that the critical
-	details were implemented as specified, not merely approximated.
+	against the affected feature spec, `specs/product-spec.md`, and
+	`specs/glossary.md` as applicable, and confirm that the critical details were
+	implemented as specified, not merely approximated.
 - Code review and self-review MUST verify constitutional compliance before merge.
 - Documentation and generated scaffolding MUST stay consistent with this
 	constitution whenever the rules change.
@@ -137,11 +145,12 @@ concise code and justified complexity keep it maintainable.
 
 This constitution overrides conflicting local process guidance for this repository.
 Amendments require a documented change to this file, an explicit rationale, and
-synchronization of impacted templates or agent instructions in the same change.
+synchronization of impacted templates, agent instructions, and consolidated
+product documentation in the same change.
 Versioning follows semantic rules for governance documents: MAJOR for incompatible
 principle changes or removals, MINOR for new principles or materially expanded
 requirements, and PATCH for clarifications that do not change project obligations.
 Compliance review is required for every plan, task list, and pull request that
 changes behavior, tooling, or development workflow.
 
-**Version**: 1.5.2 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-04
+**Version**: 1.6.0 | **Ratified**: 2026-04-02 | **Last Amended**: 2026-04-06

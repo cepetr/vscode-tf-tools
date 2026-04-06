@@ -7,12 +7,13 @@
 
 **File Reference Rule**: Use workspace-relative paths for any repository file references written into this specification.
 
-## Informal Spec Alignment *(mandatory)*
+## Product Documentation Alignment *(mandatory)*
 
-- **Source Documents**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
-- **Selected Slice**: [Name the feature slice from feature-split.md]
-- **Scope Guard**: [State what this spec includes and which adjacent slices are explicitly excluded]
-- **Critical Informal Details**: [List the concrete user-visible and implementation-sensitive behaviors from the selected slice that MUST survive into planning and implementation]
+- **Source Documents**: `specs/product-spec.md`, `specs/glossary.md`
+- **Affected Product Areas**: [List the product-spec sections this feature changes or depends on]
+- **Scope Guard**: [State what this spec includes and which adjacent behavior is explicitly out of scope]
+- **Terminology Guard**: [List the glossary terms this feature MUST use consistently and any glossary updates that are required]
+- **Critical Product Details**: [List the concrete user-visible and implementation-sensitive behaviors from the product spec or glossary that MUST survive into planning and implementation]
 
 ## User Scenarios & Testing *(mandatory)*
 

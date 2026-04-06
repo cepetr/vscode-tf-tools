@@ -7,16 +7,16 @@ description: "Task list template for feature implementation"
 
 **Input**: Design documents from `specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
-**Informal Spec Slice**: [Name the slice from spec.md and plan.md]
-**Scope Guard**: [Tasks in this file stay within the selected slice; reject cross-slice scope creep]
+**Affected Product Areas**: [List the product-spec sections from spec.md and plan.md]
+**Scope Guard**: [Tasks in this file stay within the scoped feature change; reject unrelated product-area drift]
 
-**Tests**: Generate automated test tasks for every user story. Include regression coverage for bug fixes and integration coverage whenever the change crosses VS Code APIs, manifest parsing, task execution, diagnostics, persisted state, or implementation-sensitive UI/event-ordering behavior from the informal spec.
+**Tests**: Generate automated test tasks for every user story. Include regression coverage for bug fixes and integration coverage whenever the change crosses VS Code APIs, manifest parsing, task execution, diagnostics, persisted state, or implementation-sensitive UI/event-ordering behavior from the product specification.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
-**Slice Rule**: Include only tasks and stories that belong to the selected informal-spec slice.
+**Scope Rule**: Include only tasks and stories that belong to the scoped feature change described by spec.md and plan.md.
 
-**Critical Detail Rule**: Include explicit tasks for the critical informal-spec details named in spec.md and plan.md. Do not assume those details are covered implicitly by broader implementation tasks.
+**Critical Detail Rule**: Include explicit tasks for the critical product-spec and glossary details named in spec.md and plan.md. Do not assume those details are covered implicitly by broader implementation tasks.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -248,7 +248,7 @@ With multiple developers:
 
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
-- State the selected informal-spec slice at the top of the file and reject scope drift into other slices
+- State the affected product areas at the top of the file and reject scope drift into unrelated behavior
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing
 - Complete one task at a time. Create automatic commits only after the task is

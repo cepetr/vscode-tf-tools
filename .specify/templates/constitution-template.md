@@ -38,7 +38,7 @@
 <!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
 
 [SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, workspace-relative file references in generated artifacts, verified task completion before automatic commits, task-prefixed implementation commits such as T001:, T003-T006:, or T001,T003-T006:, reconciliation against informal specs, etc. -->
+<!-- Example: Code review requirements, testing gates, deployment approval process, workspace-relative file references in generated artifacts, verified task completion before automatic commits, task-prefixed implementation commits such as T001:, T003-T006:, or T001,T003-T006:, reconciliation against consolidated product docs, etc. -->
 
 ## Governance
 <!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->

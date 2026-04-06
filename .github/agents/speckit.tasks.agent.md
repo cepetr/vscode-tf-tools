@@ -63,29 +63,29 @@ only for tool inputs or for references outside the workspace.
 
 1. **Setup**: Run `.specify/scripts/bash/check-prerequisites.sh --json` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list for internal use. Any file references written into generated artifacts MUST be workspace-relative. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
-2. **Load design documents**: Read from FEATURE_DIR and `informal_spec/`:
+2. **Load design documents**: Read from FEATURE_DIR and the consolidated product docs:
    - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
-  - **Required when present**: `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, `informal_spec/feature-split.md`
+  - **Required when present**: `specs/product-spec.md`, `specs/glossary.md`
    - **Optional**: data-model.md (entities), contracts/ (interface contracts), research.md (decisions), quickstart.md (test scenarios)
    - Note: Not all projects have all documents. Generate tasks based on what's available.
 
 3. **Execute task generation workflow**:
    - Load plan.md and extract tech stack, libraries, project structure
    - Load spec.md and extract user stories with their priorities (P1, P2, P3, etc.)
-  - Load the selected informal-spec slice from spec.md/plan.md and validate it against `feature-split.md`
-  - Extract the critical informal-spec details from spec.md/plan.md and generate explicit implementation, validation, or regression-test tasks for them
+  - Load the affected product areas from spec.md/plan.md and reconcile them against `specs/product-spec.md`
+  - Extract the critical product-spec and glossary details from spec.md/plan.md and generate explicit implementation, validation, or regression-test tasks for them
    - If data-model.md exists: Extract entities and map to user stories
    - If contracts/ exists: Map interface contracts to user stories
    - If research.md exists: Extract decisions for setup tasks
    - Generate tasks organized by user story (see Task Generation Rules below)
-  - ERROR if any task belongs to a different informal-spec slice than the selected one
+  - ERROR if any task belongs to unrelated product behavior outside the scoped feature change
    - Generate dependency graph showing user story completion order
    - Create parallel execution examples per user story
    - Validate task completeness (each user story has all needed tasks, independently testable)
 
 4. **Generate tasks.md**: Use `.specify/templates/tasks-template.md` as structure, fill with:
    - Correct feature name from plan.md
-  - Selected informal-spec slice and scope guard from spec.md/plan.md
+  - Affected product areas and scope guard from spec.md/plan.md
    - Phase 1: Setup tasks (project initialization)
    - Phase 2: Foundational tasks (blocking prerequisites for all user stories)
    - Phase 3+: One phase per user story (in priority order from spec.md)
@@ -100,7 +100,7 @@ only for tool inputs or for references outside the workspace.
 5. **Report**: Output path to generated tasks.md and summary:
    - Total task count
    - Task count per user story
-  - Selected informal-spec slice
+  - Affected product areas
    - Parallel opportunities identified
    - Independent test criteria for each story
    - Suggested MVP scope (typically just User Story 1)
@@ -143,7 +143,7 @@ The tasks.md should be immediately executable - each task must be specific enoug
 
 **CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
 
-**CRITICAL**: Tasks MUST stay within the selected informal-spec slice. If the requested work crosses into another slice from `feature-split.md`, stop and require the feature to be split or the informal spec to be amended first.
+**CRITICAL**: Tasks MUST stay within the scoped feature change and the affected product areas named in spec.md and plan.md. If the requested work expands beyond them, stop and require a spec update first.
 
 **Tests are REQUIRED**: Generate test tasks for every user story. Include regression coverage for bug fixes and integration-level tests whenever work touches VS Code APIs, manifest parsing, task execution, diagnostics, or persisted state.
 

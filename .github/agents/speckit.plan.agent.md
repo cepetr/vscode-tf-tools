@@ -62,22 +62,22 @@ only for tool inputs or for references outside the workspace.
 
 1. **Setup**: Run `.specify/scripts/bash/setup-plan.sh --json` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
-2. **Load context**: Read FEATURE_SPEC, `.specify/memory/constitution.md`, `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, and `informal_spec/feature-split.md`. Load IMPL_PLAN template (already copied).
+2. **Load context**: Read FEATURE_SPEC, `.specify/memory/constitution.md`, `specs/product-spec.md`, and `specs/glossary.md`. Load IMPL_PLAN template (already copied).
 
 3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
-  - Fill Informal Spec Alignment from the selected slice in spec.md and `feature-split.md`
-  - Carry forward the `Critical Informal Details` from spec.md and reconcile them against `informal_spec/`
+  - Fill Product Documentation Alignment from the affected product areas named in spec.md and `specs/product-spec.md`
+  - Carry forward the `Critical Product Details` from spec.md and reconcile them against the consolidated product docs
    - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
    - Fill Constitution Check section from constitution
   - Fill Critical Detail Reconciliation with the concrete files, tests, and validation points that will enforce those details
-  - ERROR if the plan introduces work from a different informal-spec slice
+  - ERROR if the plan introduces behavior outside the bounded feature scope without corresponding spec and product-doc updates
    - Evaluate gates (ERROR if violations unjustified)
    - Phase 0: Generate research.md (resolve all NEEDS CLARIFICATION)
    - Phase 1: Generate data-model.md, contracts/, quickstart.md
    - Phase 1: Update agent context by running the agent script
    - Re-evaluate Constitution Check post-design
 
-4. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, selected informal-spec slice, and generated artifacts.
+4. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, affected product areas, and generated artifacts.
 
 5. **Check for extension hooks**: After reporting, check if `.specify/extensions.yml` exists in the project root.
    - If it exists, read it and look for entries under the `hooks.after_plan` key

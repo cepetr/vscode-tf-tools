@@ -88,8 +88,8 @@ only for tool inputs or for references outside the workspace.
 3. Load and analyze the implementation context:
    - **REQUIRED**: Read tasks.md for the complete task list and execution plan
    - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
-  - **REQUIRED when present**: Read `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, and `informal_spec/feature-split.md`
-  - Extract the critical informal-spec details from spec.md, plan.md, and `informal_spec/` before making code changes
+  - **REQUIRED when present**: Read `specs/product-spec.md` and `specs/glossary.md`
+  - Extract the critical product-spec and glossary details from spec.md, plan.md, and the consolidated docs before making code changes
    - **IF EXISTS**: Read data-model.md for entities and relationships
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints
@@ -141,7 +141,7 @@ only for tool inputs or for references outside the workspace.
 
 5. Parse tasks.md structure and extract:
    - **Task phases**: Setup, Tests, Core, Integration, Polish
-  - **Selected informal-spec slice**: The slice named in spec.md, plan.md, and tasks.md
+  - **Affected product areas**: The areas named in spec.md, plan.md, and tasks.md
    - **Task dependencies**: Sequential execution order and any [P] markers that
      identify dependency-safe tasks
    - **Task details**: ID, description, file paths, parallel markers [P]
@@ -149,7 +149,7 @@ only for tool inputs or for references outside the workspace.
 
 6. Execute implementation following the task plan:
    - **Phase-by-phase execution**: Complete each phase before moving to the next
-  - **Scope guard**: Halt if a task, code change, or requested follow-on work crosses into a different informal-spec slice than the selected one
+  - **Scope guard**: Halt if a task, code change, or requested follow-on work crosses into unrelated product behavior outside the scoped feature change
    - **Respect dependencies**: Execute exactly one task at a time in order;
      treat [P] tasks as dependency metadata, not permission to batch execution
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
@@ -165,7 +165,7 @@ only for tool inputs or for references outside the workspace.
      `T001,T007,T009: align task fixtures`, or a mixed form such as
      `T001,T003-T006: align task fixtures`.
    - **Validation checkpoints**: Verify each phase completion before proceeding
-  - **Critical detail checkpoints**: Verify the implementation still matches the concrete informal-spec details called out in spec.md and plan.md before marking a task complete
+  - **Critical detail checkpoints**: Verify the implementation still matches the concrete product-spec and glossary details called out in spec.md and plan.md before marking a task complete
 
 7. Implementation execution rules:
    - **Setup first**: Initialize project structure, dependencies, configuration
@@ -184,7 +184,7 @@ only for tool inputs or for references outside the workspace.
 
 9. Completion validation:
    - Verify all required tasks are completed
-  - Verify the completed work still matches the selected informal-spec slice and did not absorb cross-slice scope
+  - Verify the completed work still matches the affected product areas and did not absorb unrelated scope
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan

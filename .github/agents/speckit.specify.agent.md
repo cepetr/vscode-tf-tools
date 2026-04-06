@@ -64,11 +64,11 @@ The text the user typed after `/speckit.specify` in the triggering message **is*
 
 Given that feature description, do this:
 
-0. **Load informal-spec context first**:
-   - Read `informal_spec/user-spec.md`, `informal_spec/tech-spec.md`, and `informal_spec/feature-split.md` before generating any artifact.
-   - Identify the single feature slice in `feature-split.md` that matches the request.
-   - Extract the concrete user-visible and implementation-sensitive details from that slice, especially UI interaction rules, ordering constraints, persistence behavior, and VS Code surface expectations.
-   - If the request spans multiple slices, ERROR and instruct the user to split the request or amend the informal spec first.
+0. **Load product documentation first**:
+   - Read `specs/product-spec.md` and `specs/glossary.md` before generating any artifact.
+   - Identify the product areas and terminology that match the request.
+   - Extract the concrete user-visible and implementation-sensitive details that apply, especially UI interaction rules, ordering constraints, persistence behavior, and VS Code surface expectations.
+   - If the request changes user-visible behavior or terminology that is not yet reflected in the consolidated docs, record the required documentation updates in the generated spec instead of silently diverging.
 
 1. **Generate a concise short name** (2-4 words) for the branch:
    - Analyze the feature description and extract the most meaningful keywords
@@ -107,7 +107,7 @@ Given that feature description, do this:
 
     1. Parse user description from Input
        If empty: ERROR "No feature description provided"
-   2. Extract key concepts from description and determine the selected informal-spec slice
+      2. Extract key concepts from description and determine the affected product areas
        Identify: actors, actions, data, constraints
     3. For unclear aspects:
        - Make informed guesses based on context and industry standards
@@ -121,7 +121,7 @@ Given that feature description, do this:
        If no clear user flow: ERROR "Cannot determine user scenarios"
     5. Generate Functional Requirements
        Each requirement must be testable
-       Every requirement MUST fit inside the selected informal-spec slice
+       Every requirement MUST fit inside the bounded feature scope and align with the affected product areas
        Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
     6. Define Success Criteria
        Create measurable, technology-agnostic outcomes
@@ -131,9 +131,9 @@ Given that feature description, do this:
     8. Return: SUCCESS (spec ready for planning)
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
-   - Fill the `Informal Spec Alignment` section with the selected slice and explicit exclusions.
-   - Fill `Critical Informal Details` with the concrete behaviors that later planning and implementation MUST preserve.
-   - Reject scope creep: do not include requirements that belong to other slices from `feature-split.md`.
+   - Fill the `Product Documentation Alignment` section with the affected product areas, terminology guard, and explicit exclusions.
+   - Fill `Critical Product Details` with the concrete behaviors that later planning and implementation MUST preserve.
+   - Reject scope creep: do not include requirements outside the bounded feature scope named in the spec.
 
 6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
 
@@ -155,8 +155,9 @@ Given that feature description, do this:
 
       ## Requirement Completeness
 
-      - [ ] Informal-spec slice is stated explicitly
-      - [ ] No requirements spill into other informal-spec slices
+      - [ ] Product documentation sources are stated explicitly
+      - [ ] Affected product areas are stated explicitly
+      - [ ] Terminology is consistent with `specs/glossary.md`
       - [ ] No [NEEDS CLARIFICATION] markers remain
       - [ ] Requirements are testable and unambiguous
       - [ ] Success criteria are measurable
@@ -229,7 +230,7 @@ Given that feature description, do this:
 
    d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
 
-7. Report completion with branch name, spec file path, selected informal-spec slice, checklist results, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
+7. Report completion with branch name, spec file path, affected product areas, checklist results, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
 
 8. **Check for extension hooks**: After reporting completion, check if `.specify/extensions.yml` exists in the project root.
    - If it exists, read it and look for entries under the `hooks.after_specify` key
