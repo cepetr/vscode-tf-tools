@@ -27,6 +27,8 @@
 - Q: Where do debug entries live in the manifest? → A: They are declared under each `component` as `component.debug`; the extension evaluates only the selected component's entries.
 - Q: How is the executable path determined for debugging? → A: Derive it from `<artifactName><artifactSuffix><executableExtension>` under the active model artifact folder, with `artifactSuffix` and `executableExtension` coming from the selected target when present.
 - Q: How are multiple matching debug entries resolved? → A: The first matching entry in declaration order wins; there is no explicit `priority` field.
+- Q: Should the extension support legacy debug schema or tokens during this change? → A: No. Support only the new schema and `${tfTools.debugProfileName}` token; reject legacy top-level `debug`, `priority`, profile-level `executable`, and `${tfTools.debugConfigName}` usage.
+- Q: Is `component.debug[].when` required? → A: No. `when` is optional; when omitted, the debug entry matches all active contexts for that component.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -43,7 +45,7 @@ As a firmware developer, I want the extension to resolve the correct component-s
 1. **Given** the active build context matches a debug entry in the selected component and its derived executable artifact exists, **When** the user invokes `Trezor: Start Debugging` from the Configuration view header, **Then** the extension launches the resolved debug configuration for that active context.
 2. **Given** the active build context matches a debug entry in the selected component and its derived executable artifact exists, **When** the user invokes `Start Debugging` from the `Executable` row, **Then** the extension launches the same resolved debug configuration.
 3. **Given** the active build context matches a debug entry in the selected component and its derived executable artifact exists, **When** the user invokes `Trezor: Start Debugging` from the Command Palette, **Then** the extension launches the same resolved debug configuration.
-4. **Given** multiple debug entries in the selected component match the active build context, **When** the user invokes `Trezor: Start Debugging`, **Then** the extension launches the first matching entry in declaration order.
+4. **Given** multiple debug entries in the selected component match the active build context, including entries whose `when` is omitted, **When** the user invokes `Trezor: Start Debugging`, **Then** the extension launches the first matching entry in declaration order.
 5. **Given** a matching debug entry defines `name` and tf-tools variables in template fields or additional variables, **When** the user invokes `Trezor: Start Debugging`, **Then** the launched debug configuration uses `${tfTools.debugProfileName}` and the other resolved values for the active build context.
 
 ---
@@ -85,6 +87,7 @@ As a firmware developer, I want explicit errors and persistent logs when debug l
 
 - The active build context matches no debug entry in the selected component.
 - Multiple debug entries in the selected component match, and the first declaration-order match must be used.
+- A selected component includes a debug entry with no `when`, so that entry matches all active contexts for that component.
 - The selected target defines `executableExtension` and changes the derived executable filename.
 - The selected target omits `executableExtension`, so the derived executable filename has no extra extension.
 - The selected debug entry references tf-tools variables inside nested arrays or nested objects in the template.
@@ -100,9 +103,11 @@ As a firmware developer, I want explicit errors and persistent logs when debug l
 ### Functional Requirements
 
 - **FR-001**: The system MUST evaluate the selected component's manifest-defined `debug` entries against the active model, target, and component using the same condition-expression semantics used for manifest `when` rules.
+- **FR-001A**: The system MUST treat an omitted `component.debug[].when` as matching all active contexts for the selected component.
 - **FR-002**: The system MUST treat the active build context as startable for debugging only when the selected component yields at least one matching manifest-defined debug entry.
 - **FR-003**: When multiple matching debug entries exist in the selected component, the system MUST use the first matching entry in declaration order.
 - **FR-004**: The system MUST ignore `debug` entries declared on non-selected components when resolving `Trezor: Start Debugging`.
+- **FR-004A**: The system MUST support only the component-scoped debug schema and `${tfTools.debugProfileName}` token; legacy top-level `debug` entries, `priority`, profile-level `executable`, and `${tfTools.debugConfigName}` usage MUST be treated as unsupported rather than silently mapped.
 - **FR-005**: The system MUST load the selected debug template from `tfTools.debug.templatesPath` each time the user invokes `Trezor: Start Debugging`.
 - **FR-005A**: The default value of `tfTools.debug.templatesPath` MUST be `${workspaceFolder}/core/embed/.tf-tools`.
 - **FR-006**: The system MUST reject template-path traversal outside the configured debug templates root.
@@ -149,6 +154,7 @@ As a firmware developer, I want explicit errors and persistent logs when debug l
 - Source of truth inputs: The active model, target, and component selection; the selected component's manifest `debug` array; `tfTools.artifactsPath`; `tfTools.debug.templatesPath` with default `${workspaceFolder}/core/embed/.tf-tools`; the selected model's `artifactFolder`; the selected component's `artifactName`; the selected target's optional `artifactSuffix` and optional `executableExtension`; the selected debug entry's `name`, `template`, `when`, and optional `vars`; manifest validity; workspace support state; and the presence of the resolved executable on disk.
 - Workspace assumptions: Single-root workspace only.
 - Compatibility exclusions: Multi-root workspaces, launch.json generation or persistence, Flash and Upload actions, `Binary` and `Map File` ownership, Build Workflow task behaviors, compile-commands provider behavior, and excluded-file surfaces are out of scope.
+- Compatibility exclusions: Multi-root workspaces, launch.json generation or persistence, Flash and Upload actions, `Binary` and `Map File` ownership, Build Workflow task behaviors, compile-commands provider behavior, excluded-file surfaces, and backward compatibility for the legacy debug schema or `${tfTools.debugConfigName}` token are out of scope.
 
 ## Failure Modes & Diagnostics *(mandatory)*
 
