@@ -664,7 +664,7 @@ suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
 function makeValidExecutableArtifact(overrides: Partial<ActiveExecutableArtifact> = {}): ActiveExecutableArtifact {
   return {
     contextKey: "T2T1::hw::core",
-    profileResolutionState: "selected",
+    entryResolutionState: "selected",
     expectedPath: "/build/model-t/firmware.elf",
     exists: true,
     status: "valid",
@@ -676,7 +676,7 @@ function makeValidExecutableArtifact(overrides: Partial<ActiveExecutableArtifact
 function makeMissingExecutableArtifact(overrides: Partial<ActiveExecutableArtifact> = {}): ActiveExecutableArtifact {
   return {
     contextKey: "T2T1::hw::core",
-    profileResolutionState: "selected",
+    entryResolutionState: "selected",
     expectedPath: "/build/model-t/firmware.elf",
     exists: false,
     status: "missing",
@@ -747,19 +747,19 @@ suite("ExecutableArtifactItem – missing status rendering", () => {
     );
   });
 
-  test("missing-reason profiles: no-match tooltip is non-empty", () => {
+  test("missing-reason entries: no-match tooltip is non-empty", () => {
     const item = new ExecutableArtifactItem(makeMissingExecutableArtifact({
-      profileResolutionState: "no-match",
-      tooltip: "No debug profile matches the active build context.",
+      entryResolutionState: "no-match",
+      tooltip: "No debug entry matches the active build context.",
       expectedPath: "",
     }));
     assert.ok(String(item.tooltip).length > 0);
   });
 
-  test("missing-reason profiles: ambiguous tooltip is non-empty", () => {
+  test("missing-reason entries: manifest-invalid tooltip is non-empty", () => {
     const item = new ExecutableArtifactItem(makeMissingExecutableArtifact({
-      profileResolutionState: "ambiguous",
-      tooltip: "2 debug profiles are tied at priority 5; the active context is ambiguous.",
+      entryResolutionState: "manifest-invalid",
+      tooltip: "Debug configuration has validation errors.",
       expectedPath: "",
     }));
     assert.ok(String(item.tooltip).length > 0);

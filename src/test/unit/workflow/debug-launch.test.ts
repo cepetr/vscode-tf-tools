@@ -2,13 +2,12 @@
  * Unit tests for Debug Launch core helpers.
  *
  * Covers:
- *  - resolveDebugProfile: no-when matches all, conditional when, priority wins,
- *    equal-priority ambiguity, no-match result
- *  - deriveExecutablePath: relative resolved against artifactsRoot/artifactFolder,
- *    absolute paths returned unchanged
+ *  - resolveComponentDebugEntry: omitted-when matches all, conditional when,
+ *    first-match declaration order wins, no-match result
+ *  - deriveExecutableFileName: artifact name + suffix + extension
  *  - loadDebugTemplate: valid JSONC loads, traversal blocked, missing file,
  *    malformed JSONC invalid, per-invocation fresh read
- *  - buildDebugVariableMap: built-in variables, profile vars referencing builtIns
+ *  - buildDebugVariableMap: built-in variables, entry vars referencing builtIns
  *    and each other, cyclic vars produce resolutionErrors, unknown tf-tools vars
  *    produce resolutionErrors
  *  - applyTfToolsSubstitution: single-pass replacement, nested objects and arrays,
@@ -21,8 +20,8 @@ import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 import {
-  resolveDebugProfile,
-  deriveExecutablePath,
+  resolveComponentDebugEntry,
+  deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
   applyTfToolsSubstitution,
@@ -31,108 +30,97 @@ import {
   TFTOOLS_VAR_COMPONENT,
   TFTOOLS_VAR_ARTIFACT_FOLDER,
   TFTOOLS_VAR_EXECUTABLE_PATH,
-  TFTOOLS_VAR_EXECUTABLE_BASENAME,
+  TFTOOLS_VAR_EXECUTABLE,
+  TFTOOLS_VAR_DEBUG_PROFILE_NAME,
 } from "../../../commands/debug-launch";
-import { makeDebugProfile, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
+import { makeComponentDebugEntry, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
 
 /**
- * Returns a debug profile with required fields defaulted for tests that
- * only care about when/priority/id, not template/executable.
+ * Returns a debug entry with required fields defaulted for tests that
+ * only care about when/id, not template/name.
  */
-function makeProfile(overrides: Partial<import("../../../manifest/manifest-types").ManifestDebugProfile> = {}) {
-  return makeDebugProfile({
-    template: "gdb-remote.json",
-    executable: "firmware.elf",
-    ...overrides,
-  });
+function makeEntry(overrides: Parameters<typeof makeComponentDebugEntry>[0] = { name: "gdb", template: "gdb-remote.json" }) {
+  return makeComponentDebugEntry(overrides);
 }
 
 // ---------------------------------------------------------------------------
-// resolveDebugProfile
+// resolveComponentDebugEntry
 // ---------------------------------------------------------------------------
 
-suite("resolveDebugProfile", () => {
+suite("resolveComponentDebugEntry", () => {
   const ctx = { modelId: "T2T1", targetId: "hw", componentId: "core" };
 
-  test("profile without when matches any context", () => {
-    const profile = makeProfile({ id: "p1" }); // no when
-    const result = resolveDebugProfile([profile], ctx);
+  test("entry without when matches any context", () => {
+    const entry = makeEntry({ name: "p1", template: "gdb-remote.json" }); // no when
+    const result = resolveComponentDebugEntry([entry], ctx);
     assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedProfile, profile);
+    assert.strictEqual(result.selectedEntry, entry);
   });
 
-  test("profile with matching when selects that profile", () => {
-    const profile = makeProfile({ id: "p1", when: { type: "model", id: "T2T1" } });
-    const result = resolveDebugProfile([profile], ctx);
+  test("entry with matching when selects that entry", () => {
+    const entry = makeEntry({ name: "p1", template: "gdb-remote.json", when: { type: "model", id: "T2T1" } });
+    const result = resolveComponentDebugEntry([entry], ctx);
     assert.strictEqual(result.resolutionState, "selected");
+    assert.strictEqual(result.selectedEntry, entry);
   });
 
-  test("profile with non-matching when is excluded", () => {
-    const profile = makeProfile({ id: "p1", when: { type: "model", id: "T3W1" } });
-    const result = resolveDebugProfile([profile], ctx);
+  test("entry with non-matching when is excluded", () => {
+    const entry = makeEntry({ name: "p1", template: "gdb-remote.json", when: { type: "model", id: "T3W1" } });
+    const result = resolveComponentDebugEntry([entry], ctx);
     assert.strictEqual(result.resolutionState, "no-match");
   });
 
-  test("highest priority wins among matching profiles", () => {
-    const low = makeProfile({ id: "low", priority: 5 });
-    const high = makeProfile({ id: "high", priority: 10 });
-    const result = resolveDebugProfile([low, high], ctx);
+  test("first matching entry wins (declaration order)", () => {
+    const first = makeEntry({ name: "first", template: "a.json", declarationIndex: 0 });
+    const second = makeEntry({ name: "second", template: "b.json", declarationIndex: 1 });
+    const result = resolveComponentDebugEntry([first, second], ctx);
     assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedProfile?.id, "high");
-    assert.strictEqual(result.highestPriority, 10);
+    assert.strictEqual(result.selectedEntry?.name, "first");
   });
 
-  test("equal highest priority returns ambiguous", () => {
-    const a = makeProfile({ id: "a", priority: 10 });
-    const b = makeProfile({ id: "b", priority: 10 });
-    const result = resolveDebugProfile([a, b], ctx);
-    assert.strictEqual(result.resolutionState, "ambiguous");
-    assert.strictEqual(result.selectedProfile, undefined);
-    assert.strictEqual(result.matchedProfiles.length, 2);
+  test("first matching conditional entry wins over later unconditional one", () => {
+    const nonMatch = makeEntry({ name: "no", template: "a.json", when: { type: "model", id: "T3W1" }, declarationIndex: 0 });
+    const match = makeEntry({ name: "yes", template: "b.json", when: { type: "model", id: "T2T1" }, declarationIndex: 1 });
+    const result = resolveComponentDebugEntry([nonMatch, match], ctx);
+    assert.strictEqual(result.resolutionState, "selected");
+    assert.strictEqual(result.selectedEntry?.name, "yes");
   });
 
-  test("no matching profiles returns no-match", () => {
-    const profile = makeProfile({ id: "p1", when: { type: "target", id: "emu" } });
-    const result = resolveDebugProfile([profile], ctx);
+  test("no matching entries returns no-match", () => {
+    const entry = makeEntry({ name: "p1", template: "gdb-remote.json", when: { type: "target", id: "emu" } });
+    const result = resolveComponentDebugEntry([entry], ctx);
     assert.strictEqual(result.resolutionState, "no-match");
-    assert.strictEqual(result.matchedProfiles.length, 0);
   });
 
-  test("lower-priority profile is excluded when higher-priority match exists", () => {
-    const low = makeProfile({ id: "low", priority: 0, when: { type: "model", id: "T2T1" } });
-    const high = makeProfile({ id: "high", priority: 20, when: { type: "model", id: "T2T1" } });
-    const nonMatch = makeProfile({ id: "none", priority: 50, when: { type: "model", id: "T3W1" } });
-    const result = resolveDebugProfile([low, high, nonMatch], ctx);
-    assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedProfile?.id, "high");
-    assert.strictEqual(result.matchedProfiles.length, 2); // low + high match, nonMatch does not
-  });
-
-  test("empty profiles list returns no-match", () => {
-    const result = resolveDebugProfile([], ctx);
+  test("empty entry list returns no-match", () => {
+    const result = resolveComponentDebugEntry([], ctx);
     assert.strictEqual(result.resolutionState, "no-match");
   });
 });
 
 // ---------------------------------------------------------------------------
-// deriveExecutablePath
+// deriveExecutableFileName
 // ---------------------------------------------------------------------------
 
-suite("deriveExecutablePath", () => {
-  test("relative executable resolves to artifactsRoot/artifactFolder/executable", () => {
-    const result = deriveExecutablePath("firmware.elf", "model-t", "/build");
-    assert.strictEqual(result, path.join("/build", "model-t", "firmware.elf"));
+suite("deriveExecutableFileName", () => {
+  test("concatenates artifactName, artifactSuffix, and executableExtension", () => {
+    const result = deriveExecutableFileName("firmware", "_hw", ".elf");
+    assert.strictEqual(result, "firmware_hw.elf");
   });
 
-  test("absolute executable path is returned unchanged", () => {
-    const abs = "/opt/firmware/firmware.elf";
-    const result = deriveExecutablePath(abs, "model-t", "/build");
-    assert.strictEqual(result, abs);
+  test("empty suffix and extension produces just the artifact name", () => {
+    const result = deriveExecutableFileName("firmware", "", "");
+    assert.strictEqual(result, "firmware");
   });
 
-  test("relative executable with subdirectory resolves correctly", () => {
-    const result = deriveExecutablePath("sub/dir/firmware.elf", "model-t", "/build");
-    assert.strictEqual(result, path.join("/build", "model-t", "sub", "dir", "firmware.elf"));
+  test("empty artifact name with suffix and extension", () => {
+    const result = deriveExecutableFileName("", "_emu", ".bin");
+    assert.strictEqual(result, "_emu.bin");
+  });
+
+  test("all empty strings produces empty string", () => {
+    const result = deriveExecutableFileName("", "", "");
+    assert.strictEqual(result, "");
   });
 });
 
@@ -225,48 +213,55 @@ suite("buildDebugVariableMap", () => {
   const targetId = "hw";
   const componentId = "core";
   const artifactFolder = "model-t";
+  const executableFileName = "firmware.elf";
   const executablePath = "/build/model-t/firmware.elf";
+  const debugProfileName = "gdb-remote";
+
+  function makeMap(entryVars?: Record<string, string>) {
+    return buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executableFileName, executablePath, debugProfileName, entryVars);
+  }
 
   test("built-in variables are always populated", () => {
-    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executablePath, undefined);
+    const map = makeMap();
     assert.strictEqual(map.builtIns[TFTOOLS_VAR_MODEL], "T2T1");
     assert.strictEqual(map.builtIns[TFTOOLS_VAR_TARGET], "hw");
     assert.strictEqual(map.builtIns[TFTOOLS_VAR_COMPONENT], "core");
     assert.strictEqual(map.builtIns[TFTOOLS_VAR_ARTIFACT_FOLDER], "model-t");
+    assert.strictEqual(map.builtIns[TFTOOLS_VAR_EXECUTABLE], "firmware.elf");
     assert.strictEqual(map.builtIns[TFTOOLS_VAR_EXECUTABLE_PATH], executablePath);
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_EXECUTABLE_BASENAME], "firmware.elf");
+    assert.strictEqual(map.builtIns[TFTOOLS_VAR_DEBUG_PROFILE_NAME], "gdb-remote");
   });
 
-  test("resolvedVars contains all built-ins when no profile vars", () => {
-    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executablePath, undefined);
+  test("resolvedVars contains all built-ins when no entry vars", () => {
+    const map = makeMap();
     assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_MODEL], "T2T1");
     assert.strictEqual(map.resolutionErrors.length, 0);
   });
 
-  test("profile vars referencing built-ins are resolved", () => {
+  test("entry vars referencing built-ins are resolved", () => {
     const vars = { debugLabel: "debug-${tfTools.model}-${tfTools.target}" };
-    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executablePath, vars);
+    const map = makeMap(vars);
     assert.strictEqual(map.resolvedVars["tfTools.debugLabel"], "debug-T2T1-hw");
     assert.strictEqual(map.resolutionErrors.length, 0);
   });
 
-  test("profile vars referencing other profile vars are resolved", () => {
+  test("entry vars referencing other entry vars are resolved", () => {
     const vars = {
       port: "3333",
       serverArg: "--port ${tfTools.port}",
     };
-    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executablePath, vars);
+    const map = makeMap(vars);
     assert.strictEqual(map.resolvedVars["tfTools.port"], "3333");
     assert.strictEqual(map.resolvedVars["tfTools.serverArg"], "--port 3333");
     assert.strictEqual(map.resolutionErrors.length, 0);
   });
 
-  test("cyclic profile vars produce a resolution error", () => {
+  test("cyclic entry vars produce a resolution error", () => {
     const vars = {
       a: "${tfTools.b}",
       b: "${tfTools.a}",
     };
-    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executablePath, vars);
+    const map = makeMap(vars);
     assert.ok(map.resolutionErrors.length > 0, "expected cycle error");
     assert.ok(
       map.resolutionErrors.some((e) => e.toLowerCase().includes("cyclic")),
@@ -274,9 +269,9 @@ suite("buildDebugVariableMap", () => {
     );
   });
 
-  test("unknown tf-tools variable in profile var produces a resolution error", () => {
+  test("unknown tf-tools variable in entry var produces a resolution error", () => {
     const vars = { x: "${tfTools.nonExistent}" };
-    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executablePath, vars);
+    const map = makeMap(vars);
     assert.ok(map.resolutionErrors.length > 0, "expected unknown var error");
     assert.ok(
       map.resolutionErrors.some((e) => e.includes("nonExistent")),
@@ -284,9 +279,15 @@ suite("buildDebugVariableMap", () => {
     );
   });
 
-  test("executableBasename is derived from executablePath basename", () => {
-    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, "/a/b/c/my-firmware.elf", undefined);
-    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_EXECUTABLE_BASENAME], "my-firmware.elf");
+  test("executable variable contains filename (not full path)", () => {
+    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, "my-firmware.elf", "/a/b/c/my-firmware.elf", debugProfileName, undefined);
+    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_EXECUTABLE], "my-firmware.elf");
+    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_EXECUTABLE_PATH], "/a/b/c/my-firmware.elf");
+  });
+
+  test("debugProfileName is exposed as tfTools.debugProfileName", () => {
+    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executableFileName, executablePath, "my-profile", undefined);
+    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_DEBUG_PROFILE_NAME], "my-profile");
   });
 });
 
@@ -298,7 +299,7 @@ suite("applyTfToolsSubstitution", () => {
   const resolvedVars: Readonly<Record<string, string>> = {
     "tfTools.model": "T2T1",
     "tfTools.executablePath": "/build/firmware.elf",
-    "tfTools.executableBasename": "firmware.elf",
+    "tfTools.executable": "firmware.elf",
   };
 
   test("replaces a tf-tools token in a plain string", () => {
@@ -375,14 +376,11 @@ suite("applyTfToolsSubstitution", () => {
   });
 
   test("single-pass: resolved values are not re-expanded", () => {
-    // If ${tfTools.model} → "${tfTools.executablePath}", the result should
-    // NOT be further substituted to "/build/firmware.elf"
     const tricky: Readonly<Record<string, string>> = {
       "tfTools.model": "${tfTools.executablePath}",
       "tfTools.executablePath": "/build/firmware.elf",
     };
     const { value } = applyTfToolsSubstitution("${tfTools.model}", tricky);
-    // Single-pass: ${tfTools.model} → "${tfTools.executablePath}" (literal, not re-expanded)
     assert.strictEqual(value, "${tfTools.executablePath}");
   });
 
@@ -390,7 +388,7 @@ suite("applyTfToolsSubstitution", () => {
     const template = {
       environment: [
         { name: "TARGET", value: "${tfTools.model}" },
-        { name: "EXE", value: "${tfTools.executableBasename}" },
+        { name: "EXE", value: "${tfTools.executable}" },
       ],
     };
     const { value } = applyTfToolsSubstitution(template, resolvedVars);

@@ -14,7 +14,7 @@ import {
   ManifestStateInvalid,
   BuildOption,
   WhenExpression,
-  ManifestDebugProfile,
+  ManifestComponentDebugEntry,
 } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
@@ -55,7 +55,6 @@ export function makeLoadedState(
     ],
     buildOptions: [],
     hasWorkflowBlockingIssues: false,
-    debugProfiles: [],
     hasDebugBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date("2026-01-01T00:00:00Z"),
@@ -178,7 +177,6 @@ export function makeIntelliSenseLoadedState(
     ],
     buildOptions: [],
     hasWorkflowBlockingIssues: false,
-    debugProfiles: [],
     hasDebugBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date("2026-01-01T00:00:00Z"),
@@ -325,38 +323,65 @@ export function makeExcludedFilesSnapshot(
 }
 
 // ---------------------------------------------------------------------------
-// Debug launch profile factories (feature 006)
+// Debug launch entry factories (feature 006)
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a minimal ManifestDebugProfile fixture.
+ * Returns a minimal ManifestComponentDebugEntry fixture.
  * Individual fields can be overridden for specific test scenarios.
  */
-export function makeDebugProfile(
-  overrides: { template: string; executable: string } & Partial<ManifestDebugProfile>
-): ManifestDebugProfile {
+export function makeComponentDebugEntry(
+  overrides: { name: string; template: string } & Partial<ManifestComponentDebugEntry>
+): ManifestComponentDebugEntry {
+  const componentId = overrides.componentId ?? "core";
+  const declarationIndex = overrides.declarationIndex ?? 0;
   return {
-    id: "debug[0]",
-    priority: 0,
-    vars: undefined,
-    when: undefined,
-    ...overrides,
+    id: overrides.id ?? `${componentId}:debug[${declarationIndex}]`,
+    componentId,
+    name: overrides.name,
+    template: overrides.template,
+    when: overrides.when,
+    vars: overrides.vars,
+    declarationIndex,
   };
 }
 
 /**
- * Returns a loaded manifest state that includes debug profiles.
- * Extends makeIntelliSenseLoadedState with debug profile entries.
+ * Returns a target fixture that includes an executableExtension field.
+ */
+export function makeDebugTargetWithExtension(
+  id: string,
+  executableExtension: string,
+  artifactSuffix?: string
+): ManifestStateLoaded["targets"][0] {
+  return {
+    kind: "target",
+    id,
+    name: id,
+    artifactSuffix,
+    executableExtension,
+  } as ManifestStateLoaded["targets"][0];
+}
+
+/**
+ * Returns a loaded manifest state that includes component-scoped debug entries.
+ * All entries are attached to their respective components by componentId.
+ * If an entry's componentId does not match an existing component, it is ignored.
  */
 export function makeDebugLoadedState(
-  debugProfiles: ManifestDebugProfile[] = [],
+  debugEntries: ManifestComponentDebugEntry[] = [],
   overrides: Partial<ManifestStateLoaded> = {}
 ): ManifestStateLoaded {
-  return makeIntelliSenseLoadedState({
-    debugProfiles,
-    hasDebugBlockingIssues: false,
-    ...overrides,
+  const base = makeIntelliSenseLoadedState(overrides);
+  // Attach debug entries to matching components
+  const components = base.components.map((c) => {
+    const entries = debugEntries.filter((e) => e.componentId === c.id);
+    if (entries.length === 0) {
+      return c;
+    }
+    return { ...c, debug: entries };
   });
+  return { ...base, components, hasDebugBlockingIssues: false };
 }
 
 /**

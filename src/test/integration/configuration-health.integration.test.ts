@@ -584,7 +584,6 @@ suite("IntelliSenseService – artifacts-path change regression (T029/T031)", ()
       components: [{ kind: "component", id: "core", name: "Core", artifactName: "compile_commands_core" }],
       buildOptions: [],
       hasWorkflowBlockingIssues: false,
-      debugProfiles: [],
       hasDebugBlockingIssues: false,
       validationIssues: [],
       loadedAt: new Date(),

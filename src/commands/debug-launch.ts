@@ -9,84 +9,62 @@ import * as fs from "fs";
 import * as path from "path";
 import * as jsonc from "jsonc-parser";
 import * as vscode from "vscode";
-import { ManifestDebugProfile, ManifestStateLoaded } from "../manifest/manifest-types";
+import { ManifestComponentDebugEntry, ManifestStateLoaded } from "../manifest/manifest-types";
 import { EvalContext, evaluateWhenExpression } from "../manifest/when-expressions";
 import { ActiveConfig } from "../configuration/active-config";
 import { logDebugLaunchFailure, revealLogs } from "../observability/log-channel";
 
 // ---------------------------------------------------------------------------
-// Profile resolution
+// Entry resolution
 // ---------------------------------------------------------------------------
 
-export type DebugProfileResolutionState = "selected" | "ambiguous" | "no-match";
+export type DebugEntryResolutionState = "selected" | "no-match";
 
-/** Result of matching manifest debug profiles against the active build context. */
-export interface DebugProfileResolution {
-  readonly resolutionState: DebugProfileResolutionState;
-  readonly selectedProfile?: ManifestDebugProfile;
-  readonly matchedProfiles: ReadonlyArray<ManifestDebugProfile>;
-  readonly highestPriority: number;
+/** Result of matching a component's debug entries against the active build context. */
+export interface DebugEntryResolution {
+  readonly resolutionState: DebugEntryResolutionState;
+  readonly selectedEntry?: ManifestComponentDebugEntry;
 }
 
 /**
- * Resolves manifest debug profiles against the active build context.
+ * Resolves component-scoped debug entries against the active build context
+ * using first-match declaration order.
  *
- * - Profiles without a `when` expression match all contexts.
- * - Among matching profiles the highest `priority` wins.
- * - Exactly one highest-priority match → `"selected"`.
- * - Two or more tied at the highest priority → `"ambiguous"`.
- * - No matches at all → `"no-match"`.
+ * - Entries without a `when` expression match all contexts (match-all).
+ * - The first matching entry in declaration order is selected.
+ * - No matches → `"no-match"`.
  */
-export function resolveDebugProfile(
-  profiles: ReadonlyArray<ManifestDebugProfile>,
+export function resolveComponentDebugEntry(
+  entries: ReadonlyArray<ManifestComponentDebugEntry>,
   evalCtx: EvalContext
-): DebugProfileResolution {
-  const matched = profiles.filter((p) =>
-    p.when === undefined ? true : evaluateWhenExpression(p.when, evalCtx)
+): DebugEntryResolution {
+  const selected = entries.find((e) =>
+    e.when === undefined ? true : evaluateWhenExpression(e.when, evalCtx)
   );
 
-  if (matched.length === 0) {
-    return { resolutionState: "no-match", matchedProfiles: [], highestPriority: 0 };
+  if (selected === undefined) {
+    return { resolutionState: "no-match" };
   }
 
-  const highestPriority = Math.max(...matched.map((p) => p.priority));
-  const topProfiles = matched.filter((p) => p.priority === highestPriority);
-
-  if (topProfiles.length === 1) {
-    return {
-      resolutionState: "selected",
-      selectedProfile: topProfiles[0],
-      matchedProfiles: matched,
-      highestPriority,
-    };
-  }
-
-  return {
-    resolutionState: "ambiguous",
-    matchedProfiles: matched,
-    highestPriority,
-  };
+  return { resolutionState: "selected", selectedEntry: selected };
 }
 
 // ---------------------------------------------------------------------------
-// Executable path derivation
+// Executable derivation
 // ---------------------------------------------------------------------------
 
 /**
- * Derives the absolute executable path from the selected debug profile.
+ * Derives the executable file name from artifact fields.
  *
- * - Absolute `executable` values are returned unchanged.
- * - Relative values are resolved against `<artifactsRoot>/<artifactFolder>/`.
+ * Result: `<artifactName><artifactSuffix><executableExtension>`
+ * Empty string components are treated as an empty string.
  */
-export function deriveExecutablePath(
-  executable: string,
-  artifactFolder: string,
-  artifactsRoot: string
+export function deriveExecutableFileName(
+  artifactName: string,
+  artifactSuffix: string,
+  executableExtension: string
 ): string {
-  if (path.isAbsolute(executable)) {
-    return executable;
-  }
-  return path.join(artifactsRoot, artifactFolder, executable);
+  return `${artifactName}${artifactSuffix}${executableExtension}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -185,7 +163,8 @@ export const TFTOOLS_VAR_TARGET = "tfTools.target";
 export const TFTOOLS_VAR_COMPONENT = "tfTools.component";
 export const TFTOOLS_VAR_ARTIFACT_FOLDER = "tfTools.artifactFolder";
 export const TFTOOLS_VAR_EXECUTABLE_PATH = "tfTools.executablePath";
-export const TFTOOLS_VAR_EXECUTABLE_BASENAME = "tfTools.executableBasename";
+export const TFTOOLS_VAR_EXECUTABLE = "tfTools.executable";
+export const TFTOOLS_VAR_DEBUG_PROFILE_NAME = "tfTools.debugProfileName";
 
 /** Matches `${tfTools.varName}` tokens inside template strings. */
 const TFTOOLS_TOKEN_RE = /\$\{(tfTools\.[^}]+)\}/g;
@@ -202,28 +181,32 @@ export interface DebugVariableMap {
  * Builds the complete tf-tools variable map for the active debug context.
  *
  * Built-in variables derive from the active model, target, component, artifact
- * folder, and resolved executable path. Profile-defined `vars` may reference
- * built-ins and other profile vars; cycles and unknown tf-tools references in
- * profile vars are reported as resolution errors that block launch.
+ * folder, derived executable file name and path, and the selected debug entry name.
+ * Entry-defined `vars` may reference built-ins and other entry vars; cycles and
+ * unknown tf-tools references in entry vars are reported as resolution errors
+ * that block launch.
  */
 export function buildDebugVariableMap(
   modelId: string,
   targetId: string,
   componentId: string,
   artifactFolder: string,
+  executableFileName: string,
   executablePath: string,
-  profileVars: Readonly<Record<string, string>> | undefined
+  debugProfileName: string,
+  entryVars: Readonly<Record<string, string>> | undefined
 ): DebugVariableMap {
   const builtIns: Readonly<Record<string, string>> = {
     [TFTOOLS_VAR_MODEL]: modelId,
     [TFTOOLS_VAR_TARGET]: targetId,
     [TFTOOLS_VAR_COMPONENT]: componentId,
     [TFTOOLS_VAR_ARTIFACT_FOLDER]: artifactFolder,
+    [TFTOOLS_VAR_EXECUTABLE]: executableFileName,
     [TFTOOLS_VAR_EXECUTABLE_PATH]: executablePath,
-    [TFTOOLS_VAR_EXECUTABLE_BASENAME]: path.basename(executablePath),
+    [TFTOOLS_VAR_DEBUG_PROFILE_NAME]: debugProfileName,
   };
 
-  const rawVars = profileVars ?? {};
+  const rawVars = entryVars ?? {};
   const rawVarNames = Object.keys(rawVars);
 
   if (rawVarNames.length === 0) {
@@ -421,13 +404,27 @@ export async function executeDebugLaunch(
     return;
   }
 
-  // 2. Resolve debug profile
+  // 2. Find selected component and target
+  const component = manifest.components.find((c) => c.id === config.componentId);
+  const target = manifest.targets.find((t) => t.id === config.targetId);
+  const model = manifest.models.find((m) => m.id === config.modelId);
+
+  if (!component || !target || !model) {
+    revealLogs();
+    void vscode.window.showErrorMessage(
+      "Cannot start debugging: active configuration references an unknown component, target, or model."
+    );
+    return;
+  }
+
+  // 3. Resolve component debug entry (first-match declaration order)
   const evalCtx: EvalContext = {
     modelId: config.modelId,
     targetId: config.targetId,
     componentId: config.componentId,
   };
-  const resolution = resolveDebugProfile(manifest.debugProfiles, evalCtx);
+  const entries = component.debug ?? [];
+  const resolution = resolveComponentDebugEntry(entries, evalCtx);
 
   if (resolution.resolutionState === "no-match") {
     logDebugLaunchFailure("no-match", {
@@ -437,31 +434,21 @@ export async function executeDebugLaunch(
     });
     revealLogs();
     void vscode.window.showErrorMessage(
-      "Cannot start debugging: no debug profile matches the active build context."
+      "Cannot start debugging: no debug entry matches the active build context."
     );
     return;
   }
 
-  if (resolution.resolutionState === "ambiguous") {
-    logDebugLaunchFailure("ambiguous-profile", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-      detail: `${resolution.matchedProfiles.length} profiles tied at priority ${resolution.highestPriority}`,
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(
-      `Cannot start debugging: ${resolution.matchedProfiles.length} debug profiles are tied at highest priority ${resolution.highestPriority}. Resolve the ambiguity by assigning distinct priorities.`
-    );
-    return;
-  }
+  const entry = resolution.selectedEntry!;
 
-  const profile = resolution.selectedProfile!;
-
-  // 3. Derive executable path and verify existence
-  const model = manifest.models.find((m) => m.id === config.modelId);
-  const artifactFolder = model?.artifactFolder ?? "";
-  const executablePath = deriveExecutablePath(profile.executable, artifactFolder, artifactsRoot);
+  // 4. Derive executable file name and path
+  const artifactFolder = model.artifactFolder ?? "";
+  const executableFileName = deriveExecutableFileName(
+    component.artifactName ?? "",
+    target.artifactSuffix ?? "",
+    target.executableExtension ?? ""
+  );
+  const executablePath = path.join(artifactsRoot, artifactFolder, executableFileName);
 
   if (!fs.existsSync(executablePath)) {
     logDebugLaunchFailure("missing-executable", {
@@ -477,8 +464,8 @@ export async function executeDebugLaunch(
     return;
   }
 
-  // 4. Load debug template (per-invocation — no caching)
-  const templateResult = loadDebugTemplate(profile.template, templatesRoot);
+  // 5. Load debug template (per-invocation — no caching)
+  const templateResult = loadDebugTemplate(entry.template, templatesRoot);
 
   if (templateResult.parseState === "traversal-blocked") {
     logDebugLaunchFailure("traversal-blocked", {
@@ -524,14 +511,16 @@ export async function executeDebugLaunch(
 
   const configuration = templateResult.configuration!;
 
-  // 5. Build tf-tools variable map
+  // 6. Build tf-tools variable map
   const varMap = buildDebugVariableMap(
     config.modelId,
     config.targetId,
     config.componentId,
     artifactFolder,
+    executableFileName,
     executablePath,
-    profile.vars
+    entry.name,
+    entry.vars
   );
 
   if (varMap.resolutionErrors.length > 0) {

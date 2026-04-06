@@ -20,8 +20,8 @@ import {
   resolveActiveExecutableArtifact,
 } from "../../intellisense/artifact-resolution";
 import {
-  resolveDebugProfile,
-  deriveExecutablePath,
+  resolveComponentDebugEntry,
+  deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
   applyTfToolsSubstitution,
@@ -29,10 +29,13 @@ import {
 } from "../../commands/debug-launch";
 import {
   makeDebugLoadedState,
-  makeDebugProfile,
+  makeComponentDebugEntry,
+  makeDebugTargetWithExtension,
+  makeIntelliSenseLoadedState,
   debugLaunchValidTemplatesRoot,
   debugLaunchFailuresWorkspaceRoot,
 } from "../unit/workflow-test-helpers";
+import { ManifestStateLoaded, ManifestComponentDebugEntry } from "../../manifest/manifest-types";
 import { ExecutableArtifactItem } from "../../ui/configuration-tree";
 
 // ---------------------------------------------------------------------------
@@ -44,6 +47,25 @@ function makeConfig(modelId: string, targetId = "hw", componentId = "core") {
 }
 
 const failuresTemplatesRoot = path.join(debugLaunchFailuresWorkspaceRoot(), "debug-templates");
+
+// Helper: creates manifest state whose derived exe path is <artifactsRoot>/model-t/firmware.elf
+function makeExeManifest(
+  entries: ManifestComponentDebugEntry[] = [],
+  overrides: Partial<ManifestStateLoaded> = {}
+): ManifestStateLoaded {
+  return makeIntelliSenseLoadedState({
+    targets: [makeDebugTargetWithExtension("hw", ".elf")],
+    components: [{
+      kind: "component",
+      id: "core",
+      name: "Core",
+      artifactName: "firmware",
+      debug: entries,
+    } as ManifestStateLoaded["components"][0]],
+    hasDebugBlockingIssues: false,
+    ...overrides,
+  });
+}
 
 // ---------------------------------------------------------------------------
 // S1: Unique highest-priority profile — valid Executable row + launch
@@ -65,13 +87,13 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const profile = makeDebugProfile({ template: "gdb-remote.json", executable: "firmware.elf" });
-    const manifest = makeDebugLoadedState([profile]);
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
     const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "valid");
-    assert.strictEqual(result.profileResolutionState, "selected");
+    assert.strictEqual(result.entryResolutionState, "selected");
     assert.strictEqual(result.exists, true);
   });
 
@@ -80,8 +102,8 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const profile = makeDebugProfile({ template: "gdb-remote.json", executable: "firmware.elf" });
-    const manifest = makeDebugLoadedState([profile]);
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
     const artifact = resolveActiveExecutableArtifact(manifest, config, tmpDir);
@@ -99,8 +121,8 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
   });
 
   test("ExecutableArtifactItem has command set to tfTools.startDebugging", () => {
-    const profile = makeDebugProfile({ template: "gdb-remote.json", executable: "firmware.elf" });
-    const manifest = makeDebugLoadedState([profile]);
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
     const artifact = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     const item = new ExecutableArtifactItem(artifact);
@@ -119,11 +141,8 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const profile = makeDebugProfile({
-      template: "gdb-remote.json",
-      executable: "firmware.elf",
-    });
-    const manifest = makeDebugLoadedState([profile]);
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
     // Launch may fail (no real debugger in CI), but it must not throw an error
@@ -135,36 +154,33 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// S2: Priority decides among multiple matching profiles
+// S2: First-match wins among multiple matching entries (declaration order)
 // ---------------------------------------------------------------------------
 
-suite("QS2 – Priority selection among multiple matching profiles (T026)", () => {
-  test("resolveDebugProfile selects strictly higher-priority profile", () => {
-    const lowPriority = makeDebugProfile({ template: "low.json", executable: "low.elf", priority: 0 });
-    const highPriority = makeDebugProfile({ template: "high.json", executable: "high.elf", priority: 10 });
+suite("QS2 – First-match-wins selection among multiple matching entries (T026)", () => {
+  test("resolveComponentDebugEntry selects first entry in declaration order when all match", () => {
+    const first = makeComponentDebugEntry({ name: "first", template: "first.json", declarationIndex: 0 });
+    const second = makeComponentDebugEntry({ name: "second", template: "second.json", declarationIndex: 1 });
     const evalCtx = { modelId: "T2T1", targetId: "hw", componentId: "core" };
 
-    const result = resolveDebugProfile([lowPriority, highPriority], evalCtx);
+    const result = resolveComponentDebugEntry([first, second], evalCtx);
 
     assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedProfile?.template, "high.json");
-    assert.strictEqual(result.highestPriority, 10);
-    assert.strictEqual(result.matchedProfiles.length, 2);
+    assert.strictEqual(result.selectedEntry?.name, "first");
   });
 
-  test("resolveActiveExecutableArtifact resolves to the highest-priority profile executable path", () => {
-    const lowPriority = makeDebugProfile({ template: "low.json", executable: "low.elf", priority: 0 });
-    const highPriority = makeDebugProfile({ template: "high.json", executable: "high.elf", priority: 10 });
-    const manifest = makeDebugLoadedState([lowPriority, highPriority]);
+  test("resolveActiveExecutableArtifact selects first matching entry for executable path", () => {
+    const first = makeComponentDebugEntry({ name: "first", template: "first.json", declarationIndex: 0 });
+    const second = makeComponentDebugEntry({ name: "second", template: "second.json", declarationIndex: 1 });
+    const manifest = makeExeManifest([first, second]);
     const config = makeConfig("T2T1");
 
     const result = resolveActiveExecutableArtifact(manifest, config, "/artifacts");
 
-    // Even if missing, the selected profile must be the high-priority one
-    assert.strictEqual(result.profileResolutionState, "selected");
+    assert.strictEqual(result.entryResolutionState, "selected");
     assert.ok(
-      result.expectedPath.includes("high.elf"),
-      `expected high.elf in expectedPath, got: ${result.expectedPath}`
+      result.expectedPath.includes("firmware.elf"),
+      `expected firmware.elf in expectedPath, got: ${result.expectedPath}`
     );
   });
 });
@@ -173,38 +189,29 @@ suite("QS2 – Priority selection among multiple matching profiles (T026)", () =
 // S3: Ambiguous and unmatched contexts stay blocked with visible actions
 // ---------------------------------------------------------------------------
 
-suite("QS3 – Ambiguous and unmatched contexts remain discoverable but blocked (T026)", () => {
+suite("QS3 – Unmatched contexts remain discoverable but blocked (T026)", () => {
   test("no-match: resolveActiveExecutableArtifact returns missing with no-match state", () => {
-    const profile = makeDebugProfile({
+    const entry = makeComponentDebugEntry({
+      name: "gdb",
       template: "gdb.json",
-      executable: "fw.elf",
       when: { type: "model", id: "T3W1" },
     });
-    const manifest = makeDebugLoadedState([profile]);
-    const config = makeConfig("T2T1"); // T3W1 profile does not match T2T1
+    const manifest = makeExeManifest([entry]);
+    const config = makeConfig("T2T1"); // T3W1 entry does not match T2T1
 
     const result = resolveActiveExecutableArtifact(manifest, config, "/artifacts");
     assert.strictEqual(result.status, "missing");
-    assert.strictEqual(result.profileResolutionState, "no-match");
+    assert.strictEqual(result.entryResolutionState, "no-match");
     assert.ok(result.missingReason, "expected a missingReason for no-match state");
   });
 
-  test("ambiguous: resolveActiveExecutableArtifact returns missing with ambiguous state", () => {
-    const profileA = makeDebugProfile({ template: "a.json", executable: "a.elf", priority: 5 });
-    const profileB = makeDebugProfile({ template: "b.json", executable: "b.elf", priority: 5 });
-    const manifest = makeDebugLoadedState([profileA, profileB]);
-    const config = makeConfig("T2T1");
-
-    const result = resolveActiveExecutableArtifact(manifest, config, "/artifacts");
-    assert.strictEqual(result.status, "missing");
-    assert.strictEqual(result.profileResolutionState, "ambiguous");
-    assert.ok(result.missingReason, "expected a missingReason for ambiguous state");
-  });
-
-  test("ambiguous: ExecutableArtifactItem shows error icon and missing description", () => {
-    const profileA = makeDebugProfile({ template: "a.json", executable: "a.elf", priority: 5 });
-    const profileB = makeDebugProfile({ template: "b.json", executable: "b.elf", priority: 5 });
-    const manifest = makeDebugLoadedState([profileA, profileB]);
+  test("no-match: ExecutableArtifactItem shows error icon and missing description", () => {
+    const entry = makeComponentDebugEntry({
+      name: "gdb",
+      template: "gdb.json",
+      when: { type: "model", id: "T3W1" },
+    });
+    const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
     const artifact = resolveActiveExecutableArtifact(manifest, config, "/artifacts");
@@ -214,29 +221,22 @@ suite("QS3 – Ambiguous and unmatched contexts remain discoverable but blocked 
     assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "error");
   });
 
-  test("no-match and ambiguous states do NOT fire executeDebugLaunch (blocked early)", async () => {
+  test("no-match state does NOT fire executeDebugLaunch (blocked early)", async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
       return;
     }
 
     // no-match case
-    const noMatchProfile = makeDebugProfile({
-      template: "gdb.json", executable: "fw.elf", when: { type: "model", id: "T3W1" },
+    const entry = makeComponentDebugEntry({
+      name: "gdb",
+      template: "gdb.json",
+      when: { type: "model", id: "T3W1" },
     });
     await assert.doesNotReject(
-      () => executeDebugLaunch(workspaceFolder, makeDebugLoadedState([noMatchProfile]),
+      () => executeDebugLaunch(workspaceFolder, makeExeManifest([entry]),
         makeConfig("T2T1"), "/artifacts", "/templates"),
       "no-match must resolve without throwing"
-    );
-
-    // ambiguous case
-    const pA = makeDebugProfile({ template: "a.json", executable: "a.elf", priority: 5 });
-    const pB = makeDebugProfile({ template: "b.json", executable: "b.elf", priority: 5 });
-    await assert.doesNotReject(
-      () => executeDebugLaunch(workspaceFolder, makeDebugLoadedState([pA, pB]),
-        makeConfig("T2T1"), "/artifacts", "/templates"),
-      "ambiguous must resolve without throwing"
     );
   });
 });
@@ -262,8 +262,8 @@ suite("QS4 – Executable row explains readiness (T026)", () => {
     const exePath = path.join(exeDir, "firmware.elf");
     fs.writeFileSync(exePath, "");
 
-    const profile = makeDebugProfile({ template: "gdb.json", executable: "firmware.elf" });
-    const manifest = makeDebugLoadedState([profile]);
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb.json" });
+    const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = new ExecutableArtifactItem(artifact);
 
@@ -274,8 +274,8 @@ suite("QS4 – Executable row explains readiness (T026)", () => {
   });
 
   test("missing state: tooltip includes the missing reason", () => {
-    const profile = makeDebugProfile({ template: "gdb.json", executable: "firmware.elf" });
-    const manifest = makeDebugLoadedState([profile]);
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb.json" });
+    const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = new ExecutableArtifactItem(artifact);
 
@@ -292,10 +292,12 @@ suite("QS4 – Executable row explains readiness (T026)", () => {
   });
 
   test("no-match state: Executable row tooltip describes why", () => {
-    const profile = makeDebugProfile({
-      template: "gdb.json", executable: "fw.elf", when: { type: "model", id: "T3W1" },
+    const entry = makeComponentDebugEntry({
+      name: "gdb",
+      template: "gdb.json",
+      when: { type: "model", id: "T3W1" },
     });
-    const manifest = makeDebugLoadedState([profile]);
+    const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = new ExecutableArtifactItem(artifact);
 
@@ -327,8 +329,8 @@ suite("QS5 – Template failures at invocation time (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const profile = makeDebugProfile({ template: "missing-template.json", executable: "firmware.elf" });
-    const manifest = makeDebugLoadedState([profile]);
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "missing-template.json" });
+    const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
 
     // Template existence does NOT affect enablement
@@ -340,8 +342,8 @@ suite("QS5 – Template failures at invocation time (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const profile = makeDebugProfile({ template: "malformed-template.json", executable: "firmware.elf" });
-    const manifest = makeDebugLoadedState([profile]);
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "malformed-template.json" });
+    const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
 
     assert.strictEqual(artifact.status, "valid");
@@ -369,8 +371,8 @@ suite("QS5 – Template failures at invocation time (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const profile = makeDebugProfile({ template: "missing-template.json", executable: "firmware.elf" });
-    const manifest = makeDebugLoadedState([profile]);
+    const entry = makeComponentDebugEntry({ name: "gdb", template: "missing-template.json" });
+    const manifest = makeExeManifest([entry]);
 
     await assert.doesNotReject(
       () => executeDebugLaunch(workspaceFolder, manifest, makeConfig("T2T1"), tmpDir, failuresTemplatesRoot),
@@ -385,17 +387,17 @@ suite("QS5 – Template failures at invocation time (T026)", () => {
 
 suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T026)", () => {
   test("buildDebugVariableMap includes all built-in tf-tools variables", () => {
-    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "/artifacts/model-t/firmware.elf", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "firmware.elf", "/artifacts/model-t/firmware.elf", "gdb-remote", undefined);
     assert.strictEqual(varMap.resolvedVars["tfTools.model"], "T2T1");
     assert.strictEqual(varMap.resolvedVars["tfTools.target"], "hw");
     assert.strictEqual(varMap.resolvedVars["tfTools.component"], "core");
     assert.strictEqual(varMap.resolvedVars["tfTools.artifactFolder"], "model-t");
     assert.strictEqual(varMap.resolvedVars["tfTools.executablePath"], "/artifacts/model-t/firmware.elf");
-    assert.strictEqual(varMap.resolvedVars["tfTools.executableBasename"], "firmware.elf");
+    assert.strictEqual(varMap.resolvedVars["tfTools.executable"], "firmware.elf");
   });
 
   test("applyTfToolsSubstitution resolves nested object and array string fields", () => {
-    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "/build/firmware.elf", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
     const template = {
       type: "cortex-debug",
       executable: "${tfTools.executablePath}",
@@ -412,7 +414,7 @@ suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T02
   });
 
   test("applyTfToolsSubstitution leaves non-tf-tools VS Code variables untouched", () => {
-    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "/build/fw.elf", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
     const template = {
       cwd: "${workspaceFolder}",
       serverPath: "${env:OPENOCD_PATH}",
@@ -428,7 +430,7 @@ suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T02
   });
 
   test("applyTfToolsSubstitution reports unknown tf-tools variables", () => {
-    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "/build/fw.elf", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
     const template = { serverPort: "${tfTools.nonExistentPort}" };
     const { unknownVars } = applyTfToolsSubstitution(template, varMap.resolvedVars);
 
@@ -440,7 +442,7 @@ suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T02
 
   test("buildDebugVariableMap surface cyclic profile vars as resolution errors", () => {
     const vars = { a: "${tfTools.b}", b: "${tfTools.a}" };
-    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "/build/fw.elf", vars);
+    const varMap = buildDebugVariableMap("T2T1", "hw", "core", "model-t", "fw.elf", "/build/fw.elf", "gdb-remote", vars);
 
     assert.ok(
       varMap.resolutionErrors.length > 0,
@@ -464,15 +466,14 @@ suite("QS7 – Template-root traversal rejection (T026)", () => {
     );
   });
 
-  test("deriveExecutablePath resolves relative exe against artifactsRoot/artifactFolder", () => {
-    const executablePath = deriveExecutablePath("firmware.elf", "model-t", "/workspace/artifacts");
-    assert.strictEqual(executablePath, path.join("/workspace/artifacts", "model-t", "firmware.elf"));
+  test("deriveExecutableFileName returns artifactName+artifactSuffix+executableExtension", () => {
+    const fileName = deriveExecutableFileName("firmware", "", ".elf");
+    assert.strictEqual(fileName, "firmware.elf");
   });
 
-  test("deriveExecutablePath returns absolute exe unchanged", () => {
-    const absPath = "/usr/local/bin/gdb";
-    const executablePath = deriveExecutablePath(absPath, "model-t", "/workspace/artifacts");
-    assert.strictEqual(executablePath, absPath);
+  test("deriveExecutableFileName includes suffix when present", () => {
+    const fileName = deriveExecutableFileName("firmware", "_emu", ".elf");
+    assert.strictEqual(fileName, "firmware_emu.elf");
   });
 
   test("executeDebugLaunch resolves without throwing for traversal-attempt template", async () => {
@@ -487,11 +488,11 @@ suite("QS7 – Template-root traversal rejection (T026)", () => {
       fs.mkdirSync(exeDir);
       fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-      const profile = makeDebugProfile({
+      const entry = makeComponentDebugEntry({
+        name: "gdb",
         template: "../escaped/evil.json",
-        executable: "firmware.elf",
       });
-      const manifest = makeDebugLoadedState([profile]);
+      const manifest = makeExeManifest([entry]);
 
       await assert.doesNotReject(
         () => executeDebugLaunch(workspaceFolder, manifest, makeConfig("T2T1"), tmpDir, tmpDir),

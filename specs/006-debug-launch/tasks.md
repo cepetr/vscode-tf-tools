@@ -21,7 +21,7 @@
 - [X] T002 [P] Refresh the invalid legacy-schema and validation-error manifest fixture in `test-fixtures/manifests/debug-launch-invalid/tf-tools-manifest.yaml`
 - [X] T003 [P] Update the successful debug workspace fixture in `test-fixtures/workspaces/debug-launch-valid/tf-tools-manifest.yaml`, `test-fixtures/workspaces/debug-launch-valid/.vscode/settings.json`, and `test-fixtures/workspaces/debug-launch-valid/debug-templates/gdb-remote.json`
 - [X] T004 [P] Update the failure-path debug workspace fixture in `test-fixtures/workspaces/debug-launch-failures/tf-tools-manifest.yaml`, `test-fixtures/workspaces/debug-launch-failures/.vscode/settings.json`, `test-fixtures/workspaces/debug-launch-failures/debug-templates/malformed-template.json`, and `test-fixtures/workspaces/debug-launch-failures/debug-templates/unknown-var-template.json`
-- [ ] T005 [P] Extend shared debug-launch test helpers for debug API spies, output-channel assertions, and settings refresh in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
+- [X] T005 [P] Extend shared debug-launch test helpers for debug API spies, output-channel assertions, and settings refresh in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
 
 ---
 
@@ -34,9 +34,9 @@
 - [X] T006 Add the `tfTools.debug.templatesPath` setting contribution and Start Debugging command metadata updates in `package.json`
 - [X] T007 [P] Add debug templates-path setting helpers and refresh wiring support in `src/workspace/settings.ts`
 - [X] T008 [P] Update debug-related manifest model types for component-scoped `debug[]` entries and target `executableExtension` in `src/manifest/manifest-types.ts`
-- [ ] T009 [P] Add unit coverage for component-scoped debug schema, optional `when`, and legacy-schema rejection in `src/test/unit/manifest/validate-manifest.test.ts`
+- [X] T009 [P] Add unit coverage for component-scoped debug schema, optional `when`, and legacy-schema rejection in `src/test/unit/manifest/validate-manifest.test.ts`
 - [X] T010 Parse and validate component-scoped debug entries, optional `when`, target `executableExtension`, and hard-cutover legacy-schema rejection in `src/manifest/validate-manifest.ts`
-- [ ] T011 [P] Rework shared executable artifact derivation for `<artifactName><artifactSuffix><executableExtension>` in `src/intellisense/artifact-resolution.ts`
+- [X] T011 [P] Rework shared executable artifact derivation for `<artifactName><artifactSuffix><executableExtension>` in `src/intellisense/artifact-resolution.ts`
 
 **Checkpoint**: The manifest schema, templates-path setting, and executable derivation rules are ready for story work.
 
@@ -52,13 +52,13 @@
 
 > **NOTE: Write these tests first and ensure they fail before implementation.**
 
-- [ ] T012 [P] [US1] Add unit tests for first-match declaration-order resolution, omitted-`when` match-all behavior, derived executable built-ins, and `${tfTools.debugProfileName}` substitution in `src/test/unit/workflow/debug-launch.test.ts`
-- [ ] T013 [P] [US1] Add unit tests for nested single-pass tf-tools substitution, non-tf-tools variable pass-through, and per-invocation template reload in `src/test/unit/workflow/debug-template-resolution.test.ts`
-- [ ] T014 [P] [US1] Add integration coverage for successful Start Debugging launch from the header, overflow, `Executable` row, and Command Palette in `src/test/integration/debug-launch.integration.test.ts`
+- [X] T012 [P] [US1] Add unit tests for first-match declaration-order resolution, omitted-`when` match-all behavior, derived executable built-ins, and `${tfTools.debugProfileName}` substitution in `src/test/unit/workflow/debug-launch.test.ts`
+- [X] T013 [P] [US1] Add unit tests for nested single-pass tf-tools substitution, non-tf-tools variable pass-through, and per-invocation template reload in `src/test/unit/workflow/debug-template-resolution.test.ts`
+- [X] T014 [P] [US1] Add integration coverage for successful Start Debugging launch from the header, overflow, `Executable` row, and Command Palette in `src/test/integration/debug-launch.integration.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Implement first-match component debug resolution, built-in variable derivation, and debug configuration assembly in `src/commands/debug-launch.ts`
+- [X] T015 [US1] Implement first-match component debug resolution, built-in variable derivation, and debug configuration assembly in `src/commands/debug-launch.ts`
 - [ ] T016 [US1] Wire the `tfTools.startDebugging` command, active-context resolution, and `vscode.debug.startDebugging` launch flow in `src/extension.ts`
 - [ ] T017 [US1] Restrict Command Palette visibility for `tfTools.startDebugging` to startable contexts in `package.json`
 
@@ -74,14 +74,14 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T018 [P] [US2] Add unit tests for executable artifact status, expected-path tooltip text, and blocked-reason messaging in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts`
-- [ ] T019 [P] [US2] Add unit tests for `Executable` row placement, context values, and visible-but-disabled Start Debugging actions in `src/test/unit/ui/configuration-tree.test.ts`
-- [ ] T020 [P] [US2] Add integration coverage for `Executable` row rendering, header and overflow enablement, Command Palette hiding, and settings-driven refresh in `src/test/integration/debug-launch-artifacts.integration.test.ts`
-- [ ] T021 [P] [US2] Add dedicated integration coverage proving missing and malformed templates do not disable visible Start Debugging actions before invocation in `src/test/integration/debug-launch-artifacts.integration.test.ts`
+- [X] T018 [P] [US2] Add unit tests for executable artifact status, expected-path tooltip text, and blocked-reason messaging in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts`
+- [X] T019 [P] [US2] Add unit tests for `Executable` row placement, context values, and visible-but-disabled Start Debugging actions in `src/test/unit/ui/configuration-tree.test.ts`
+- [X] T020 [P] [US2] Add integration coverage for `Executable` row rendering, header and overflow enablement, Command Palette hiding, and settings-driven refresh in `src/test/integration/debug-launch-artifacts.integration.test.ts`
+- [X] T021 [P] [US2] Add dedicated integration coverage proving missing and malformed templates do not disable visible Start Debugging actions before invocation in `src/test/integration/debug-launch-artifacts.integration.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Derive executable artifact state, missing reasons, and startability snapshots from the selected component and target in `src/intellisense/artifact-resolution.ts`
+- [X] T022 [US2] Derive executable artifact state, missing reasons, and startability snapshots from the selected component and target in `src/intellisense/artifact-resolution.ts`
 - [ ] T023 [US2] Render the always-present `Executable` row with tooltip detail, row action state, correct ordering, and template-failure-independent enablement in `src/ui/configuration-tree.ts`
 - [ ] T024 [US2] Wire Start Debugging context keys and refresh behavior for model, target, component, manifest, artifacts path, and templates path changes in `src/extension.ts` and `src/workspace/settings.ts`
 - [ ] T025 [US2] Contribute visible header, overflow, and `Executable` row Start Debugging menus with disabled-state enablement rules in `package.json`
@@ -99,7 +99,7 @@
 ### Tests for User Story 3 ⚠️
 
 - [ ] T026 [P] [US3] Add unit tests for traversal rejection, malformed JSONC templates, unknown tf-tools variables, and cyclic debug vars in `src/test/unit/workflow/debug-template-resolution.test.ts`
-- [ ] T027 [P] [US3] Add integration coverage for no-match, missing-template, malformed-template, variable, traversal, missing-executable, unsupported-workspace, and manifest-invalid launch failures in `src/test/integration/debug-launch-failures.integration.test.ts`
+- [X] T027 [P] [US3] Add integration coverage for no-match, missing-template, malformed-template, variable, traversal, missing-executable, unsupported-workspace, and manifest-invalid launch failures in `src/test/integration/debug-launch-failures.integration.test.ts`
 
 ### Implementation for User Story 3
 
@@ -116,7 +116,7 @@
 **Purpose**: Close regression gaps and validate the slice end to end.
 
 - [ ] T031 [P] Extend scope-regression coverage for Debug Launch command and menu boundaries, including no `launch.json` persistence, in `src/test/integration/configuration-scope.integration.test.ts`
-- [ ] T032 [P] Add end-to-end quickstart regression coverage for the revised Debug Launch scenarios in `src/test/integration/debug-launch-quickstart.integration.test.ts`
+- [X] T032 [P] Add end-to-end quickstart regression coverage for the revised Debug Launch scenarios in `src/test/integration/debug-launch-quickstart.integration.test.ts`
 - [ ] T033 Validate the manual Debug Launch scenarios in `specs/006-debug-launch/quickstart.md`
 
 ---
