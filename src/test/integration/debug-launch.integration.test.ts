@@ -27,12 +27,12 @@ import {
   executeDebugLaunch,
 } from "../../commands/debug-launch";
 import {
-  makeComponentDebugEntry,
+  makeComponentDebugProfile,
   makeDebugTargetWithExtension,
   makeIntelliSenseLoadedState,
   debugLaunchValidTemplatesRoot,
 } from "../unit/workflow-test-helpers";
-import { ManifestStateLoaded, ManifestComponentDebugEntry } from "../../manifest/manifest-types";
+import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,7 +61,7 @@ function getExtPackageJson(): Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 function makeExeManifest(
-  entries: ManifestComponentDebugEntry[] = [],
+  entries: ManifestComponentDebugProfile[] = [],
   overrides: Partial<ManifestStateLoaded> = {}
 ): ManifestStateLoaded {
   return makeIntelliSenseLoadedState({
@@ -98,13 +98,13 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration (
     fs.mkdirSync(execDir, { recursive: true });
     fs.writeFileSync(path.join(execDir, "firmware.elf"), "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb-remote.json" });
     const manifest = makeExeManifest([entry]);
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
     const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "valid");
-    assert.strictEqual(result.entryResolutionState, "selected");
+    assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
     assert.ok(result.expectedPath.endsWith("firmware.elf"));
   });
@@ -114,7 +114,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration (
     fs.mkdirSync(execDir, { recursive: true });
     fs.writeFileSync(path.join(execDir, "firmware_emu.elf"), "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb-remote.json" });
     const manifest = makeExeManifest([entry], {
       targets: [makeDebugTargetWithExtension("emu", ".elf", "_emu")],
     });
@@ -122,24 +122,24 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration (
 
     const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "valid");
-    assert.strictEqual(result.entryResolutionState, "selected");
+    assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
     assert.ok(result.expectedPath.endsWith("firmware_emu.elf"));
   });
 
   test("returns status: missing when executable file does not exist", () => {
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb-remote.json" });
     const manifest = makeExeManifest([entry]);
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
     const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "missing");
-    assert.strictEqual(result.entryResolutionState, "selected");
+    assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, false);
   });
 
   test("returns status: missing with no-match when entry when-expression does not match", () => {
-    const entry = makeComponentDebugEntry({
+    const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "gdb-remote.json",
       when: { type: "model", id: "T3W1" }, // different model
@@ -149,7 +149,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration (
 
     const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "missing");
-    assert.strictEqual(result.entryResolutionState, "no-match");
+    assert.strictEqual(result.profileResolutionState, "no-match");
   });
 
   test("returns status: missing with manifest-invalid when hasDebugBlockingIssues is true", () => {
@@ -158,18 +158,18 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration (
 
     const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "missing");
-    assert.strictEqual(result.entryResolutionState, "manifest-invalid");
+    assert.strictEqual(result.profileResolutionState, "manifest-invalid");
   });
 
   test("first matching entry wins when multiple entries match", () => {
-    const first = makeComponentDebugEntry({ name: "first", template: "a.json", declarationIndex: 0 });
-    const second = makeComponentDebugEntry({ name: "second", template: "b.json", declarationIndex: 1 });
+    const first = makeComponentDebugProfile({ name: "first", template: "a.json", declarationIndex: 0 });
+    const second = makeComponentDebugProfile({ name: "second", template: "b.json", declarationIndex: 1 });
     const manifest = makeExeManifest([first, second]);
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
     const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "missing"); // file doesn't exist yet
-    assert.strictEqual(result.entryResolutionState, "selected");
+    assert.strictEqual(result.profileResolutionState, "selected");
   });
 });
 
@@ -265,7 +265,7 @@ suite("Debug Launch – substitution pipeline integration (T011)", () => {
     const templateResult = loadDebugTemplate("gdb-remote.json", templatesRoot);
     assert.strictEqual(templateResult.parseState, "loaded");
 
-    const entry = makeComponentDebugEntry({
+    const entry = makeComponentDebugProfile({
       name: "gdb-remote",
       template: "gdb-remote.json",
       vars: { debugPort: "3333" },
@@ -330,7 +330,7 @@ suite("Debug Launch – command registration (T011)", () => {
         return originalExecuteCommand(command, ...args);
       };
 
-      const entry = makeComponentDebugEntry({ name: "gdb-remote", template: "gdb-remote.json" });
+      const entry = makeComponentDebugProfile({ name: "gdb-remote", template: "gdb-remote.json" });
       const manifest = makeExeManifest([entry]);
       const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 

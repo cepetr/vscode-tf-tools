@@ -14,7 +14,7 @@ import {
   ManifestStateInvalid,
   BuildOption,
   WhenExpression,
-  ManifestComponentDebugEntry,
+  ManifestComponentDebugProfile,
 } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
@@ -323,16 +323,16 @@ export function makeExcludedFilesSnapshot(
 }
 
 // ---------------------------------------------------------------------------
-// Debug launch entry factories (feature 006)
+// Debug launch profile factories (feature 006)
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a minimal ManifestComponentDebugEntry fixture.
+ * Returns a minimal ManifestComponentDebugProfile fixture.
  * Individual fields can be overridden for specific test scenarios.
  */
-export function makeComponentDebugEntry(
-  overrides: { name: string; template: string } & Partial<ManifestComponentDebugEntry>
-): ManifestComponentDebugEntry {
+export function makeComponentDebugProfile(
+  overrides: { name: string; template: string } & Partial<ManifestComponentDebugProfile>
+): ManifestComponentDebugProfile {
   const componentId = overrides.componentId ?? "core";
   const declarationIndex = overrides.declarationIndex ?? 0;
   return {
@@ -364,22 +364,22 @@ export function makeDebugTargetWithExtension(
 }
 
 /**
- * Returns a loaded manifest state that includes component-scoped debug entries.
- * All entries are attached to their respective components by componentId.
- * If an entry's componentId does not match an existing component, it is ignored.
+ * Returns a loaded manifest state that includes component-scoped debug profiles.
+ * All profiles are attached to their respective components by componentId.
+ * If a profile's componentId does not match an existing component, it is ignored.
  */
 export function makeDebugLoadedState(
-  debugEntries: ManifestComponentDebugEntry[] = [],
+  debugProfiles: ManifestComponentDebugProfile[] = [],
   overrides: Partial<ManifestStateLoaded> = {}
 ): ManifestStateLoaded {
   const base = makeIntelliSenseLoadedState(overrides);
-  // Attach debug entries to matching components
+  // Attach debug profiles to matching components
   const components = base.components.map((c) => {
-    const entries = debugEntries.filter((e) => e.componentId === c.id);
-    if (entries.length === 0) {
+    const profiles = debugProfiles.filter((profile) => profile.componentId === c.id);
+    if (profiles.length === 0) {
       return c;
     }
-    return { ...c, debug: entries };
+    return { ...c, debug: profiles };
   });
   return { ...base, components, hasDebugBlockingIssues: overrides.hasDebugBlockingIssues ?? false };
 }

@@ -29,11 +29,11 @@ import {
 } from "../../ui/configuration-tree";
 import {
   makeDebugLoadedState,
-  makeComponentDebugEntry,
+  makeComponentDebugProfile,
   makeDebugTargetWithExtension,
   makeIntelliSenseLoadedState,
 } from "../unit/workflow-test-helpers";
-import { ManifestStateLoaded, ManifestComponentDebugEntry } from "../../manifest/manifest-types";
+import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -65,7 +65,7 @@ function getExtPackageJson(): Record<string, unknown> {
 
 // Helper: creates manifest state whose derived exe path is <artifactsRoot>/model-t/firmware.elf
 function makeExeManifest(
-  entries: ManifestComponentDebugEntry[] = [],
+  entries: ManifestComponentDebugProfile[] = [],
   overrides: Partial<ManifestStateLoaded> = {}
 ): ManifestStateLoaded {
   return makeIntelliSenseLoadedState({
@@ -102,7 +102,7 @@ suite("Debug Launch – Executable row rendering under resolution states (T016)"
   }
 
   test("Executable row contextValue is 'artifact-executable'", () => {
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "t.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
@@ -110,7 +110,7 @@ suite("Debug Launch – Executable row rendering under resolution states (T016)"
   });
 
   test("Executable row icon is 'error' when no profile matches (no-match state)", () => {
-    const entry = makeComponentDebugEntry({
+    const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "t.json",
       when: { type: "model", id: "T3W1" },
@@ -123,7 +123,7 @@ suite("Debug Launch – Executable row rendering under resolution states (T016)"
   });
 
   test("Executable row icon is 'error' when no entry matches (no-match state)", () => {
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "a.json", when: { type: "model", id: "T3W1" } });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "a.json", when: { type: "model", id: "T3W1" } });
     const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
@@ -138,7 +138,7 @@ suite("Debug Launch – Executable row rendering under resolution states (T016)"
   });
 
   test("Executable row icon is 'error' when profile matches but executable is missing", () => {
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "t.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
@@ -150,7 +150,7 @@ suite("Debug Launch – Executable row rendering under resolution states (T016)"
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "t.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = makeRow(artifact);
@@ -164,7 +164,7 @@ suite("Debug Launch – Executable row rendering under resolution states (T016)"
     const exePath = path.join(exeDir, "firmware.elf");
     fs.writeFileSync(exePath, "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "t.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
     const validArtifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     assert.strictEqual(validArtifact.status, "valid");
@@ -201,7 +201,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree (T016)",
   function makeExecArtifact(overrides: Partial<ActiveExecutableArtifact> = {}): ActiveExecutableArtifact {
     return {
       contextKey: "T2T1::hw::core",
-      entryResolutionState: "selected",
+      profileResolutionState: "selected",
       expectedPath: "/build/model-t/firmware.elf",
       exists: true,
       status: "valid",
@@ -225,8 +225,8 @@ suite("Debug Launch – Executable row position in Build Artifacts tree (T016)",
     provider.updateArtifact(makeValidArtifact());
     provider.updateExecutableArtifact(makeExecArtifact({
       status: "missing",
-      entryResolutionState: "no-match",
-      tooltip: "No debug entry matches.",
+      profileResolutionState: "no-match",
+      tooltip: "No debug profile matches.",
     }));
 
     const children = getBuildArtifacts();
@@ -265,7 +265,7 @@ suite("Debug Launch – Executable availability refresh after context change (T0
   });
 
   test("status changes from missing to valid when executable is created (artifacts-path change simulation)", () => {
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "t.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
@@ -283,7 +283,7 @@ suite("Debug Launch – Executable availability refresh after context change (T0
 
   test("status changes when model changes to one matching the entry when-expression", () => {
     // Entry matches T3W1 only
-    const entry = makeComponentDebugEntry({
+    const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "t.json",
       when: { type: "model", id: "T3W1" },
@@ -291,33 +291,33 @@ suite("Debug Launch – Executable availability refresh after context change (T0
     const manifest = makeExeManifest([entry]);
 
     const forT2T1 = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
-    assert.strictEqual(forT2T1.entryResolutionState, "no-match");
+    assert.strictEqual(forT2T1.profileResolutionState, "no-match");
 
     const forT3W1 = resolveActiveExecutableArtifact(manifest, makeConfig("T3W1"), tmpDir);
     // Entry matches but file doesn't exist → selected (missing)
-    assert.strictEqual(forT3W1.entryResolutionState, "selected");
+    assert.strictEqual(forT3W1.profileResolutionState, "selected");
   });
 
   test("status reflects component change when when-expression uses componentId", () => {
     // Entry is on core component, with when: component(core) — still matches if config uses core,
     // but when config uses prodtest the entry (still on core) is not found because core component
     // is not the active component. In component-scoped schema, entries follow their component.
-    const entry = makeComponentDebugEntry({
+    const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "t.json",
     });
     const manifest = makeExeManifest([entry]); // entry on core component
 
     const coreResult = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1", "hw", "core"), tmpDir);
-    assert.strictEqual(coreResult.entryResolutionState, "selected");
+    assert.strictEqual(coreResult.profileResolutionState, "selected");
 
     // prodtest has no debug entries, so no-match
     const prodtestResult = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1", "hw", "prodtest"), tmpDir);
-    assert.strictEqual(prodtestResult.entryResolutionState, "no-match");
+    assert.strictEqual(prodtestResult.profileResolutionState, "no-match");
   });
 
   test("status changes when artifacts-root path changes to one containing the executable", () => {
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "t.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 

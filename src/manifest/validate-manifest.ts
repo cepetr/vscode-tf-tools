@@ -5,7 +5,7 @@ import {
   ManifestModel,
   ManifestTarget,
   ManifestComponent,
-  ManifestComponentDebugEntry,
+  ManifestComponentDebugProfile,
   BuildOption,
   BuildOptionState,
   ValidationIssue,
@@ -367,7 +367,7 @@ function validateComponents(
 }
 
 // ---------------------------------------------------------------------------
-// Component-scoped debug entry validator
+// Component-scoped debug profile validator
 // ---------------------------------------------------------------------------
 
 function validateComponentDebugEntries(
@@ -377,7 +377,7 @@ function validateComponentDebugEntries(
   componentId: string,
   whenContext: WhenContext,
   hasDebugBlockingIssuesRef: { value: boolean }
-): ManifestComponentDebugEntry[] | undefined {
+): ManifestComponentDebugProfile[] | undefined {
   const seqNode = componentItem.get("debug", true);
   if (seqNode === undefined || seqNode === null) {
     return undefined;
@@ -397,7 +397,7 @@ function validateComponentDebugEntries(
     return undefined;
   }
 
-  const entries: ManifestComponentDebugEntry[] = [];
+  const entries: ManifestComponentDebugProfile[] = [];
 
   for (let idx = 0; idx < seqNode.items.length; idx++) {
     const item = seqNode.items[idx];

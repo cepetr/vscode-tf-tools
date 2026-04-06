@@ -13,7 +13,7 @@
 - **Decision**: Keep `component.debug[].when` optional. When absent, the entry matches all active contexts for that component. When present, parse and validate it with the same expression parser, unknown-id checks, and diagnostics used for build-option `when`, `flashWhen`, and `uploadWhen`.
 - **Rationale**: This matches the clarified spec, reduces YAML boilerplate for per-component default debug entries, and reuses an existing parser rather than adding a debug-specific rule language.
 - **Alternatives considered**:
-  - Make `when` mandatory on every debug entry: rejected because it adds noise without improving determinism.
+  - Make `when` mandatory on every debug profile: rejected because it adds noise without improving determinism.
   - Introduce a separate debug-only selector language: rejected because it would duplicate semantics and validation paths.
 
 ## Decision 3: Resolve the selected component's debug entries by first-match declaration order

@@ -20,7 +20,7 @@ import {
   resolveActiveExecutableArtifact,
 } from "../../intellisense/artifact-resolution";
 import {
-  resolveComponentDebugEntry,
+  resolveDebugProfile,
   deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
@@ -28,13 +28,13 @@ import {
   executeDebugLaunch,
 } from "../../commands/debug-launch";
 import {
-  makeComponentDebugEntry,
+  makeComponentDebugProfile,
   makeDebugTargetWithExtension,
   makeIntelliSenseLoadedState,
   debugLaunchValidTemplatesRoot,
   debugLaunchFailuresWorkspaceRoot,
 } from "../unit/workflow-test-helpers";
-import { ManifestStateLoaded, ManifestComponentDebugEntry } from "../../manifest/manifest-types";
+import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
 import { ExecutableArtifactItem } from "../../ui/configuration-tree";
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ const failuresTemplatesRoot = path.join(debugLaunchFailuresWorkspaceRoot(), "deb
 
 // Helper: creates manifest state whose derived exe path is <artifactsRoot>/model-t/firmware.elf
 function makeExeManifest(
-  entries: ManifestComponentDebugEntry[] = [],
+  entries: ManifestComponentDebugProfile[] = [],
   overrides: Partial<ManifestStateLoaded> = {}
 ): ManifestStateLoaded {
   return makeIntelliSenseLoadedState({
@@ -86,13 +86,13 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb-remote.json" });
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
     const result = resolveActiveExecutableArtifact(manifest, config, tmpDir);
     assert.strictEqual(result.status, "valid");
-    assert.strictEqual(result.entryResolutionState, "selected");
+    assert.strictEqual(result.profileResolutionState, "selected");
     assert.strictEqual(result.exists, true);
   });
 
@@ -101,7 +101,7 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb-remote.json" });
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
@@ -129,7 +129,7 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb-remote.json" });
     const manifest = makeExeManifest([entry]);
     const config = makeConfig("T2T1");
 
@@ -145,27 +145,27 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
 // S2: First-match wins among multiple matching entries (declaration order)
 // ---------------------------------------------------------------------------
 
-suite("QS2 – First-match-wins selection among multiple matching entries (T026)", () => {
-  test("resolveComponentDebugEntry selects first entry in declaration order when all match", () => {
-    const first = makeComponentDebugEntry({ name: "first", template: "first.json", declarationIndex: 0 });
-    const second = makeComponentDebugEntry({ name: "second", template: "second.json", declarationIndex: 1 });
+suite("QS2 – First-match-wins selection among multiple matching profiles (T026)", () => {
+  test("resolveDebugProfile selects first profile in declaration order when all match", () => {
+    const first = makeComponentDebugProfile({ name: "first", template: "first.json", declarationIndex: 0 });
+    const second = makeComponentDebugProfile({ name: "second", template: "second.json", declarationIndex: 1 });
     const evalCtx = { modelId: "T2T1", targetId: "hw", componentId: "core" };
 
-    const result = resolveComponentDebugEntry([first, second], evalCtx);
+    const result = resolveDebugProfile([first, second], evalCtx);
 
     assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedEntry?.name, "first");
+    assert.strictEqual(result.selectedProfile?.name, "first");
   });
 
-  test("resolveActiveExecutableArtifact selects first matching entry for executable path", () => {
-    const first = makeComponentDebugEntry({ name: "first", template: "first.json", declarationIndex: 0 });
-    const second = makeComponentDebugEntry({ name: "second", template: "second.json", declarationIndex: 1 });
+  test("resolveActiveExecutableArtifact selects first matching profile for executable path", () => {
+    const first = makeComponentDebugProfile({ name: "first", template: "first.json", declarationIndex: 0 });
+    const second = makeComponentDebugProfile({ name: "second", template: "second.json", declarationIndex: 1 });
     const manifest = makeExeManifest([first, second]);
     const config = makeConfig("T2T1");
 
     const result = resolveActiveExecutableArtifact(manifest, config, "/artifacts");
 
-    assert.strictEqual(result.entryResolutionState, "selected");
+    assert.strictEqual(result.profileResolutionState, "selected");
     assert.ok(
       result.expectedPath.includes("firmware.elf"),
       `expected firmware.elf in expectedPath, got: ${result.expectedPath}`
@@ -179,7 +179,7 @@ suite("QS2 – First-match-wins selection among multiple matching entries (T026)
 
 suite("QS3 – Unmatched contexts remain discoverable but blocked (T026)", () => {
   test("no-match: resolveActiveExecutableArtifact returns missing with no-match state", () => {
-    const entry = makeComponentDebugEntry({
+    const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "gdb.json",
       when: { type: "model", id: "T3W1" },
@@ -189,12 +189,12 @@ suite("QS3 – Unmatched contexts remain discoverable but blocked (T026)", () =>
 
     const result = resolveActiveExecutableArtifact(manifest, config, "/artifacts");
     assert.strictEqual(result.status, "missing");
-    assert.strictEqual(result.entryResolutionState, "no-match");
+    assert.strictEqual(result.profileResolutionState, "no-match");
     assert.ok(result.missingReason, "expected a missingReason for no-match state");
   });
 
   test("no-match: ExecutableArtifactItem shows error icon and missing description", () => {
-    const entry = makeComponentDebugEntry({
+    const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "gdb.json",
       when: { type: "model", id: "T3W1" },
@@ -216,7 +216,7 @@ suite("QS3 – Unmatched contexts remain discoverable but blocked (T026)", () =>
     }
 
     // no-match case
-    const entry = makeComponentDebugEntry({
+    const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "gdb.json",
       when: { type: "model", id: "T3W1" },
@@ -250,7 +250,7 @@ suite("QS4 – Executable row explains readiness (T026)", () => {
     const exePath = path.join(exeDir, "firmware.elf");
     fs.writeFileSync(exePath, "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb.json" });
     const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = new ExecutableArtifactItem(artifact);
@@ -262,7 +262,7 @@ suite("QS4 – Executable row explains readiness (T026)", () => {
   });
 
   test("missing state: tooltip includes the missing reason", () => {
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "gdb.json" });
     const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
     const item = new ExecutableArtifactItem(artifact);
@@ -280,7 +280,7 @@ suite("QS4 – Executable row explains readiness (T026)", () => {
   });
 
   test("no-match state: Executable row tooltip describes why", () => {
-    const entry = makeComponentDebugEntry({
+    const entry = makeComponentDebugProfile({
       name: "gdb",
       template: "gdb.json",
       when: { type: "model", id: "T3W1" },
@@ -317,7 +317,7 @@ suite("QS5 – Template failures at invocation time (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "missing-template.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "missing-template.json" });
     const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
 
@@ -330,7 +330,7 @@ suite("QS5 – Template failures at invocation time (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "malformed-template.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "malformed-template.json" });
     const manifest = makeExeManifest([entry]);
     const artifact = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), tmpDir);
 
@@ -359,7 +359,7 @@ suite("QS5 – Template failures at invocation time (T026)", () => {
     fs.mkdirSync(exeDir);
     fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "missing-template.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb", template: "missing-template.json" });
     const manifest = makeExeManifest([entry]);
 
     await assert.doesNotReject(
@@ -476,7 +476,7 @@ suite("QS7 – Template-root traversal rejection (T026)", () => {
       fs.mkdirSync(exeDir);
       fs.writeFileSync(path.join(exeDir, "firmware.elf"), "");
 
-      const entry = makeComponentDebugEntry({
+      const entry = makeComponentDebugProfile({
         name: "gdb",
         template: "../escaped/evil.json",
       });

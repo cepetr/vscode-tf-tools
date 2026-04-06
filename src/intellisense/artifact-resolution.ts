@@ -12,8 +12,8 @@ import {
 } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 import {
-  DebugEntryResolutionState,
-  resolveComponentDebugEntry,
+  DebugProfileResolutionState,
+  resolveDebugProfile,
   deriveExecutableFileName,
 } from "../commands/debug-launch";
 
@@ -333,7 +333,7 @@ export type ExecutableArtifactStatus = "valid" | "missing";
 /** User-visible executable artifact state for the active build context. */
 export interface ActiveExecutableArtifact {
   readonly contextKey: string;
-  readonly entryResolutionState: DebugEntryResolutionState | "manifest-invalid";
+  readonly profileResolutionState: DebugProfileResolutionState | "manifest-invalid";
   readonly expectedPath: string;
   readonly exists: boolean;
   readonly status: ExecutableArtifactStatus;
@@ -345,7 +345,7 @@ export interface ActiveExecutableArtifact {
  * Resolves the active executable artifact state for the given manifest, config,
  * and artifacts root.
  *
- * - Returns `status: "valid"` only when the first matching component debug entry
+ * - Returns `status: "valid"` only when the first matching component debug profile
  *   is found, its derived executable file exists on disk, and the manifest has no
  *   debug-blocking validation errors.
  * - Returns `status: "missing"` for all other cases with an explanatory reason.
@@ -360,7 +360,7 @@ export function resolveActiveExecutableArtifact(
   if (manifest.hasDebugBlockingIssues) {
     return {
       contextKey,
-      entryResolutionState: "manifest-invalid",
+      profileResolutionState: "manifest-invalid",
       expectedPath: "",
       exists: false,
       status: "missing",
@@ -377,7 +377,7 @@ export function resolveActiveExecutableArtifact(
     const reason = "Active configuration references an unknown component, target, or model.";
     return {
       contextKey,
-      entryResolutionState: "no-match",
+      profileResolutionState: "no-match",
       expectedPath: "",
       exists: false,
       status: "missing",
@@ -387,22 +387,22 @@ export function resolveActiveExecutableArtifact(
   }
 
   const evalCtx = { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId };
-  const entries = component.debug ?? [];
-  const resolution = resolveComponentDebugEntry(entries, evalCtx);
+  const profiles = component.debug ?? [];
+  const resolution = resolveDebugProfile(profiles, evalCtx);
 
   if (resolution.resolutionState === "no-match") {
     return {
       contextKey,
-      entryResolutionState: "no-match",
+      profileResolutionState: "no-match",
       expectedPath: "",
       exists: false,
       status: "missing",
-      missingReason: "No debug entry matches the active build context.",
-      tooltip: "No debug entry matches the active build context.",
+      missingReason: "No debug profile matches the active build context.",
+      tooltip: "No debug profile matches the active build context.",
     };
   }
 
-  // Entry resolved — derive executable path
+  // Profile resolved — derive executable path
   const artifactFolder = model.artifactFolder ?? "";
   const executableFileName = deriveExecutableFileName(
     component.artifactName ?? "",
@@ -421,7 +421,7 @@ export function resolveActiveExecutableArtifact(
     }
     return {
       contextKey,
-      entryResolutionState: "selected",
+      profileResolutionState: "selected",
       expectedPath: "",
       exists: false,
       status: "missing",
@@ -436,7 +436,7 @@ export function resolveActiveExecutableArtifact(
   if (exists) {
     return {
       contextKey,
-      entryResolutionState: "selected",
+      profileResolutionState: "selected",
       expectedPath,
       exists: true,
       status: "valid",
@@ -446,7 +446,7 @@ export function resolveActiveExecutableArtifact(
 
   return {
     contextKey,
-    entryResolutionState: "selected",
+    profileResolutionState: "selected",
     expectedPath,
     exists: false,
     status: "missing",

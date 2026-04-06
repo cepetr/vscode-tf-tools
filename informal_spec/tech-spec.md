@@ -206,9 +206,9 @@ The Build Options section preserves YAML order while consolidating repeated grou
 
 Option availability is evaluated against the active build context before rendering. Options whose `when` expression evaluates to `false` are omitted from the visible tree, but their persisted values remain stored in workspace state.
 
-Debug availability is evaluated against the active build context from the selected component's manifest-defined `debug` entries together with the derived executable artifact state. The side-bar header `Start Debugging` action, the overflow-menu `Start Debugging` action, and the `Executable` row action are enabled only when the selected component yields a first matching debug entry for the active build context and the derived executable artifact exists. The Command Palette contribution for `Trezor: Start Debugging` is shown only under that same condition.
+Debug availability is evaluated against the active build context from the selected component's manifest-defined `debug` profiles together with the derived executable artifact state. The side-bar header `Start Debugging` action, the overflow-menu `Start Debugging` action, and the `Executable` row action are enabled only when the selected component yields a first matching debug profile for the active build context and the derived executable artifact exists. The Command Palette contribution for `Trezor: Start Debugging` is shown only under that same condition.
 
-The `Start Debugging` actions remain visible even when disabled so the user can discover debugger support from the main configuration view. Disabled-state tooltips explain whether debugging is unavailable because no selected-component debug entry matched or the executable artifact is missing.
+The `Start Debugging` actions remain visible even when disabled so the user can discover debugger support from the main configuration view. Disabled-state tooltips explain whether debugging is unavailable because no selected-component debug profile matched or the executable artifact is missing.
 
 The resolved debug executable path is part of Build Artifacts state and Start Debugging action enablement. The executable filename is derived as `<artifactName><artifactSuffix><executableExtension>`, where `artifactSuffix` and `executableExtension` come from the selected target and default to empty strings when omitted. When the executable artifact is missing, the `Executable` row reports the missing path and all visible Start Debugging actions stay disabled until the artifact becomes available.
 
@@ -253,8 +253,8 @@ Additional command behavior:
 - `Start Debugging` uses the user-facing title `Trezor: Start Debugging` and launches the resolved debugger template for the active build context
 - `Flash` is available only when the selected component's `flashWhen` expression evaluates to `true`
 - `Upload` is available only when the selected component's `uploadWhen` expression evaluates to `true`
-- `Start Debugging` is available only when the selected component yields a first matching debug entry for the active build context
-- `Trezor: Start Debugging` is contributed to the Command Palette only when the selected component yields a first matching debug entry for the active build context and the executable artifact exists
+- `Start Debugging` is available only when the selected component yields a first matching debug profile for the active build context
+- `Trezor: Start Debugging` is contributed to the Command Palette only when the selected component yields a first matching debug profile for the active build context and the executable artifact exists
 - omitted `flashWhen` and `uploadWhen` values make the corresponding action unavailable
 - artifact-row actions remain visible whenever their action is applicable
 - applicable `Flash` and `Upload` actions are also contributed to the Configuration view overflow menu and stay visible there, but disabled, when the binary artifact is missing

@@ -9,7 +9,7 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 - **`tfTools.debug.templatesPath`**:
   - Resource-scoped setting
   - Default value: `${workspaceFolder}/core/embed/.tf-tools`
-  - Resolves the root directory for component debug-entry template files
+  - Resolves the root directory for component debug-profile template files
   - Changing this setting refreshes derived executable resolution and Start Debugging availability without requiring a restart
 
 ## Commands
@@ -19,13 +19,13 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
   - Category: `Trezor`
   - User-facing title: `Trezor: Start Debugging`
   - Launches the resolved debug configuration for the active build context through the VS Code debug API
-  - Appears in the Command Palette only when the selected component yields a matching debug entry and the derived executable exists
+  - Appears in the Command Palette only when the selected component yields a matching debug profile and the derived executable exists
 
 ## Command Palette Surface
 
 - **Visibility contract**:
-  - `tfTools.startDebugging` is shown only when the selected component yields a matching debug entry for the active model, target, and component and the derived executable artifact exists
-  - it is absent when no debug entry matches or when the executable is missing
+  - `tfTools.startDebugging` is shown only when the selected component yields a matching debug profile for the active model, target, and component and the derived executable artifact exists
+  - it is absent when no debug profile matches or when the executable is missing
   - template readability and template parse validity do not affect pre-invocation Command Palette visibility
 - **Execution contract**:
   - selecting the command loads the template on demand, resolves tf-tools variables, and launches debugging through the VS Code debug API
@@ -49,14 +49,14 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
   - the `Build Artifacts` section always includes an `Executable` row
   - the `Executable` row appears after `Map File` when Binary and Map rows are present, and immediately after `Compile Commands` when they are not
 - **Status contract**:
-  - the row displays `valid` when a matching debug entry exists and the derived executable exists
-  - the row displays `missing` when no matching debug entry resolves or when the expected executable path does not exist
+  - the row displays `valid` when a matching debug profile exists and the derived executable exists
+  - the row displays `missing` when no matching debug profile resolves or when the expected executable path does not exist
 - **Tooltip contract**:
   - when derivation succeeds, the tooltip includes the expected executable path
   - when the row is `missing`, the tooltip also includes the reason the artifact is unavailable
 - **Row action contract**:
   - the row exposes an icon-only `Start Debugging` action backed by `tfTools.startDebugging`
-  - the action remains visible but disabled when no matching debug entry resolves or the executable is missing
+  - the action remains visible but disabled when no matching debug profile resolves or the executable is missing
   - template readability and template parse validity do not affect pre-invocation row-action enablement
 
 ## Menus And Context Keys
@@ -75,9 +75,9 @@ This contract captures the user-visible VS Code surfaces introduced or changed b
 
 ## Launch And Failure Contract
 
-- Debug matching uses only the selected component's `debug` entries and the same condition semantics as other manifest `when` expressions.
-- `component.debug[].when` is optional; omission means the entry matches all active contexts for that component.
-- The first matching entry in declaration order is the selected debug entry.
+- Debug matching uses only the selected component's `debug` profiles and the same condition semantics as other manifest `when` expressions.
+- `component.debug[].when` is optional; omission means the profile matches all active contexts for that component.
+- The first matching profile in declaration order is the selected debug profile.
 - The derived executable file name is `<artifactName><artifactSuffix><executableExtension>` and the absolute executable path is built under the selected model artifact folder.
 - The selected template is loaded from `tfTools.debug.templatesPath` on every invocation.
 - Template paths that escape the configured root are rejected.

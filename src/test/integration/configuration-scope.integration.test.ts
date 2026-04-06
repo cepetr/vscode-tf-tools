@@ -11,7 +11,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import {
   makeDebugLoadedState,
-  makeComponentDebugEntry,
+  makeComponentDebugProfile,
   makeDebugTargetWithExtension,
   debugLaunchValidWorkspaceRoot,
   debugLaunchValidTemplatesRoot,
@@ -210,7 +210,7 @@ suite("Debug Launch scope boundaries (T025)", () => {
 
 suite("Debug Launch – no launch.json persistence (T031)", () => {
   function makeExeManifest(): ManifestStateLoaded {
-    const entry = makeComponentDebugEntry({ name: "gdb-remote", template: "gdb-remote.json" });
+    const entry = makeComponentDebugProfile({ name: "gdb-remote", template: "gdb-remote.json" });
     return makeDebugLoadedState([entry], {
       models: [
         { kind: "model", id: "T2T1", name: "Trezor Model T", artifactFolder: "model-t" } as ManifestStateLoaded["models"][0],

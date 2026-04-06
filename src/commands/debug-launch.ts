@@ -9,44 +9,44 @@ import * as fs from "fs";
 import * as path from "path";
 import * as jsonc from "jsonc-parser";
 import * as vscode from "vscode";
-import { ManifestComponentDebugEntry, ManifestStateLoaded } from "../manifest/manifest-types";
+import { ManifestComponentDebugProfile, ManifestStateLoaded } from "../manifest/manifest-types";
 import { EvalContext, evaluateWhenExpression } from "../manifest/when-expressions";
 import { ActiveConfig } from "../configuration/active-config";
 import { logDebugLaunchFailure, revealLogs } from "../observability/log-channel";
 
 // ---------------------------------------------------------------------------
-// Entry resolution
+// Profile resolution
 // ---------------------------------------------------------------------------
 
-export type DebugEntryResolutionState = "selected" | "no-match";
+export type DebugProfileResolutionState = "selected" | "no-match";
 
-/** Result of matching a component's debug entries against the active build context. */
-export interface DebugEntryResolution {
-  readonly resolutionState: DebugEntryResolutionState;
-  readonly selectedEntry?: ManifestComponentDebugEntry;
+/** Result of matching a component's debug profiles against the active build context. */
+export interface DebugProfileResolution {
+  readonly resolutionState: DebugProfileResolutionState;
+  readonly selectedProfile?: ManifestComponentDebugProfile;
 }
 
 /**
- * Resolves component-scoped debug entries against the active build context
+ * Resolves component-scoped debug profiles against the active build context
  * using first-match declaration order.
  *
- * - Entries without a `when` expression match all contexts (match-all).
- * - The first matching entry in declaration order is selected.
+ * - Profiles without a `when` expression match all contexts (match-all).
+ * - The first matching profile in declaration order is selected.
  * - No matches → `"no-match"`.
  */
-export function resolveComponentDebugEntry(
-  entries: ReadonlyArray<ManifestComponentDebugEntry>,
+export function resolveDebugProfile(
+  profiles: ReadonlyArray<ManifestComponentDebugProfile>,
   evalCtx: EvalContext
-): DebugEntryResolution {
-  const selected = entries.find((e) =>
-    e.when === undefined ? true : evaluateWhenExpression(e.when, evalCtx)
+): DebugProfileResolution {
+  const selectedProfile = profiles.find((profile) =>
+    profile.when === undefined ? true : evaluateWhenExpression(profile.when, evalCtx)
   );
 
-  if (selected === undefined) {
+  if (selectedProfile === undefined) {
     return { resolutionState: "no-match" };
   }
 
-  return { resolutionState: "selected", selectedEntry: selected };
+  return { resolutionState: "selected", selectedProfile };
 }
 
 // ---------------------------------------------------------------------------
@@ -192,9 +192,9 @@ export interface DebugVariableMap {
  * Builds the complete tf-tools variable map for the active debug context.
  *
  * Built-in variables derive from the active model, target, component, artifact
- * folder, derived executable file name and path, and the selected debug entry name.
- * Entry-defined `vars` may reference built-ins and other entry vars; cycles and
- * unknown tf-tools references in entry vars are reported as resolution errors
+ * folder, derived executable file name and path, and the selected debug profile name.
+ * Profile-defined `vars` may reference built-ins and other profile vars; cycles and
+ * unknown tf-tools references in profile vars are reported as resolution errors
  * that block launch.
  */
 export function buildDebugVariableMap(
@@ -209,7 +209,7 @@ export function buildDebugVariableMap(
   executableFileName: string,
   executablePath: string,
   debugProfileName: string,
-  entryVars: Readonly<Record<string, string>> | undefined
+  profileVars: Readonly<Record<string, string>> | undefined
 ): DebugVariableMap {
   const builtIns: Readonly<Record<string, string>> = {
     [TFTOOLS_VAR_ARTIFACT_PATH]: artifactPath,
@@ -228,7 +228,7 @@ export function buildDebugVariableMap(
     [TFTOOLS_VAR_DEBUG_PROFILE_NAME]: debugProfileName,
   };
 
-  const rawVars = entryVars ?? {};
+  const rawVars = profileVars ?? {};
   const rawVarNames = Object.keys(rawVars);
 
   if (rawVarNames.length === 0) {
@@ -393,14 +393,14 @@ export function applyTfToolsSubstitution(
  * Executes the Start Debugging flow for the active build context.
  *
  * On each invocation:
- *  1. Validates manifest debug state and resolves a unique matching profile.
+ *  1. Validates manifest debug state and resolves the selected debug profile.
  *  2. Derives and verifies the executable artifact path.
  *  3. Loads and parses the JSONC debug template from `templatesRoot`.
  *  4. Builds the tf-tools variable map (built-ins + profile vars).
  *  5. Applies single-pass tf-tools substitution to the template.
  *  6. Starts the resolved configuration via `vscode.debug.startDebugging`.
  *
- * All blocked states (no-match, ambiguous, missing executable, template
+ * All blocked states (no-match, missing executable, template
  * errors, variable errors) surface an error message and return early.
  * Persistent output-channel logging is added by T022.
  */
@@ -439,14 +439,14 @@ export async function executeDebugLaunch(
     return;
   }
 
-  // 3. Resolve component debug entry (first-match declaration order)
+  // 3. Resolve component debug profile (first-match declaration order)
   const evalCtx: EvalContext = {
     modelId: config.modelId,
     targetId: config.targetId,
     componentId: config.componentId,
   };
-  const entries = component.debug ?? [];
-  const resolution = resolveComponentDebugEntry(entries, evalCtx);
+  const profiles = component.debug ?? [];
+  const resolution = resolveDebugProfile(profiles, evalCtx);
 
   if (resolution.resolutionState === "no-match") {
     logDebugLaunchFailure("no-match", {
@@ -456,12 +456,12 @@ export async function executeDebugLaunch(
     });
     revealLogs();
     void vscode.window.showErrorMessage(
-      "Cannot start debugging: no debug entry matches the active build context."
+      "Cannot start debugging: no debug profile matches the active build context."
     );
     return;
   }
 
-  const entry = resolution.selectedEntry!;
+  const profile = resolution.selectedProfile!;
 
   // 4. Derive executable file name and path
   const artifactFolder = model.artifactFolder ?? "";
@@ -488,7 +488,7 @@ export async function executeDebugLaunch(
   }
 
   // 5. Load debug template (per-invocation — no caching)
-  const templateResult = loadDebugTemplate(entry.template, templatesRoot);
+  const templateResult = loadDebugTemplate(profile.template, templatesRoot);
 
   if (templateResult.parseState === "traversal-blocked") {
     logDebugLaunchFailure("traversal-blocked", {
@@ -546,8 +546,8 @@ export async function executeDebugLaunch(
     artifactPath,
     executableFileName,
     executablePath,
-    entry.name,
-    entry.vars
+    profile.name,
+    profile.vars
   );
 
   if (varMap.resolutionErrors.length > 0) {

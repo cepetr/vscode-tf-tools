@@ -1013,10 +1013,10 @@ components:
 });
 
 // ---------------------------------------------------------------------------
-// T009/T024: Component-scoped debug entry and executableExtension coverage
+// T009/T024: Component-scoped debug profile and executableExtension coverage
 // ---------------------------------------------------------------------------
 
-suite("parseManifest – component-scoped debug entries (T009)", () => {
+suite("parseManifest – component-scoped debug profiles (T009)", () => {
   function baseManifest(extras: string): string {
     return `
 models:
@@ -1060,10 +1060,10 @@ targets:
   });
 
   // -------------------------------------------------------------------------
-  // Component-scoped debug entries
+  // Component-scoped debug profiles
   // -------------------------------------------------------------------------
 
-  test("component without debug section parses without debug entries", () => {
+  test("component without debug section parses without debug profiles", () => {
     const source = baseManifest("");
     const result = parseManifest(source);
     assert.strictEqual(result.issues.length, 0);
@@ -1073,25 +1073,25 @@ targets:
     assert.strictEqual(result.hasDebugBlockingIssues, false);
   });
 
-  test("component with valid debug entry is parsed", () => {
+  test("component with valid debug profile is parsed", () => {
     const source = baseManifest(`    debug:
       - name: gdb-remote
         template: gdb-remote.json`);
     const result = parseManifest(source);
     assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
     const core = result.components.find((c) => c.id === "core");
-    assert.ok(core?.debug, "expected debug entries");
+    assert.ok(core?.debug, "expected debug profiles");
     assert.strictEqual(core.debug!.length, 1);
-    const entry = core.debug![0];
-    assert.strictEqual(entry.name, "gdb-remote");
-    assert.strictEqual(entry.template, "gdb-remote.json");
-    assert.strictEqual(entry.when, undefined);
-    assert.strictEqual(entry.vars, undefined);
-    assert.strictEqual(entry.declarationIndex, 0);
+    const profile = core.debug![0];
+    assert.strictEqual(profile.name, "gdb-remote");
+    assert.strictEqual(profile.template, "gdb-remote.json");
+    assert.strictEqual(profile.when, undefined);
+    assert.strictEqual(profile.vars, undefined);
+    assert.strictEqual(profile.declarationIndex, 0);
     assert.strictEqual(result.hasDebugBlockingIssues, false);
   });
 
-  test("component debug entry with optional when is parsed", () => {
+  test("component debug profile with optional when is parsed", () => {
     const source = baseManifest(`    debug:
       - name: hw-only
         template: gdb.json
@@ -1099,13 +1099,13 @@ targets:
     const result = parseManifest(source);
     assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
     const core = result.components.find((c) => c.id === "core");
-    const entry = core?.debug?.[0];
-    assert.ok(entry, "expected debug entry");
-    assert.deepStrictEqual(entry.when, { type: "model", id: "T2T1" });
+    const profile = core?.debug?.[0];
+    assert.ok(profile, "expected debug profile");
+    assert.deepStrictEqual(profile.when, { type: "model", id: "T2T1" });
     assert.strictEqual(result.hasDebugBlockingIssues, false);
   });
 
-  test("component debug entry with vars is parsed", () => {
+  test("component debug profile with vars is parsed", () => {
     const source = baseManifest(`    debug:
       - name: gdb
         template: gdb.json
@@ -1115,13 +1115,13 @@ targets:
     const result = parseManifest(source);
     assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
     const core = result.components.find((c) => c.id === "core");
-    const entry = core?.debug?.[0];
-    assert.ok(entry, "expected debug entry");
-    assert.deepStrictEqual(entry.vars, { port: "3333", server: "localhost" });
+    const profile = core?.debug?.[0];
+    assert.ok(profile, "expected debug profile");
+    assert.deepStrictEqual(profile.vars, { port: "3333", server: "localhost" });
     assert.strictEqual(result.hasDebugBlockingIssues, false);
   });
 
-  test("multiple debug entries on same component are parsed in order", () => {
+  test("multiple debug profiles on same component are parsed in order", () => {
     const source = baseManifest(`    debug:
       - name: first
         template: a.json
@@ -1131,7 +1131,7 @@ targets:
     const result = parseManifest(source);
     assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
     const core = result.components.find((c) => c.id === "core");
-    assert.ok(core?.debug, "expected debug entries");
+    assert.ok(core?.debug, "expected debug profiles");
     assert.strictEqual(core.debug!.length, 2);
     assert.strictEqual(core.debug![0].name, "first");
     assert.strictEqual(core.debug![0].declarationIndex, 0);
@@ -1164,7 +1164,7 @@ targets:
   // Invalid when expression → hasDebugBlockingIssues
   // -------------------------------------------------------------------------
 
-  test("invalid when expression on debug entry sets hasDebugBlockingIssues", () => {
+  test("invalid when expression on debug profile sets hasDebugBlockingIssues", () => {
     const source = baseManifest(`    debug:
       - name: gdb
         template: gdb.json
@@ -1222,7 +1222,7 @@ debug:
     }
   });
 
-  test("validateManifest loaded state has debug entries on component for valid config", () => {
+  test("validateManifest loaded state has debug profiles on component for valid config", () => {
     const source = baseManifest(`    debug:
       - name: gdb
         template: gdb.json`);
@@ -1231,7 +1231,7 @@ debug:
     if (state.status === "loaded") {
       assert.strictEqual(state.hasDebugBlockingIssues, false);
       const core = state.components.find((c) => c.id === "core");
-      assert.ok(core?.debug && core.debug.length === 1, "expected 1 debug entry on core component");
+      assert.ok(core?.debug && core.debug.length === 1, "expected 1 debug profile on core component");
     }
   });
 });

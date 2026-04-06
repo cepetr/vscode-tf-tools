@@ -44,7 +44,7 @@
 
 ## Phase 3: User Story 1 - Launch The Correct Debug Profile (Priority: P1) 🎯 MVP
 
-**Goal**: Launch the selected component's first matching debug entry with the derived executable and resolved template from every supported entry point.
+**Goal**: Launch the selected component's first matching debug profile with the derived executable and resolved template from every supported entry point.
 
 **Independent Test**: Use a valid component-scoped debug manifest with a present derived executable and verify that the header action, overflow action, `Executable` row action, and Command Palette all launch the same resolved debug configuration.
 

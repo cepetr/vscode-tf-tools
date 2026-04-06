@@ -2,7 +2,7 @@
  * Unit tests for Debug Launch core helpers.
  *
  * Covers:
- *  - resolveComponentDebugEntry: omitted-when matches all, conditional when,
+ *  - resolveDebugProfile: omitted-when matches all, conditional when,
  *    first-match declaration order wins, no-match result
  *  - deriveExecutableFileName: artifact name + suffix + extension
  *  - loadDebugTemplate: valid JSONC loads, traversal blocked, missing file,
@@ -20,7 +20,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 import {
-  resolveComponentDebugEntry,
+  resolveDebugProfile,
   deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
@@ -36,67 +36,67 @@ import {
   TFTOOLS_VAR_EXECUTABLE,
   TFTOOLS_VAR_DEBUG_PROFILE_NAME,
 } from "../../../commands/debug-launch";
-import { makeComponentDebugEntry, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
+import { makeComponentDebugProfile, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
 
 /**
- * Returns a debug entry with required fields defaulted for tests that
+ * Returns a debug profile with required fields defaulted for tests that
  * only care about when/id, not template/name.
  */
-function makeEntry(overrides: Parameters<typeof makeComponentDebugEntry>[0] = { name: "gdb", template: "gdb-remote.json" }) {
-  return makeComponentDebugEntry(overrides);
+function makeProfile(overrides: Parameters<typeof makeComponentDebugProfile>[0] = { name: "gdb", template: "gdb-remote.json" }) {
+  return makeComponentDebugProfile(overrides);
 }
 
 // ---------------------------------------------------------------------------
-// resolveComponentDebugEntry
+// resolveDebugProfile
 // ---------------------------------------------------------------------------
 
-suite("resolveComponentDebugEntry", () => {
+suite("resolveDebugProfile", () => {
   const ctx = { modelId: "T2T1", targetId: "hw", componentId: "core" };
 
-  test("entry without when matches any context", () => {
-    const entry = makeEntry({ name: "p1", template: "gdb-remote.json" }); // no when
-    const result = resolveComponentDebugEntry([entry], ctx);
+  test("profile without when matches any context", () => {
+    const profile = makeProfile({ name: "p1", template: "gdb-remote.json" }); // no when
+    const result = resolveDebugProfile([profile], ctx);
     assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedEntry, entry);
+    assert.strictEqual(result.selectedProfile, profile);
   });
 
-  test("entry with matching when selects that entry", () => {
-    const entry = makeEntry({ name: "p1", template: "gdb-remote.json", when: { type: "model", id: "T2T1" } });
-    const result = resolveComponentDebugEntry([entry], ctx);
+  test("profile with matching when selects that profile", () => {
+    const profile = makeProfile({ name: "p1", template: "gdb-remote.json", when: { type: "model", id: "T2T1" } });
+    const result = resolveDebugProfile([profile], ctx);
     assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedEntry, entry);
+    assert.strictEqual(result.selectedProfile, profile);
   });
 
-  test("entry with non-matching when is excluded", () => {
-    const entry = makeEntry({ name: "p1", template: "gdb-remote.json", when: { type: "model", id: "T3W1" } });
-    const result = resolveComponentDebugEntry([entry], ctx);
+  test("profile with non-matching when is excluded", () => {
+    const profile = makeProfile({ name: "p1", template: "gdb-remote.json", when: { type: "model", id: "T3W1" } });
+    const result = resolveDebugProfile([profile], ctx);
     assert.strictEqual(result.resolutionState, "no-match");
   });
 
-  test("first matching entry wins (declaration order)", () => {
-    const first = makeEntry({ name: "first", template: "a.json", declarationIndex: 0 });
-    const second = makeEntry({ name: "second", template: "b.json", declarationIndex: 1 });
-    const result = resolveComponentDebugEntry([first, second], ctx);
+  test("first matching profile wins (declaration order)", () => {
+    const first = makeProfile({ name: "first", template: "a.json", declarationIndex: 0 });
+    const second = makeProfile({ name: "second", template: "b.json", declarationIndex: 1 });
+    const result = resolveDebugProfile([first, second], ctx);
     assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedEntry?.name, "first");
+    assert.strictEqual(result.selectedProfile?.name, "first");
   });
 
-  test("first matching conditional entry wins over later unconditional one", () => {
-    const nonMatch = makeEntry({ name: "no", template: "a.json", when: { type: "model", id: "T3W1" }, declarationIndex: 0 });
-    const match = makeEntry({ name: "yes", template: "b.json", when: { type: "model", id: "T2T1" }, declarationIndex: 1 });
-    const result = resolveComponentDebugEntry([nonMatch, match], ctx);
+  test("first matching conditional profile wins over later unconditional one", () => {
+    const nonMatch = makeProfile({ name: "no", template: "a.json", when: { type: "model", id: "T3W1" }, declarationIndex: 0 });
+    const match = makeProfile({ name: "yes", template: "b.json", when: { type: "model", id: "T2T1" }, declarationIndex: 1 });
+    const result = resolveDebugProfile([nonMatch, match], ctx);
     assert.strictEqual(result.resolutionState, "selected");
-    assert.strictEqual(result.selectedEntry?.name, "yes");
+    assert.strictEqual(result.selectedProfile?.name, "yes");
   });
 
-  test("no matching entries returns no-match", () => {
-    const entry = makeEntry({ name: "p1", template: "gdb-remote.json", when: { type: "target", id: "emu" } });
-    const result = resolveComponentDebugEntry([entry], ctx);
+  test("no matching profiles returns no-match", () => {
+    const profile = makeProfile({ name: "p1", template: "gdb-remote.json", when: { type: "target", id: "emu" } });
+    const result = resolveDebugProfile([profile], ctx);
     assert.strictEqual(result.resolutionState, "no-match");
   });
 
-  test("empty entry list returns no-match", () => {
-    const result = resolveComponentDebugEntry([], ctx);
+  test("empty profile list returns no-match", () => {
+    const result = resolveDebugProfile([], ctx);
     assert.strictEqual(result.resolutionState, "no-match");
   });
 });

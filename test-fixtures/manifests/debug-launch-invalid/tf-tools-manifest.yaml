@@ -7,7 +7,7 @@
 # The manifest has valid models, targets and components but debug entries
 # that have various validation errors.  The manifest loads with status
 # "loaded" (structural fields are valid) but hasDebugBlockingIssues is true
-# and validation issues are reported for each invalid debug entry.
+# and validation issues are reported for each invalid debug profile.
 
 models:
   - id: T2T1

@@ -13,9 +13,9 @@
   - `id` and `name` are required non-empty strings
   - `artifactSuffix` and `executableExtension` are optional strings and default to empty when omitted
 
-## Component Debug Entry
+## Component Debug Profile
 
-- **Purpose**: Represent one ordered debug entry declared under the selected component.
+- **Purpose**: Represent one ordered debug profile declared under the selected component.
 - **Fields**:
   - `id`: stable internal identifier derived from component id plus declaration index for logging and tests
   - `componentId`: owning component id
@@ -30,7 +30,7 @@
   - `vars` values must be strings and may reference built-in tf-tools variables and sibling `vars` keys only when they resolve without cycles
   - legacy top-level `debug`, `priority`, profile-level `executable`, and `${tfTools.debugConfigName}` are unsupported
 
-## Debug Entry Match Result
+## Debug Profile Match Result
 
 - **Purpose**: Capture the result of evaluating the selected component's ordered debug entries against the active build context.
 - **Fields**:
@@ -38,11 +38,11 @@
   - `candidateEntries`: ordered debug entries declared on the selected component
   - `matchingEntries`: ordered subset whose `when` matches the active build context, with omitted `when` treated as match-all
   - `resolutionState`: `selected` or `no-match`
-  - `selectedEntry`: first matching entry when `resolutionState = selected`
+  - `selectedProfile`: first matching profile when `resolutionState = selected`
   - `blockedReason`: `no-match`, `manifest-invalid`, or `workspace-unsupported`
 - **Validation rules**:
-  - `selectedEntry` exists only when at least one matching entry is present
-  - `matchingEntries[0]` and `selectedEntry` refer to the same entry when `resolutionState = selected`
+  - `selectedProfile` exists only when at least one matching profile is present
+  - `matchingProfiles[0]` and `selectedProfile` refer to the same profile when `resolutionState = selected`
 
 ## Executable Artifact State
 
@@ -57,7 +57,7 @@
   - `missingReason`: user-facing explanation when the executable cannot be derived or does not exist
   - `tooltip`: expected-path and missing-reason text shown on the tree row
 - **Validation rules**:
-  - `status = valid` only when a matching debug entry exists and the derived file exists on disk
+  - `status = valid` only when a matching debug profile exists and the derived file exists on disk
   - `missingReason` is required whenever `status = missing`
   - `expectedPath` is empty only when manifest-invalid, workspace-unsupported, or derivation prerequisites are missing
 
@@ -71,7 +71,7 @@
   - `resolutionErrors`: list of unknown, unresolved, or cyclic variable failures
 - **Validation rules**:
   - built-in variables are concrete strings whenever the active context and executable derivation inputs exist
-  - `${tfTools.debugProfileName}` resolves from the selected debug entry `name`
+  - `${tfTools.debugProfileName}` resolves from the selected debug profile `name`
   - `${tfTools.executable}` and `${tfTools.executablePath}` are derived values, not manifest-authored path fragments
   - cycles and unknown tf-tools variables are invalid and block launch
   - replacement results are not re-expanded after a variable resolves
@@ -111,7 +111,7 @@
 - **Fields**:
   - `sourceSurface`: `header`, `overflow`, `executable-row`, or `command-palette`
   - `contextKey`: active build-context key
-  - `selectedEntryId`: selected debug-entry identifier when available
+  - `selectedProfileId`: selected debug-profile identifier when available
   - `resolvedConfigurationName`: final debug configuration name passed to VS Code
   - `requestedAt`: timestamp
 - **Validation rules**:
