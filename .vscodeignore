@@ -13,6 +13,5 @@ eslint.config.mjs
 tsconfig.json
 .github/**
 specs/**
-informal_spec/**
 launch.json
 scripts/**

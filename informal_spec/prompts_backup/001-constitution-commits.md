@@ -1,1 +1,0 @@
-/speckit.constitution The agent must commit changes to git after every task completion in the tasks.md file. Do not batch multiple tasks into a single commit. Execute these tasks one by one. After completing each task, run a git commit with a descriptive message and then move to the next.
