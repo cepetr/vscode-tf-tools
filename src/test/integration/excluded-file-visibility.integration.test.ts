@@ -332,42 +332,6 @@ suite("ExcludedFileDecorationsProvider — handleSnapshot() decoration change ev
 // T015: Integration tests for ExcludedFileOverlaysManager
 // ===========================================================================
 
-// ---------------------------------------------------------------------------
-// Helpers (T015): stub TextEditor scoped to this suite
-// ---------------------------------------------------------------------------
-
-/**
- * A minimal stub implementing the parts of TextEditor that
- * ExcludedFileOverlaysManager uses. Records setDecorations calls.
- */
-function makeStubTextEditor(fsPath: string): {
-  document: { uri: vscode.Uri; lineAt: (n: number) => vscode.TextLine };
-  setDecorations: (type: vscode.TextEditorDecorationType, ranges: vscode.DecorationOptions[]) => void;
-  decorationCalls: Array<{ type: vscode.TextEditorDecorationType; ranges: vscode.DecorationOptions[] }>;
-} {
-  const decorationCalls: Array<{ type: vscode.TextEditorDecorationType; ranges: vscode.DecorationOptions[] }> = [];
-  const uri = vscode.Uri.file(fsPath.replace(/\//g, path.sep));
-  return {
-    document: {
-      uri,
-      lineAt(n: number): vscode.TextLine {
-        return {
-          lineNumber: n,
-          range: new vscode.Range(new vscode.Position(n, 0), new vscode.Position(n, 0)),
-          rangeIncludingLineBreak: new vscode.Range(new vscode.Position(n, 0), new vscode.Position(n, 0)),
-          firstNonWhitespaceCharacterIndex: 0,
-          isEmptyOrWhitespace: false,
-          text: "",
-        };
-      },
-    },
-    setDecorations(type: vscode.TextEditorDecorationType, ranges: vscode.DecorationOptions[]) {
-      decorationCalls.push({ type, ranges });
-    },
-    decorationCalls,
-  };
-}
-
 function makeOverlaySnapshot(
   excludedPaths: string[],
   showEditorOverlay = true

@@ -275,8 +275,7 @@ suite("Excluded-file refresh — manual refresh reuse (US3-AC3)", () => {
     const svc = new ExcludedFilesService();
 
     svc.recompute("T2T1/hw/core", ARTIFACT_PATH, INCLUDED_FILES, BASE_SETTINGS, WORKSPACE_ROOT, ALL_CANDIDATES);
-    const firstSnap = svc.getSnapshot();
-    const firstExcluded = new Set(firstSnap.excludedFiles);
+    svc.getSnapshot();
 
     // Change context key on second recompute
     const allIncluded = new Set(ALL_CANDIDATES.map((u) => normalizeToForwardSlashes(u.fsPath)));

@@ -25,6 +25,7 @@ import {
   ConfigurationTreeProvider,
   CompileCommandsArtifactItem,
   ExecutableArtifactItem,
+  SectionItem,
 } from "../../ui/configuration-tree";
 import {
   makeDebugLoadedState,
@@ -170,7 +171,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree (T016)",
   });
 
   function getBuildArtifacts(): vscode.TreeItem[] {
-    return provider.getChildren(new (require("../../ui/configuration-tree").SectionItem)(
+    return provider.getChildren(new SectionItem(
       "build-artifacts",
       "Build Artifacts"
     ));
@@ -321,8 +322,8 @@ suite("Debug Launch – Executable availability refresh after context change (T0
 suite("Debug Launch – package.json US2 menu contributions (T016)", () => {
   test("commandPalette entry for tfTools.startDebugging uses tfTools.startDebuggingEnabled when-clause", () => {
     const pkg = getExtPackageJson();
-    const menus = (pkg?.contributes as Record<string, unknown>)?.menus as Record<string, unknown>;
-    const commandPalette = menus?.commandPalette as Array<{ command: string; when?: string }>;
+    const palette = pkg?.contributes as Record<string, unknown>;
+    const commandPalette = palette?.commandPalette as Array<{ command: string; when?: string }>;
     const entry = commandPalette?.find((c) => c.command === "tfTools.startDebugging");
     assert.ok(entry, "expected commandPalette entry for tfTools.startDebugging");
     assert.ok(
