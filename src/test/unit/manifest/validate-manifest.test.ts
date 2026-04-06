@@ -362,9 +362,9 @@ ${options}
   test("parses a valid ungrouped checkbox option", () => {
     const source = baseManifest(`
 options:
-  - label: "Debug Build"
+  - name: "Debug Build"
     flag: "--debug"
-    kind: checkbox
+    type: checkbox
 `);
     const result = parseManifest(source);
     assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
@@ -380,9 +380,9 @@ options:
   test("parses a grouped checkbox option", () => {
     const source = baseManifest(`
 options:
-  - label: "Fast"
+  - name: "Fast"
     flag: "--fast"
-    kind: checkbox
+    type: checkbox
     group: "Build Tuning"
 `);
     const result = parseManifest(source);
@@ -392,9 +392,9 @@ options:
   test("parses option description when present", () => {
     const source = baseManifest(`
 options:
-  - label: "Debug"
+  - name: "Debug"
     flag: "--debug"
-    kind: checkbox
+    type: checkbox
     description: "Enable debug symbols"
 `);
     const result = parseManifest(source);
@@ -404,9 +404,9 @@ options:
   test("assigns deterministic key derived from flag", () => {
     const source = baseManifest(`
 options:
-  - label: "Debug"
+  - name: "Debug"
     flag: "--debug"
-    kind: checkbox
+    type: checkbox
 `);
     const result = parseManifest(source);
     // Key is derived from flag: strip leading dashes, replace non-alnum with _
@@ -420,16 +420,14 @@ options:
   test("parses a valid multistate option with explicit default", () => {
     const source = baseManifest(`
 options:
-  - label: "Verbosity"
+  - name: "Verbosity"
     flag: "--verbose"
-    kind: multistate
+    type: multistate
     states:
-      - id: "off"
-        label: "Off"
-        flag: ""
-      - id: "on"
-        label: "On"
-        flag: "--verbose"
+      - value: null
+        name: "Off"
+      - value: "on"
+        name: "On"
         default: true
 `);
     const result = parseManifest(source);
@@ -443,19 +441,17 @@ options:
   test("uses first state as default when no explicit default is set", () => {
     const source = baseManifest(`
 options:
-  - label: "Verbosity"
+  - name: "Verbosity"
     flag: "--verbose"
-    kind: multistate
+    type: multistate
     states:
-      - id: "off"
-        label: "Off"
-        flag: ""
-      - id: "on"
-        label: "On"
-        flag: "--verbose"
+      - value: null
+        name: "Off"
+      - value: "on"
+        name: "On"
 `);
     const result = parseManifest(source);
-    assert.strictEqual(result.buildOptions[0].defaultState, "off");
+    assert.strictEqual(result.buildOptions[0].defaultState, "null");
   });
 
   // -------------------------------------------------------------------------
@@ -465,9 +461,9 @@ options:
   test("parses a valid when expression and stores it as AST", () => {
     const source = baseManifest(`
 options:
-  - label: "T2T1 Only"
+  - name: "T2T1 Only"
     flag: "--t2t1"
-    kind: checkbox
+    type: checkbox
     when: "model(T2T1)"
 `);
     const result = parseManifest(source);
@@ -479,9 +475,9 @@ options:
   test("reports invalid-when error and sets hasWorkflowBlockingIssues for syntactically invalid when", () => {
     const source = baseManifest(`
 options:
-  - label: "Broken"
+  - name: "Broken"
     flag: "--broken"
-    kind: checkbox
+    type: checkbox
     when: "all()"
 `);
     const result = parseManifest(source);
@@ -492,9 +488,9 @@ options:
   test("reports invalid-when error for unknown model id in when expression", () => {
     const source = baseManifest(`
 options:
-  - label: "Unknown"
+  - name: "Unknown"
     flag: "--unknown"
-    kind: checkbox
+    type: checkbox
     when: "model(NONEXISTENT)"
 `);
     const result = parseManifest(source);
@@ -505,9 +501,9 @@ options:
   test("does not block workflow for manifests with only valid when expressions", () => {
     const source = baseManifest(`
 options:
-  - label: "T2T1"
+  - name: "T2T1"
     flag: "--t2t1"
-    kind: checkbox
+    type: checkbox
     when: "model(T2T1)"
 `);
     const result = parseManifest(source);
@@ -521,12 +517,12 @@ options:
   test("reports duplicate-flag error for options with the same flag", () => {
     const source = baseManifest(`
 options:
-  - label: "First"
+  - name: "First"
     flag: "--debug"
-    kind: checkbox
-  - label: "Second"
+    type: checkbox
+  - name: "Second"
     flag: "--debug"
-    kind: checkbox
+    type: checkbox
 `);
     const result = parseManifest(source);
     assert.ok(result.issues.some((i) => i.code === "duplicate-flag"));
@@ -539,15 +535,15 @@ options:
   test("preserves manifest declaration order for options", () => {
     const source = baseManifest(`
 options:
-  - label: "Alpha"
+  - name: "Alpha"
     flag: "--alpha"
-    kind: checkbox
-  - label: "Beta"
+    type: checkbox
+  - name: "Beta"
     flag: "--beta"
-    kind: checkbox
-  - label: "Gamma"
+    type: checkbox
+  - name: "Gamma"
     flag: "--gamma"
-    kind: checkbox
+    type: checkbox
 `);
     const result = parseManifest(source);
     assert.deepStrictEqual(
@@ -695,6 +691,45 @@ options:
     const result = parseManifest(source);
     assert.strictEqual(result.issues.filter((i) => i.code === "invalid-when").length, 0);
     assert.deepStrictEqual(result.buildOptions[0].when, { type: "target", id: "hardware" });
+  });
+
+  test("rejects legacy kind for options", () => {
+    const source = baseManifest(`
+options:
+  - id: perf-overlay
+    name: Performance Overlay
+    kind: checkbox
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "invalid-type"));
+    assert.strictEqual(result.buildOptions.length, 0);
+  });
+
+  test("rejects legacy label for options", () => {
+    const source = baseManifest(`
+options:
+  - label: Performance Overlay
+    flag: --perf-overlay
+    type: checkbox
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "missing-field"));
+    assert.strictEqual(result.buildOptions.length, 0);
+  });
+
+  test("rejects legacy state id/label schema", () => {
+    const source = baseManifest(`
+options:
+  - id: dbg-console
+    name: Debug Console
+    type: multistate
+    states:
+      - id: off
+        label: Off
+`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "invalid-type" || i.code === "missing-field"));
+    assert.strictEqual(result.buildOptions.length, 0);
   });
 });
 

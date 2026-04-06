@@ -23,42 +23,42 @@ components:
 
 options:
   # Always visible
-  - label: "Debug Build"
+  - name: "Debug Build"
     flag: "--debug"
-    kind: checkbox
+    type: checkbox
 
   # Visible only for T2T1 model
-  - label: "Legacy Mode"
+  - name: "Legacy Mode"
     flag: "--legacy"
-    kind: checkbox
+    type: checkbox
     when: "model(T2T1)"
 
   # Visible only for T3W1 model
-  - label: "Next Gen"
+  - name: "Next Gen"
     flag: "--next-gen"
-    kind: checkbox
+    type: checkbox
     when: "model(T3W1)"
 
   # Visible only for hardware target
-  - label: "Hardware Perf"
+  - name: "Hardware Perf"
     flag: "--hw-perf"
-    kind: checkbox
+    type: checkbox
     when: "target(hw)"
 
   # Visible only for core component
-  - label: "Core Extra"
+  - name: "Core Extra"
     flag: "--core-extra"
-    kind: checkbox
+    type: checkbox
     when: "component(core)"
 
   # Requires both T3W1 model and hw target
-  - label: "T3W1 Hardware Only"
+  - name: "T3W1 Hardware Only"
     flag: "--t3w1-hw"
-    kind: checkbox
+    type: checkbox
     when: "all(model(T3W1), target(hw))"
 
   # Visible for either T2T1 or emulator target
-  - label: "Emu or T2T1"
+  - name: "Emu or T2T1"
     flag: "--emu-t2t1"
-    kind: checkbox
+    type: checkbox
     when: "any(model(T2T1), target(emu))"

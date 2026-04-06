@@ -23,47 +23,43 @@ components:
 
 options:
   # Ungrouped checkbox option – always available
-  - label: "Debug Build"
+  - name: "Debug Build"
     flag: "--debug"
-    kind: checkbox
+    type: checkbox
 
   # Group: Build Tuning
-  - label: "Fast"
+  - name: "Fast"
     flag: "--fast"
-    kind: checkbox
+    type: checkbox
     group: "Build Tuning"
 
-  - label: "Optimize"
+  - name: "Optimize"
     flag: "--optimize"
-    kind: checkbox
+    type: checkbox
     group: "Build Tuning"
 
   # Group: Feature Flags
-  - label: "Experimental"
+  - name: "Experimental"
     flag: "--experimental"
-    kind: checkbox
+    type: checkbox
     group: "Feature Flags"
     when: "model(T3W1)"
 
   # Ungrouped multistate option – available only for hardware target
-  - label: "Verbosity"
+  - name: "Verbosity"
     flag: "--verbose"
-    kind: multistate
+    type: multistate
     when: "target(hw)"
     states:
-      - id: "off"
-        label: "Off"
-        flag: ""
-      - id: "normal"
-        label: "Normal"
-        flag: "--verbose"
-      - id: "high"
-        label: "High"
-        flag: "--verbose=2"
-    defaultState: "off"
+      - value: null
+        name: "Off"
+      - value: normal
+        name: "Normal"
+      - value: high
+        name: "High"
 
   # Group: Build Tuning (same group, later in file – still merges under first occurrence)
-  - label: "Strict"
+  - name: "Strict"
     flag: "--strict"
-    kind: checkbox
+    type: checkbox
     group: "Build Tuning"

@@ -589,14 +589,8 @@ function validateBuildOptions(
       continue;
     }
 
-    // Required: label — accept "name" (canonical) or "label" (legacy)
-    let label: string | undefined;
-    const nameNode = item.get("name", true);
-    if (nameNode instanceof Scalar && typeof nameNode.value === "string" && nameNode.value.trim()) {
-      label = nameNode.value;
-    } else {
-      label = validateStringField(item, "label", lineCounter, issues, "options entry");
-    }
+    // Required: name
+    const label = validateStringField(item, "name", lineCounter, issues, "options entry");
     if (!label) {
       continue;
     }
@@ -636,27 +630,22 @@ function validateBuildOptions(
     }
     seenFlags.add(flag);
 
-    // Required: kind — accept "type" (canonical) or "kind" (legacy)
+    // Required: type
     let kind: "checkbox" | "multistate" | undefined;
     const typeNode = item.get("type", true);
     if (typeNode instanceof Scalar && (typeNode.value === "checkbox" || typeNode.value === "multistate")) {
       kind = typeNode.value;
     } else {
-      const kindNode = item.get("kind", true);
-      if (kindNode instanceof Scalar && (kindNode.value === "checkbox" || kindNode.value === "multistate")) {
-        kind = kindNode.value;
-      } else {
-        const nodeRange = (typeNode ?? kindNode) as unknown as { range?: [number, number, number] };
-        issues.push(
-          issue(
-            "error",
-            "invalid-type",
-            `options entry "${label}": field "type" must be "checkbox" or "multistate"`,
-            toVsRange(lineCounter, nodeRange?.range)
-          )
-        );
-        continue;
-      }
+      const nodeRange = typeNode as unknown as { range?: [number, number, number] };
+      issues.push(
+        issue(
+          "error",
+          "invalid-type",
+          `options entry "${label}": field "type" must be "checkbox" or "multistate"`,
+          toVsRange(lineCounter, nodeRange?.range)
+        )
+      );
+      continue;
     }
 
     // Optional: group
@@ -789,64 +778,47 @@ function validateBuildOptionStates(
     let flag: string;
     let description: string | undefined;
 
-    // Detect schema: canonical ("value" + "name") vs legacy ("id" + "label")
-    if (stateItem.has("value")) {
-      // Canonical schema — value drives id and flag; name drives label
-      const valueNode = stateItem.get("value", true);
-      if (!(valueNode instanceof Scalar)) {
-        const nodeRange = valueNode as unknown as { range?: [number, number, number] };
-        issues.push(
-          issue(
-            "error",
-            "invalid-type",
-            `options "${optionLabel}" state: "value" must be a scalar`,
-            toVsRange(lineCounter, nodeRange?.range)
-          )
-        );
-        continue;
-      }
-      const rawValue = valueNode.value;
-      if (rawValue === null || rawValue === undefined) {
-        id = "null";
-        flag = "";
-      } else {
-        id = String(rawValue);
-        flag = `${optionFlag}=${rawValue}`;
-      }
+    const valueNode = stateItem.get("value", true);
+    if (!(valueNode instanceof Scalar)) {
+      const nodeRange = valueNode as unknown as { range?: [number, number, number] };
+      issues.push(
+        issue(
+          "error",
+          "invalid-type",
+          `options "${optionLabel}" state: "value" must be a scalar`,
+          toVsRange(lineCounter, nodeRange?.range)
+        )
+      );
+      continue;
+    }
 
-      const nameNode = stateItem.get("name", true);
-      if (!(nameNode instanceof Scalar) || typeof nameNode.value !== "string" || !nameNode.value.trim()) {
-        const nodeRange = nameNode as unknown as { range?: [number, number, number] };
-        issues.push(
-          issue(
-            "error",
-            "missing-field",
-            `options "${optionLabel}" state: required field "name" is missing or empty`,
-            toVsRange(lineCounter, nodeRange?.range)
-          )
-        );
-        continue;
-      }
-      label = nameNode.value;
-
-      const descriptionNode = stateItem.get("description", true);
-      if (descriptionNode instanceof Scalar) {
-        description = typeof descriptionNode.value === "string" ? descriptionNode.value : undefined;
-      }
+    const rawValue = valueNode.value;
+    if (rawValue === null || rawValue === undefined) {
+      id = "null";
+      flag = "";
     } else {
-      // Legacy schema — id + label + optional flag
-      const idVal = validateStringField(stateItem, "id", lineCounter, issues, `options "${optionLabel}" state`);
-      const labelVal = validateStringField(stateItem, "label", lineCounter, issues, `options "${optionLabel}" state`);
-      if (!idVal || !labelVal) {
-        continue;
-      }
-      id = idVal;
-      label = labelVal;
-      const flagNode = stateItem.get("flag", true);
-      flag =
-        flagNode instanceof Scalar && typeof flagNode.value === "string"
-          ? flagNode.value
-          : "";
+      id = String(rawValue);
+      flag = `${optionFlag}=${rawValue}`;
+    }
+
+    const nameNode = stateItem.get("name", true);
+    if (!(nameNode instanceof Scalar) || typeof nameNode.value !== "string" || !nameNode.value.trim()) {
+      const nodeRange = nameNode as unknown as { range?: [number, number, number] };
+      issues.push(
+        issue(
+          "error",
+          "missing-field",
+          `options "${optionLabel}" state: required field "name" is missing or empty`,
+          toVsRange(lineCounter, nodeRange?.range)
+        )
+      );
+      continue;
+    }
+    label = nameNode.value;
+
+    const descriptionNode = stateItem.get("description", true);
+    if (descriptionNode instanceof Scalar) {
+      description = typeof descriptionNode.value === "string" ? descriptionNode.value : undefined;
     }
 
     if (seenStateIds.has(id)) {

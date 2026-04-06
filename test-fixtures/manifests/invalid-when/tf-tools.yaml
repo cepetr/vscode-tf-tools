@@ -23,18 +23,18 @@ components:
 
 options:
   # Valid option
-  - label: "Debug Build"
+  - name: "Debug Build"
     flag: "--debug"
-    kind: checkbox
+    type: checkbox
 
   # Option with an invalid when expression (references unknown manifest id)
-  - label: "Broken Option"
+  - name: "Broken Option"
     flag: "--broken"
-    kind: checkbox
+    type: checkbox
     when: "model(UNKNOWN_MODEL_ID)"
 
   # Another option with a syntactically malformed when expression
-  - label: "Syntax Error Option"
+  - name: "Syntax Error Option"
     flag: "--syntax-err"
-    kind: checkbox
+    type: checkbox
     when: "all()"
