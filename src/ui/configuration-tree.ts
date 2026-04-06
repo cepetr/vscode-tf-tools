@@ -37,6 +37,32 @@ export class PlaceholderItem extends vscode.TreeItem {
   }
 }
 
+function formatArtifactTooltip(
+  artifactPath: string,
+  status: "valid" | "missing",
+  missingReason?: string
+): string {
+  if (status === "valid") {
+    return artifactPath;
+  }
+
+  if (!artifactPath) {
+    return missingReason ?? "Artifact missing.";
+  }
+
+  const lines = [`Missing: ${artifactPath}`];
+  if (missingReason && !isRedundantMissingReason(missingReason, artifactPath)) {
+    lines.push(missingReason);
+  }
+  return lines.join("\n");
+}
+
+function isRedundantMissingReason(reason: string, artifactPath: string): boolean {
+  return reason.includes(artifactPath)
+    || /(?:compile-commands|binary|map|executable) artifact not found/i.test(reason)
+    ;
+}
+
 // ---------------------------------------------------------------------------
 // Build Artifacts section items
 // ---------------------------------------------------------------------------
@@ -54,9 +80,7 @@ export class CompileCommandsArtifactItem extends vscode.TreeItem {
       artifact.status === "valid" ? "pass" : "error"
     );
     this.description = artifact.status;
-    this.tooltip = artifact.status === "valid"
-      ? `Compile commands: ${artifact.path}`
-      : `Expected: ${artifact.path}${artifact.missingReason ? `\n${artifact.missingReason}` : ""}`;
+    this.tooltip = formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason);
   }
 }
 
@@ -73,11 +97,7 @@ export class BinaryArtifactItem extends vscode.TreeItem {
       artifact.status === "valid" ? "pass" : "error"
     );
     this.description = artifact.status;
-    this.tooltip = artifact.status === "valid"
-      ? `Binary artifact: ${artifact.path}`
-      : (artifact.missingReason
-          ? artifact.missingReason
-          : `Expected: ${artifact.path}`);
+    this.tooltip = formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason);
   }
 }
 
@@ -94,11 +114,7 @@ export class MapArtifactItem extends vscode.TreeItem {
       artifact.status === "valid" ? "pass" : "error"
     );
     this.description = artifact.status;
-    this.tooltip = artifact.status === "valid"
-      ? `Map artifact: ${artifact.path}`
-      : (artifact.missingReason
-          ? artifact.missingReason
-          : `Expected: ${artifact.path}`);
+    this.tooltip = formatArtifactTooltip(artifact.path, artifact.status, artifact.missingReason);
   }
 }
 

@@ -341,6 +341,25 @@ export interface ActiveExecutableArtifact {
   readonly tooltip: string;
 }
 
+function formatExecutableArtifactTooltip(expectedPath: string, missingReason?: string): string {
+  if (!missingReason) {
+    return expectedPath;
+  }
+
+  if (!expectedPath) {
+    return missingReason;
+  }
+
+  if (
+    missingReason.includes(expectedPath)
+    || /executable artifact not found/i.test(missingReason)
+  ) {
+    return `Missing: ${expectedPath}`;
+  }
+
+  return [`Missing: ${expectedPath}`, missingReason].join("\n");
+}
+
 /**
  * Resolves the active executable artifact state for the given manifest, config,
  * and artifacts root.
@@ -365,7 +384,10 @@ export function resolveActiveExecutableArtifact(
       exists: false,
       status: "missing",
       missingReason: "The manifest has debug blocking issues; cannot resolve an executable.",
-      tooltip: "The manifest has debug blocking issues; cannot resolve an executable.",
+      tooltip: formatExecutableArtifactTooltip(
+        "",
+        "The manifest has debug blocking issues; cannot resolve an executable."
+      ),
     };
   }
 
@@ -382,7 +404,7 @@ export function resolveActiveExecutableArtifact(
       exists: false,
       status: "missing",
       missingReason: reason,
-      tooltip: reason,
+      tooltip: formatExecutableArtifactTooltip("", reason),
     };
   }
 
@@ -398,7 +420,10 @@ export function resolveActiveExecutableArtifact(
       exists: false,
       status: "missing",
       missingReason: "No debug profile matches the active build context.",
-      tooltip: "No debug profile matches the active build context.",
+      tooltip: formatExecutableArtifactTooltip(
+        "",
+        "No debug profile matches the active build context."
+      ),
     };
   }
 
@@ -426,7 +451,7 @@ export function resolveActiveExecutableArtifact(
       exists: false,
       status: "missing",
       missingReason: reason,
-      tooltip: reason,
+      tooltip: formatExecutableArtifactTooltip("", reason),
     };
   }
 
@@ -440,7 +465,7 @@ export function resolveActiveExecutableArtifact(
       expectedPath,
       exists: true,
       status: "valid",
-      tooltip: expectedPath,
+      tooltip: formatExecutableArtifactTooltip(expectedPath),
     };
   }
 
@@ -451,6 +476,9 @@ export function resolveActiveExecutableArtifact(
     exists: false,
     status: "missing",
     missingReason: `Executable artifact not found at the expected path: ${expectedPath}`,
-    tooltip: `Executable not found: ${expectedPath}`,
+    tooltip: formatExecutableArtifactTooltip(
+      expectedPath,
+      `Executable artifact not found at the expected path: ${expectedPath}`
+    ),
   };
 }

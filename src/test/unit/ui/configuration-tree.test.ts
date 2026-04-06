@@ -309,12 +309,12 @@ suite("CompileCommandsArtifactItem – missing artifact", () => {
     const artifact = makeMissingArtifact({ missingReason: "Build artifact not found." });
     const item = new CompileCommandsArtifactItem(artifact);
     assert.ok(
-      String(item.tooltip).includes("Build artifact not found."),
-      `expected tooltip to include missingReason, got: ${item.tooltip}`
+      String(item.tooltip).startsWith("Missing: /build/model-t/compile_commands_core.cc.json"),
+      `expected compact missing tooltip, got: ${item.tooltip}`
     );
   });
 
-  test("tooltip falls back to 'Expected: <path>' when missingReason is absent", () => {
+  test("tooltip falls back to a missing-state message with resolved path when missingReason is absent", () => {
     const artifact: ActiveCompileCommandsArtifact = {
       path: "/build/model-t/compile_commands_core.cc.json",
       exists: false,
@@ -323,12 +323,8 @@ suite("CompileCommandsArtifactItem – missing artifact", () => {
     };
     const item = new CompileCommandsArtifactItem(artifact);
     assert.ok(
-      String(item.tooltip).startsWith("Expected:"),
-      `expected 'Expected: ...' fallback tooltip, got: ${item.tooltip}`
-    );
-    assert.ok(
-      String(item.tooltip).includes("/build/model-t/compile_commands_core.cc.json"),
-      `expected path in fallback tooltip, got: ${item.tooltip}`
+      String(item.tooltip).startsWith("Missing: /build/model-t/compile_commands_core.cc.json"),
+      `expected missing-state fallback tooltip, got: ${item.tooltip}`
     );
   });
 });
@@ -452,12 +448,16 @@ suite("BinaryArtifactItem – missing artifact", () => {
     const artifact = makeMissingBinaryArtifact({ missingReason: "Build the firmware first." });
     const item = new BinaryArtifactItem(artifact);
     assert.ok(
+      String(item.tooltip).startsWith("Missing: /build/model-t/firmware_core.bin"),
+      `expected compact missing tooltip with path, got: ${item.tooltip}`
+    );
+    assert.ok(
       String(item.tooltip).includes("Build the firmware first."),
       `expected tooltip to include missingReason, got: ${item.tooltip}`
     );
   });
 
-  test("tooltip falls back to 'Expected: <path>' when missingReason is absent", () => {
+  test("tooltip falls back to a missing-state message with resolved path when missingReason is absent", () => {
     const artifact: ActiveBinaryArtifact = {
       path: "/build/model-t/firmware_core.bin",
       exists: false,
@@ -557,12 +557,12 @@ suite("MapArtifactItem – missing artifact", () => {
     const artifact = makeMissingMapArtifact({ missingReason: "Map file not found." });
     const item = new MapArtifactItem(artifact);
     assert.ok(
-      String(item.tooltip).includes("Map file not found."),
-      `expected tooltip to include missingReason, got: ${item.tooltip}`
+      String(item.tooltip).startsWith("Missing: /build/model-t/firmware_core.map"),
+      `expected compact missing tooltip, got: ${item.tooltip}`
     );
   });
 
-  test("tooltip falls back to 'Expected: <path>' when missingReason is absent", () => {
+  test("tooltip falls back to a missing-state message with resolved path when missingReason is absent", () => {
     const artifact: ActiveMapArtifact = {
       path: "/build/model-t/firmware_core.map",
       exists: false,
@@ -693,7 +693,7 @@ function makeMissingExecutableArtifact(overrides: Partial<ActiveExecutableArtifa
     exists: false,
     status: "missing",
     missingReason: "Executable artifact not found at the expected path: /build/model-t/firmware.elf",
-    tooltip: "Executable not found: /build/model-t/firmware.elf",
+    tooltip: "Missing: /build/model-t/firmware.elf",
     ...overrides,
   };
 }
@@ -754,8 +754,8 @@ suite("ExecutableArtifactItem – missing status rendering", () => {
   test("tooltip reflects the missing reason", () => {
     const item = new ExecutableArtifactItem(makeMissingExecutableArtifact());
     assert.ok(
-      String(item.tooltip).length > 0,
-      "expected a non-empty tooltip for missing executable"
+      String(item.tooltip).startsWith("Missing: /build/model-t/firmware.elf"),
+      `expected compact missing executable tooltip, got: ${item.tooltip}`
     );
   });
 
