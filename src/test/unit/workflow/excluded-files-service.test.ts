@@ -3,7 +3,7 @@
  *   isFileExcluded(), ExcludedFilesService.recompute(), and
  *   ExcludedFilesService.clear().
  *
- * Covers (per T008 specification):
+ * Covers:
  *  - Basename-only filename matching (subpath globs never match basenames)
  *  - Case-sensitive evaluation (*.c does NOT match MAIN.C)
  *  - Forward-slash separator normalization for Windows-style paths
@@ -84,7 +84,7 @@ suite("extractBasename", () => {
 });
 
 // ---------------------------------------------------------------------------
-// isFileExcluded — empty scope lists disable marking entirely (FR-002A)
+// isFileExcluded — empty scope lists disable marking entirely
 // ---------------------------------------------------------------------------
 
 suite("isFileExcluded — empty scope disabling", () => {
@@ -117,7 +117,7 @@ suite("isFileExcluded — empty scope disabling", () => {
 });
 
 // ---------------------------------------------------------------------------
-// isFileExcluded — file is in the compile-database inclusion set (FR-001)
+// isFileExcluded — file is in the compile-database inclusion set
 // ---------------------------------------------------------------------------
 
 suite("isFileExcluded — included files are never marked", () => {
@@ -133,7 +133,7 @@ suite("isFileExcluded — included files are never marked", () => {
 });
 
 // ---------------------------------------------------------------------------
-// isFileExcluded — basename-only filename matching (FR-002B)
+// isFileExcluded — basename-only filename matching
 // ---------------------------------------------------------------------------
 
 suite("isFileExcluded — basename-only filename matching", () => {
@@ -174,7 +174,7 @@ suite("isFileExcluded — basename-only filename matching", () => {
 });
 
 // ---------------------------------------------------------------------------
-// isFileExcluded — case-sensitive evaluation (FR-002C)
+// isFileExcluded — case-sensitive evaluation
 // ---------------------------------------------------------------------------
 
 suite("isFileExcluded — case-sensitive filename matching", () => {
@@ -209,7 +209,7 @@ suite("isFileExcluded — case-sensitive filename matching", () => {
 });
 
 // ---------------------------------------------------------------------------
-// isFileExcluded — forward-slash normalization of Windows paths (FR-002, NFR-002)
+// isFileExcluded — forward-slash normalization of Windows paths
 // ---------------------------------------------------------------------------
 
 suite("isFileExcluded — Windows-path separator normalization", () => {
@@ -232,7 +232,7 @@ suite("isFileExcluded — Windows-path separator normalization", () => {
 });
 
 // ---------------------------------------------------------------------------
-// isFileExcluded — workspace-relative folder glob matching (FR-002D, FR-002E)
+// isFileExcluded — workspace-relative folder glob matching
 // ---------------------------------------------------------------------------
 
 suite("isFileExcluded — workspace-relative folder globs", () => {
@@ -270,7 +270,7 @@ suite("isFileExcluded — workspace-relative folder globs", () => {
 });
 
 // ---------------------------------------------------------------------------
-// isFileExcluded — absolute folder glob matching (FR-002F)
+// isFileExcluded — absolute folder glob matching
 // ---------------------------------------------------------------------------
 
 suite("isFileExcluded — absolute folder globs", () => {
@@ -302,7 +302,7 @@ suite("isFileExcluded — absolute folder globs", () => {
 });
 
 // ---------------------------------------------------------------------------
-// isFileExcluded — all three conditions are required (FR-001 + FR-002)
+// isFileExcluded — all three conditions are required
 // ---------------------------------------------------------------------------
 
 suite("isFileExcluded — combined match rule", () => {
@@ -489,10 +489,10 @@ suite("ExcludedFilesService — clear()", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T024: Regression — path-separator normalization edge cases
+// Regression: path-separator normalization edge cases
 // ---------------------------------------------------------------------------
 
-suite("normalizeToForwardSlashes — regression (T024)", () => {
+suite("normalizeToForwardSlashes — regression", () => {
   test("trailing backslash is normalized to trailing forward slash", () => {
     assert.strictEqual(
       normalizeToForwardSlashes("C:\\project\\core\\"),
@@ -513,10 +513,10 @@ suite("normalizeToForwardSlashes — regression (T024)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T024: Regression — case-sensitive folder glob matching
+// Regression: case-sensitive folder glob matching
 // ---------------------------------------------------------------------------
 
-suite("isFileExcluded — case-sensitive folder glob regression (T024)", () => {
+suite("isFileExcluded — case-sensitive folder glob regression", () => {
   const emptySet: ReadonlySet<string> = new Set();
 
   test("uppercase folder glob does NOT match a lowercase folder path", () => {
@@ -543,10 +543,10 @@ suite("isFileExcluded — case-sensitive folder glob regression (T024)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T024: Regression — empty-scope disabling and scope restoration
+// Regression: empty-scope disabling and scope restoration
 // ---------------------------------------------------------------------------
 
-suite("isFileExcluded — empty-scope restoration regression (T024)", () => {
+suite("isFileExcluded — empty-scope restoration regression", () => {
   const emptySet: ReadonlySet<string> = new Set();
   const candidate = absPath("core/embed/other.c");
 

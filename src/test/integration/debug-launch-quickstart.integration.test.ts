@@ -1,9 +1,9 @@
 /**
- * Integration tests validating the Debug Launch quickstart scenarios (T026).
+ * Integration tests validating the consolidated Debug Launch scenarios.
  *
- * Maps to scenarios in specs/006-debug-launch/quickstart.md:
- *   S1: Unique highest-priority profile — executable row valid, launch surfaces functional
- *   S2: Priority decides among multiple matching profiles
+ * Maps to the Debug Launch behavior in specs/product-spec.md:
+ *   S1: Unique matching profile — executable row valid, launch surfaces functional
+ *   S2: First matching profile in declaration order wins
  *   S3: Ambiguous and unmatched contexts stay discoverable but blocked (enablement)
  *   S4: Executable row explains readiness with tooltip
  *   S5: Template failures at invocation time, not during enablement
@@ -67,10 +67,10 @@ function makeExeManifest(
 }
 
 // ---------------------------------------------------------------------------
-// S1: Unique highest-priority profile — valid Executable row + launch
+// S1: Unique matching profile — valid Executable row + launch
 // ---------------------------------------------------------------------------
 
-suite("QS1 – Unique highest-priority profile (T026)", () => {
+suite("QS1 – Unique matching profile", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -145,7 +145,7 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
 // S2: First-match wins among multiple matching entries (declaration order)
 // ---------------------------------------------------------------------------
 
-suite("QS2 – First-match-wins selection among multiple matching profiles (T026)", () => {
+suite("QS2 – First-match-wins selection among multiple matching profiles", () => {
   test("resolveDebugProfile selects first profile in declaration order when all match", () => {
     const first = makeComponentDebugProfile({ name: "first", template: "first.json", declarationIndex: 0 });
     const second = makeComponentDebugProfile({ name: "second", template: "second.json", declarationIndex: 1 });
@@ -177,7 +177,7 @@ suite("QS2 – First-match-wins selection among multiple matching profiles (T026
 // S3: Ambiguous and unmatched contexts stay blocked with visible actions
 // ---------------------------------------------------------------------------
 
-suite("QS3 – Unmatched contexts remain discoverable but blocked (T026)", () => {
+suite("QS3 – Unmatched contexts remain discoverable but blocked", () => {
   test("no-match: resolveActiveExecutableArtifact returns missing with no-match state", () => {
     const entry = makeComponentDebugProfile({
       name: "gdb",
@@ -233,7 +233,7 @@ suite("QS3 – Unmatched contexts remain discoverable but blocked (T026)", () =>
 // S4: Executable row explains readiness with tooltip
 // ---------------------------------------------------------------------------
 
-suite("QS4 – Executable row explains readiness (T026)", () => {
+suite("QS4 – Executable row explains readiness", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -301,7 +301,7 @@ suite("QS4 – Executable row explains readiness (T026)", () => {
 // S5: Template failures at invocation time, not during enablement
 // ---------------------------------------------------------------------------
 
-suite("QS5 – Template failures at invocation time (T026)", () => {
+suite("QS5 – Template failures at invocation time", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -373,7 +373,7 @@ suite("QS5 – Template failures at invocation time (T026)", () => {
 // S6: tf-tools substitution in nested values; non-tf-tools vars preserved
 // ---------------------------------------------------------------------------
 
-suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T026)", () => {
+suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through", () => {
   test("buildDebugVariableMap includes all built-in tf-tools variables", () => {
     const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/artifacts/model-t", "firmware.elf", "/artifacts/model-t/firmware.elf", "gdb-remote", undefined);
     assert.strictEqual(varMap.resolvedVars["tfTools.model.id"], "T2T1");
@@ -443,7 +443,7 @@ suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T02
 // S7: Template-root traversal is rejected at invocation time
 // ---------------------------------------------------------------------------
 
-suite("QS7 – Template-root traversal rejection (T026)", () => {
+suite("QS7 – Template-root traversal rejection", () => {
   test("loadDebugTemplate blocks traversal path that escapes templates root", () => {
     const result = loadDebugTemplate("../escaped/evil.json", failuresTemplatesRoot);
     assert.strictEqual(result.parseState, "traversal-blocked");

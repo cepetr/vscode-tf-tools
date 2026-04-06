@@ -1,5 +1,5 @@
 /**
- * Integration tests for Flash/Upload Actions (T009 - US1).
+ * Integration tests for Flash/Upload Actions.
  *
  * Covers:
  *  - `tfTools.flash` and `tfTools.upload` commands are registered after activation
@@ -34,7 +34,7 @@ async function activateExtension(): Promise<boolean> {
 // Suite: command registration
 // ---------------------------------------------------------------------------
 
-suite("Flash/Upload Actions – command registration (T009)", () => {
+suite("Flash/Upload Actions – command registration", () => {
   test("extension activates without error", async () => {
     const activated = await activateExtension();
     assert.strictEqual(activated, true, "expected extension to activate");
@@ -105,7 +105,7 @@ suite("Flash/Upload Actions – command registration (T009)", () => {
 // Suite: package.json static menu contributions
 // ---------------------------------------------------------------------------
 
-suite("Flash/Upload Actions – package.json menu contributions (T009)", () => {
+suite("Flash/Upload Actions – package.json menu contributions", () => {
   function getExtPackageJson(): Record<string, unknown> {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     assert.ok(ext, "cepetr.tf-tools extension must be present");
@@ -260,7 +260,7 @@ suite("Flash/Upload Actions – package.json menu contributions (T009)", () => {
 // Suite: evaluateArtifactActionPreconditions – unit-level guard logic wired
 // ---------------------------------------------------------------------------
 
-suite("Flash/Upload Actions – precondition evaluation (T009 integration)", () => {
+suite("Flash/Upload Actions – precondition evaluation", () => {
   test("returns workspace-unsupported when workspace is not supported", () => {
     const result = evaluateArtifactActionPreconditions({
       workspaceSupported: false,

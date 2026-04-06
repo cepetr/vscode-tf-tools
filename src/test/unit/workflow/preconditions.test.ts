@@ -1,9 +1,9 @@
 /**
  * Unit tests for blocked-action gating and failure reasons.
  *
- * FR-023: Blocked Build/Clippy/Check/Clean produce visible failure feedback
- * FR-024: Unsupported workspace blocks all four workflow actions
- * FR-025: Failed task produces visible notification and persistent log entry
+ * Blocked Build/Clippy/Check/Clean actions produce visible failure feedback.
+ * Unsupported workspaces block all four workflow actions.
+ * Failed tasks produce a visible notification and a persistent log entry.
  */
 import * as assert from "assert";
 import {

@@ -85,7 +85,7 @@ export class CompileCommandsArtifactItem extends vscode.TreeItem {
 }
 
 /**
- * The Binary row in the Build Artifacts section (US2).
+ * The Binary row in the Build Artifacts section.
  * contextValue "artifact-binary" enables Flash/Upload row actions via menus.view/item/context.
  */
 export class BinaryArtifactItem extends vscode.TreeItem {
@@ -102,7 +102,7 @@ export class BinaryArtifactItem extends vscode.TreeItem {
 }
 
 /**
- * The Map File row in the Build Artifacts section (US3).
+ * The Map File row in the Build Artifacts section.
  * contextValue "artifact-map" enables the openMapFile row action via menus.view/item/context.
  */
 export class MapArtifactItem extends vscode.TreeItem {
@@ -172,7 +172,7 @@ export class SelectorHeaderItem extends vscode.TreeItem {
 }
 
 // ---------------------------------------------------------------------------
-// Command identifiers for build-context selection (registered in T026)
+// Command identifiers for build-context selection.
 // ---------------------------------------------------------------------------
 
 export const SELECT_COMMANDS: Readonly<Record<SelectorKind, string>> = {
@@ -182,7 +182,7 @@ export const SELECT_COMMANDS: Readonly<Record<SelectorKind, string>> = {
 };
 
 // ---------------------------------------------------------------------------
-// Command identifiers for build-option interaction (registered in T027)
+// Command identifiers for build-option interaction.
 // ---------------------------------------------------------------------------
 
 export const TOGGLE_BUILD_OPTION_COMMAND = "tfTools.toggleBuildOption";
@@ -680,7 +680,7 @@ export class ConfigurationTreeProvider
   }
 
   // -------------------------------------------------------------------------
-  // Build Artifacts section children (US2 - FR-006 through FR-010C)
+  // Build Artifacts section children.
   // -------------------------------------------------------------------------
 
   private _buildArtifactsChildren(): vscode.TreeItem[] {

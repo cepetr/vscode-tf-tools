@@ -1,5 +1,5 @@
 /**
- * Integration tests for Debug Launch – User Story 1 (T011).
+ * Integration tests for Debug Launch.
  *
  * Covers:
  *  - resolveActiveExecutableArtifact returns "valid" when executable exists on disk
@@ -82,7 +82,7 @@ function makeExeManifest(
 // Suite: resolveActiveExecutableArtifact filesystem integration
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration (T011)", () => {
+suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -177,7 +177,7 @@ suite("Debug Launch – resolveActiveExecutableArtifact filesystem integration (
 // Suite: template loading integration
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – loadDebugTemplate integration (T011)", () => {
+suite("Debug Launch – loadDebugTemplate integration", () => {
   const templatesRoot = debugLaunchValidTemplatesRoot();
 
   test("gdb-remote.json template loads successfully from the fixture", () => {
@@ -203,7 +203,7 @@ suite("Debug Launch – loadDebugTemplate integration (T011)", () => {
 // Suite: end-to-end substitution integration
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – substitution pipeline integration (T011)", () => {
+suite("Debug Launch – substitution pipeline integration", () => {
   const templatesRoot = debugLaunchValidTemplatesRoot();
 
   test("tf-tools variables in gdb-remote.json template are substituted correctly", () => {
@@ -278,10 +278,10 @@ suite("Debug Launch – substitution pipeline integration (T011)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: command registration (requires T014)
+// Suite: command registration
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – command registration (T011)", () => {
+suite("Debug Launch – command registration", () => {
   test("extension activates without error", async () => {
     const activated = await activateExtension();
     assert.strictEqual(activated, true, "expected extension to activate");
@@ -345,10 +345,10 @@ suite("Debug Launch – command registration (T011)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: package.json contributions (requires T012)
+// Suite: package.json contributions
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – package.json contributions (T011)", () => {
+suite("Debug Launch – package.json contributions", () => {
   test("tfTools.startDebugging command is listed in package.json contributions", () => {
     const pkg = getExtPackageJson();
     const commands = (pkg.contributes as { commands: Array<{ command: string }> }).commands;
@@ -405,10 +405,10 @@ suite("Debug Launch – package.json contributions (T011)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Debug Launch scope boundaries (T025)
+// Suite: Debug Launch scope boundaries
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – scope boundaries (T025)", () => {
+suite("Debug Launch – scope boundaries", () => {
   function getPackageJson(): Record<string, unknown> {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {

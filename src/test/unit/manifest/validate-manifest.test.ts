@@ -734,7 +734,7 @@ options:
 });
 
 // ---------------------------------------------------------------------------
-// IntelliSense artifact field tests (T013)
+// IntelliSense artifact field tests
 // ---------------------------------------------------------------------------
 
 suite("parseManifest — IntelliSense artifact fields", () => {
@@ -894,10 +894,10 @@ components:
 });
 
 // ---------------------------------------------------------------------------
-// T023: flashWhen / uploadWhen regression tests
+// flashWhen / uploadWhen regression tests
 // ---------------------------------------------------------------------------
 
-suite("parseManifest – flashWhen and uploadWhen (T023)", () => {
+suite("parseManifest – flashWhen and uploadWhen", () => {
   function makeBaseManifest(components: string): string {
     return `
 models:
@@ -1074,10 +1074,10 @@ components:
 });
 
 // ---------------------------------------------------------------------------
-// T009/T024: Component-scoped debug profile and executableExtension coverage
+// Component-scoped debug profile and executableExtension coverage
 // ---------------------------------------------------------------------------
 
-suite("parseManifest – component-scoped debug profiles (T009)", () => {
+suite("parseManifest – component-scoped debug profiles", () => {
   function baseManifest(extras: string): string {
     return `
 models:

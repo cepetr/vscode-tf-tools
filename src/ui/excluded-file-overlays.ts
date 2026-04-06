@@ -13,8 +13,8 @@
  *    `onDidChangeVisibleTextEditors` event handler wired in extension.ts.
  *  - `handleSnapshot()` immediately clears all overlays when
  *    `showEditorOverlay` is false or when `excludedFiles` is empty, which
- *    satisfies FR-007 and FR-012 without requiring a separate clear call.
- *  - Full overlay rendering is delivered in T016.
+ *    clears stale overlays without requiring a separate clear call.
+ *  - Overlay rendering is handled here for excluded editors.
  */
 
 import * as vscode from "vscode";
@@ -69,9 +69,9 @@ export class ExcludedFileOverlaysManager {
   }
 
   /**
-   * Applies or clears the first-line overlay for all currently visible text
-   * editors based on the latest snapshot.  No-ops when no snapshot is present.
-   * Full rendering is implemented in T016; this stub clears all overlays.
+  * Applies or clears the first-line overlay for all currently visible text
+  * editors based on the latest snapshot. No-ops when no snapshot is present.
+  * Refresh the overlay state for all tracked editors.
    */
   applyToVisibleEditors(): void {
     const snapshot = this._snapshot;
@@ -88,7 +88,7 @@ export class ExcludedFileOverlaysManager {
     editor: vscode.TextEditor,
     snapshot: ExcludedFilesSnapshot
   ): void {
-    // Full implementation in T016.
+    // Keep the decoration state aligned with the current exclusion snapshot.
     // Stub: clear any existing overlay so the editor is clean.
     if (!snapshot.settings.showEditorOverlay) {
       editor.setDecorations(this._decorationType, []);
@@ -101,7 +101,7 @@ export class ExcludedFileOverlaysManager {
       return;
     }
 
-    // Apply a first-line whole-line decoration (implemented fully in T016).
+    // Apply a first-line whole-line decoration to explain excluded-file status.
     const firstLine = editor.document.lineAt(0);
     const range = firstLine.range;
     const decoration: vscode.DecorationOptions = {

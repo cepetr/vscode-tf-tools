@@ -1,5 +1,5 @@
 /**
- * Integration tests for the `Refresh IntelliSense` command contribution and execution (T025).
+ * Integration tests for `Refresh IntelliSense` command contribution and execution.
  * Runs inside the VS Code extension host via @vscode/test-electron.
  *
  * Covers:
@@ -39,7 +39,7 @@ async function activateExtension(): Promise<boolean> {
 // Suite: tfTools.refreshIntelliSense command
 // ---------------------------------------------------------------------------
 
-suite("tfTools.refreshIntelliSense – command registration and execution (T025)", () => {
+suite("tfTools.refreshIntelliSense – command registration and execution", () => {
   test("extension cepetr.tf-tools is available in development host", async () => {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     assert.ok(ext, "expected cepetr.tf-tools extension to be available in the test host");
@@ -84,7 +84,7 @@ suite("tfTools.refreshIntelliSense – command registration and execution (T025)
 // Suite: IntelliSenseService with "manual" trigger (equivalent to command)
 // ---------------------------------------------------------------------------
 
-suite("IntelliSenseService – manual refresh trigger (T025)", () => {
+suite("IntelliSenseService – manual refresh trigger", () => {
   /** Yields to the microtask queue to let pending refresh resolve. */
   function drainMicrotasks(): Promise<void> {
     return drainRefresh(50);

@@ -1,11 +1,11 @@
 /**
  * Unit tests for ExcludedFileOverlaysManager state selection and clearing behavior.
  *
- * Covers (per T014 specification):
- *  - handleSnapshot() clears all overlays when showEditorOverlay is false (FR-007)
- *  - handleSnapshot() clears all overlays when excludedFiles is empty (FR-012)
- *  - handleSnapshot() applies first-line decoration to excluded editors (FR-006)
- *  - handleSnapshot() clears decoration from non-excluded editors (FR-007)
+ * Covers:
+ *  - `handleSnapshot()` clears all overlays when `showEditorOverlay` is false
+ *  - `handleSnapshot()` clears all overlays when `excludedFiles` is empty
+ *  - `handleSnapshot()` applies first-line decoration to excluded editors
+ *  - `handleSnapshot()` clears decoration from non-excluded editors
  *  - applyToVisibleEditors() with no snapshot is a no-op (no errors)
  *  - applyToVisibleEditors() applies the last snapshot state to new editors
  *  - Multiple visible editors: excluded and non-excluded handled independently
@@ -77,7 +77,7 @@ function makeSnapshot(
 const windowMock: { visibleTextEditors: unknown[] } = (vscode as unknown as { window: { visibleTextEditors: unknown[] } }).window;
 
 // ---------------------------------------------------------------------------
-// Suite: handleSnapshot() — showEditorOverlay disabled (FR-007)
+// Suite: handleSnapshot() — showEditorOverlay disabled
 // ---------------------------------------------------------------------------
 
 suite("ExcludedFileOverlaysManager — showEditorOverlay disabled", () => {
@@ -124,7 +124,7 @@ suite("ExcludedFileOverlaysManager — showEditorOverlay disabled", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: handleSnapshot() — excluded file gets overlay (FR-006)
+// Suite: handleSnapshot() — excluded file gets overlay
 // ---------------------------------------------------------------------------
 
 suite("ExcludedFileOverlaysManager — excluded file receives overlay", () => {
@@ -170,7 +170,7 @@ suite("ExcludedFileOverlaysManager — excluded file receives overlay", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: handleSnapshot() — non-excluded files get cleared (FR-007)
+// Suite: handleSnapshot() — non-excluded files get cleared
 // ---------------------------------------------------------------------------
 
 suite("ExcludedFileOverlaysManager — non-excluded files are cleared", () => {

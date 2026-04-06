@@ -25,7 +25,7 @@ export function hasSupportedWorkspace(): boolean {
 
 /**
  * Returns true when the workspace is supported for Build Workflow.
- * Build Workflow requires exactly one open workspace folder (FR-024).
+ * Build Workflow requires exactly one open workspace folder.
  * - No folders: unsupported
  * - More than one folder: unsupported (multi-root)
  * - Exactly one folder: supported

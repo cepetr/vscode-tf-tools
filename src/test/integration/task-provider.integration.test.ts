@@ -3,10 +3,10 @@
  *
  * Verifies:
  * - TaskProvider is registered and provideTasks returns all four task types
- * - Task labels follow the required format (FR-014 through FR-017)
- * - Clean task label is always "Clean" (FR-017)
- * - target-display uses shortName when available (FR-018)
- * - Task failure logging writes to output channel (FR-025, T031)
+ * - Task labels follow the required format.
+ * - Clean task label is always "Clean".
+ * - `target-display` uses `shortName` when available.
+ * - Task failure logging writes to the output channel.
  *
  * These tests run inside the VS Code extension host.
  */
@@ -77,10 +77,10 @@ suite("Build Task Provider – VS Code registration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: T031 – task failure notification integration
+// Suite: task failure notification integration
 // ---------------------------------------------------------------------------
 
-suite("Build Task Provider – task failure visibility (T031)", () => {
+suite("Build Task Provider – task failure visibility", () => {
   test("logWorkflowFailure writes a persistent log entry", () => {
     // Test that the log function runs without throwing
     assert.doesNotThrow(() => {

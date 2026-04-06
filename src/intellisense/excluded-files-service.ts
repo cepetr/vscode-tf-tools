@@ -86,17 +86,17 @@ export function isFileExcluded(
   settings: ExcludedFilesSettings,
   workspaceRoot: string
 ): boolean {
-  // Empty scope lists disable marking entirely (FR-002A).
+  // Empty scope lists disable marking entirely.
   if (settings.fileNamePatterns.length === 0 || settings.folderGlobs.length === 0) {
     return false;
   }
 
-  // File must not be in the active compile database (FR-001, FR-002).
+  // The file must not be in the active compile database.
   if (includedFiles.has(normalizedAbsPath)) {
     return false;
   }
 
-  // Basename-only, case-sensitive filename matching (FR-002B, FR-002C).
+  // Basename-only, case-sensitive filename matching.
   const basename = extractBasename(normalizedAbsPath);
   const matchesFileName = settings.fileNamePatterns.some((pattern) =>
     minimatch(basename, pattern, { nocase: false, dot: true })
@@ -105,7 +105,7 @@ export function isFileExcluded(
     return false;
   }
 
-  // Folder glob matching — absolute or workspace-relative (FR-002D, FR-002E, FR-002F).
+  // Folder glob matching supports absolute and workspace-relative patterns.
   const normalizedWorkspaceRoot = normalizeToForwardSlashes(workspaceRoot);
   const matchesFolder = settings.folderGlobs.some((glob) => {
     const normalizedGlob = normalizeToForwardSlashes(glob);
@@ -170,7 +170,7 @@ export class ExcludedFilesService {
    * Callers provide the `includedFiles` set extracted from the active
    * `ProviderPayload`, or an empty set / null `artifactPath` when the
    * compile-database payload is unavailable.  In that case the resulting
-   * `excludedFiles` set is empty so stale markers are cleared (FR-012).
+  * `excludedFiles` is empty so stale markers are cleared.
    *
    * @param contextKey  Active configuration key (model/target/component).
    * @param artifactPath  Resolved compile-commands path, or null when absent.
@@ -189,7 +189,7 @@ export class ExcludedFilesService {
     workspaceRoot: string,
     candidateUris: ReadonlyArray<vscode.Uri>
   ): void {
-    // Stub: full implementation in T010.
+    // Build the latest exclusion snapshot from inclusion data and settings.
     // Guard: no payload → emit empty snapshot so stale markers are cleared.
     const excludedFiles = new Set<string>();
 

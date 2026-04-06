@@ -1,5 +1,5 @@
 /**
- * Integration tests for Binary and Map File artifact rows (T014 - US2).
+ * Integration tests for Binary and Map File artifact rows.
  *
  * Covers:
  *  - BinaryArtifactItem and MapArtifactItem contextValues are correct for row-scoped actions
@@ -65,7 +65,7 @@ function makeMissingMapArtifact(): ActiveMapArtifact {
 // Suite: BinaryArtifactItem context values (row-scoped actions)
 // ---------------------------------------------------------------------------
 
-suite("Flash/Upload artifacts – BinaryArtifactItem (T014)", () => {
+suite("Flash/Upload artifacts – BinaryArtifactItem", () => {
   test("contextValue is 'artifact-binary' for valid artifact", () => {
     const item = new BinaryArtifactItem(makeValidBinaryArtifact());
     assert.strictEqual(
@@ -112,7 +112,7 @@ suite("Flash/Upload artifacts – BinaryArtifactItem (T014)", () => {
 // Suite: MapArtifactItem context values (row-scoped actions)
 // ---------------------------------------------------------------------------
 
-suite("Flash/Upload artifacts – MapArtifactItem (T014)", () => {
+suite("Flash/Upload artifacts – MapArtifactItem", () => {
   test("contextValue is 'artifact-map' for valid artifact", () => {
     const item = new MapArtifactItem(makeValidMapArtifact());
     assert.strictEqual(
@@ -159,7 +159,7 @@ suite("Flash/Upload artifacts – MapArtifactItem (T014)", () => {
 // Suite: package.json view/item/context enablement rules
 // ---------------------------------------------------------------------------
 
-suite("Flash/Upload artifacts – menu enablement rules (T014)", () => {
+suite("Flash/Upload artifacts – menu enablement rules", () => {
   function getExtPackageJson(): Record<string, unknown> | undefined {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     return ext?.packageJSON as Record<string, unknown> | undefined;

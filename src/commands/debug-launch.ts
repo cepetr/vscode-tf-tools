@@ -2,7 +2,7 @@
  * Debug Launch helpers: profile resolution, executable path derivation,
  * template loading, variable-map construction, and tf-tools substitution.
  *
- * FR-001 through FR-026 (debug launch slice).
+ * Covers debug launch behavior for the active build context.
  */
 
 import * as fs from "fs";
@@ -390,7 +390,7 @@ export function applyTfToolsSubstitution(
  *
  * All blocked states (no-match, missing executable, template
  * errors, variable errors) surface an error message and return early.
- * Persistent output-channel logging is added by T022.
+ * Persistent output-channel logging records blocked and failed debug launches.
  */
 export async function executeDebugLaunch(
   workspaceFolder: vscode.WorkspaceFolder,

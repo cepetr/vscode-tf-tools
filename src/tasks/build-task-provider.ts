@@ -2,12 +2,12 @@
  * VS Code build task provider for Build Workflow actions.
  *
  * Exposes Build, Clippy, Check, and Clean as VS Code tasks through the
- * standard task system (FR-013), so users can run them from the terminal,
+ * standard task system, so users can run them from the terminal,
  * the Run Task picker, and keybindings in addition to the Configuration view.
  *
- * FR-013: tasks accessible through standard VS Code entry points
- * FR-014 through FR-017: task label formats
- * FR-018: target-display uses shortName when present
+ * Tasks are accessible through standard VS Code entry points.
+ * Task labels reflect the active build context.
+ * `target-display` uses `shortName` when present.
  */
 
 import * as vscode from "vscode";

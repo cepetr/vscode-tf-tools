@@ -88,7 +88,7 @@ export function logManifestState(state: ManifestState): void {
 }
 
 // ---------------------------------------------------------------------------
-// Workflow failure logging (FR-025)
+// Workflow failure logging
 // ---------------------------------------------------------------------------
 
 /**
@@ -99,7 +99,7 @@ export function logWorkflowFailure(kind: string, message: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// Debug launch failure logging (US3-T022)
+// Debug launch failure logging
 // ---------------------------------------------------------------------------
 
 /**
@@ -116,7 +116,7 @@ export function logDebugLaunchFailure(
 }
 
 // ---------------------------------------------------------------------------
-// IntelliSense event logging (FR-003, FR-005)
+// IntelliSense event logging
 // ---------------------------------------------------------------------------
 
 /**
@@ -133,7 +133,7 @@ export function logMissingArtifact(expectedPath: string, contextKey: string): vo
 /**
  * Writes a persistent log entry for a provider warning condition (missing or
  * wrong provider). Also shows a visible VS Code warning notification so the
- * condition is not silent (FR-005A).
+ * condition is not silent.
  */
 export function logProviderWarning(message: string): void {
   log(`[IntelliSense] [WARN] ${message}`);

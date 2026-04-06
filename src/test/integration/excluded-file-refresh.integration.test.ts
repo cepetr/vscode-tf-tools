@@ -1,7 +1,7 @@
 /**
  * Integration tests for excluded-file refresh: active-config refresh,
  * settings-driven refresh, manual refresh reuse, workspace-change refresh,
- * and stale-state clearing (T020).
+ * and stale-state clearing.
  *
  * These tests run inside the VS Code extension host so they exercise the real
  * `vscode.EventEmitter`, `vscode.Uri`, `vscode.FileDecoration`,
@@ -11,7 +11,7 @@
  * end-to-end refresh cycles can be verified without the extension activation
  * layer.
  *
- * Covers (T020):
+ * Covers:
  *  - Active-config refresh: recompute() with a new contextKey produces a
  *    snapshot reflecting the new config; stale markers from the previous config
  *    are cleared
@@ -103,10 +103,10 @@ function wireOverlayToService(
 }
 
 // ---------------------------------------------------------------------------
-// Suite: Active-config refresh (US3-AC1)
+// Suite: Active-config refresh
 // ---------------------------------------------------------------------------
 
-suite("Excluded-file refresh — active-config refresh (US3-AC1)", () => {
+suite("Excluded-file refresh — active-config refresh", () => {
   test("recompute() with a new contextKey produces a snapshot with the updated key", () => {
     const svc = new ExcludedFilesService();
     const snapshots: ExcludedFilesSnapshot[] = [];
@@ -170,10 +170,10 @@ suite("Excluded-file refresh — active-config refresh (US3-AC1)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Settings-driven refresh (US3-AC2)
+// Suite: Settings-driven refresh
 // ---------------------------------------------------------------------------
 
-suite("Excluded-file refresh — settings-driven refresh (US3-AC2)", () => {
+suite("Excluded-file refresh — settings-driven refresh", () => {
   test("empty fileNamePatterns disables all excluded-file marking", () => {
     const svc = new ExcludedFilesService();
     const snapshots: ExcludedFilesSnapshot[] = [];
@@ -255,10 +255,10 @@ suite("Excluded-file refresh — settings-driven refresh (US3-AC2)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Manual refresh reuse (US3-AC3)
+// Suite: Manual refresh reuse
 // ---------------------------------------------------------------------------
 
-suite("Excluded-file refresh — manual refresh reuse (US3-AC3)", () => {
+suite("Excluded-file refresh — manual refresh reuse", () => {
   test("back-to-back recompute() calls fire onDidUpdateSnapshot twice", () => {
     const svc = new ExcludedFilesService();
     let fireCount = 0;
@@ -315,7 +315,7 @@ suite("Excluded-file refresh — manual refresh reuse (US3-AC3)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Workspace-change refresh (US3-AC3 variant)
+// Suite: Workspace-change refresh
 // ---------------------------------------------------------------------------
 
 suite("Excluded-file refresh — workspace-change refresh", () => {
@@ -381,10 +381,10 @@ suite("Excluded-file refresh — workspace-change refresh", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Stale-state clearing (US3-AC4)
+// Suite: Stale-state clearing
 // ---------------------------------------------------------------------------
 
-suite("Excluded-file refresh — stale-state clearing (US3-AC4)", () => {
+suite("Excluded-file refresh — stale-state clearing", () => {
   test("clear() empties excludedFiles and fires onDidUpdateSnapshot", () => {
     const svc = new ExcludedFilesService();
     const snapshots: ExcludedFilesSnapshot[] = [];
@@ -525,10 +525,10 @@ suite("Excluded-file refresh — stale-state clearing (US3-AC4)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: T024 Regression — scope restoration after empty settings cycle
+// Suite: scope restoration regression after empty settings cycle
 // ---------------------------------------------------------------------------
 
-suite("Excluded-file refresh — scope restoration regression (T024)", () => {
+suite("Excluded-file refresh — scope restoration regression", () => {
   test("ExcludedFileDecorationsProvider shows decoration again after fileNamePatterns is repopulated", () => {
     const svc = new ExcludedFilesService();
     const provider = new ExcludedFileDecorationsProvider();

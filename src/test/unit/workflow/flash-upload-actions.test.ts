@@ -344,13 +344,13 @@ suite("createUploadTask", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T018: openMapFile unit tests
+// openMapFile unit tests
 // ---------------------------------------------------------------------------
 
 import { openMapFile } from "../../../commands/artifact-actions";
 import * as vscode from "vscode";
 
-suite("openMapFile – missing-file guards (T018)", () => {
+suite("openMapFile – missing-file guards", () => {
   test("returns without error when path is empty string", async () => {
     // openMapFile must not throw when called with an empty path
     let threw = false;
@@ -375,7 +375,7 @@ suite("openMapFile – missing-file guards (T018)", () => {
   });
 });
 
-suite("openMapFile – valid path handling (T018)", () => {
+suite("openMapFile – valid path handling", () => {
   test("calls vscode.window.showTextDocument with the provided path", async () => {
     // Track calls to the mock showTextDocument
     const calls: vscode.Uri[] = [];

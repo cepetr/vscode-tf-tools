@@ -1,9 +1,9 @@
 /**
  * Unit tests for excluded-file refresh requests, payload-loss clearing,
- * and latest-state snapshot updates (T019).
+ * and latest-state snapshot updates.
  *
- * Tests the ExcludedFilesService refresh cycle from the perspective of
- * User Story 3: keeping excluded markers in sync with context changes.
+ * Tests the ExcludedFilesService refresh cycle for keeping excluded markers
+ * in sync with context changes.
  *
  * Covers:
  *  - Payload-loss clearing: recompute() with null artifactPath emits empty snapshot

@@ -1,24 +1,24 @@
 /**
  * Integration tests for Explorer FileDecorationProvider badge, tooltip, and
- * optional gray color behavior (T009), and editor overlay rendering,
- * hover text, and showEditorOverlay toggling behavior (T015).
+ * optional gray color behavior, and editor overlay rendering,
+ * hover text, and showEditorOverlay toggling behavior.
  *
  * These tests run inside the VS Code extension host so they use the real
  * `vscode.FileDecoration`, `vscode.ThemeColor`, `vscode.Uri`, and
  * `vscode.window.createTextEditorDecorationType` APIs.
  *
- * Covers (T009):
+ * Covers:
  *  - Excluded files receive the "✗" badge
  *  - Excluded files receive the correct tooltip
- *  - Gray color is applied when grayInTree is enabled (FR-004)
- *  - No gray color is applied when grayInTree is disabled (FR-005)
+ *  - Gray color is applied when `grayInTree` is enabled
+ *  - No gray color is applied when `grayInTree` is disabled
  *  - Included files return undefined (no decoration)
  *  - Out-of-scope files return undefined (no decoration)
  *  - handleSnapshot() fires onDidChangeFileDecorations for newly excluded URIs
  *  - handleSnapshot() fires onDidChangeFileDecorations for newly included URIs
  *  - handleSnapshot() fires undefined (full refresh) when only grayInTree changes
  *
- * Covers (T015):
+ * Covers:
  *  - ExcludedFileOverlaysManager constructs without error (createTextEditorDecorationType)
  *  - handleSnapshot() applies decoration when showEditorOverlay is enabled and file is excluded
  *  - handleSnapshot() clears decoration when showEditorOverlay is disabled
@@ -117,11 +117,11 @@ suite("ExcludedFileDecorationsProvider — badge and tooltip", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: provideFileDecoration — gray coloring (FR-004, FR-005)
+// Suite: provideFileDecoration — gray coloring
 // ---------------------------------------------------------------------------
 
 suite("ExcludedFileDecorationsProvider — optional gray color", () => {
-  test("color is set when grayInTree is true (FR-004)", () => {
+  test("color is set when grayInTree is true", () => {
     const provider = new ExcludedFileDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
     provider.handleSnapshot(makeSnapshot([excludedPath], [], /* grayInTree */ true));
@@ -134,7 +134,7 @@ suite("ExcludedFileDecorationsProvider — optional gray color", () => {
     provider.dispose();
   });
 
-  test("color is undefined when grayInTree is false (FR-005)", () => {
+  test("color is undefined when grayInTree is false", () => {
     const provider = new ExcludedFileDecorationsProvider();
     const excludedPath = fixturePath("core/embed/other.c");
     provider.handleSnapshot(makeSnapshot([excludedPath], [], /* grayInTree */ false));
@@ -329,7 +329,7 @@ suite("ExcludedFileDecorationsProvider — handleSnapshot() decoration change ev
 });
 
 // ===========================================================================
-// T015: Integration tests for ExcludedFileOverlaysManager
+// Integration tests for ExcludedFileOverlaysManager
 // ===========================================================================
 
 function makeOverlaySnapshot(
@@ -351,10 +351,10 @@ function makeOverlaySnapshot(
 }
 
 // ---------------------------------------------------------------------------
-// Suite: ExcludedFileOverlaysManager — construction and lifecycle (T015)
+// Suite: ExcludedFileOverlaysManager — construction and lifecycle
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — construction and lifecycle (T015)", () => {
+suite("ExcludedFileOverlaysManager — construction and lifecycle", () => {
   test("constructs without error using real VS Code createTextEditorDecorationType", () => {
     let manager: ExcludedFileOverlaysManager | undefined;
     assert.doesNotThrow(() => {
@@ -376,10 +376,10 @@ suite("ExcludedFileOverlaysManager — construction and lifecycle (T015)", () =>
 });
 
 // ---------------------------------------------------------------------------
-// Suite: ExcludedFileOverlaysManager — overlay applied to excluded editors (T015)
+// Suite: ExcludedFileOverlaysManager — overlay applied to excluded editors
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — overlay applied to excluded editors (T015)", () => {
+suite("ExcludedFileOverlaysManager — overlay applied to excluded editors", () => {
   test("handleSnapshot() calls setDecorations with non-empty ranges for excluded file", () => {
     const excludedPath = fixturePath("core/embed/other.c");
     const manager = new ExcludedFileOverlaysManager();
@@ -408,10 +408,10 @@ suite("ExcludedFileOverlaysManager — overlay applied to excluded editors (T015
 });
 
 // ---------------------------------------------------------------------------
-// Suite: ExcludedFileOverlaysManager — overlay decoration options (T015)
+// Suite: ExcludedFileOverlaysManager — overlay decoration options
 // ---------------------------------------------------------------------------
 
-suite("ExcludedFileOverlaysManager — EXCLUDED_TOOLTIP (T015)", () => {
+suite("ExcludedFileOverlaysManager — EXCLUDED_TOOLTIP", () => {
   test("EXCLUDED_TOOLTIP includes the canonical phrase used in hoverMessage", () => {
     assert.ok(
       EXCLUDED_TOOLTIP.toLowerCase().includes("active build configuration"),

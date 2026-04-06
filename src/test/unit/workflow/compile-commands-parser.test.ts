@@ -468,10 +468,10 @@ suite("tokenizeCommandString", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T029: Regression – mixed-language compile database
+// Regression: mixed-language compile database
 // ---------------------------------------------------------------------------
 
-suite("parseCompileCommandsFile – mixed-language regression (T029)", () => {
+suite("parseCompileCommandsFile – mixed-language regression", () => {
   function writeTmpDb(entries: object[]): string {
     const tmpPath = path.join(os.tmpdir(), `mixed-lang-${Date.now()}.cc.json`);
     fs.writeFileSync(tmpPath, JSON.stringify(entries), "utf-8");

@@ -1,5 +1,5 @@
 /**
- * Integration tests for Debug Launch failure cases – User Story 3 (T021).
+ * Integration tests for Debug Launch failure cases.
  *
  * Covers:
  *  - no-match: resolveActiveExecutableArtifact returns no-match state
@@ -73,10 +73,10 @@ function makeExeManifest(
 }
 
 // ---------------------------------------------------------------------------
-// Suite: no-match failure (T021)
+// Suite: no-match failure
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch Failures – no-match (T021)", () => {
+suite("Debug Launch Failures – no-match", () => {
   test("resolveActiveExecutableArtifact returns no-match when no entry matches the active context", () => {
     const entry = makeComponentDebugProfile({
       name: "gdb",
@@ -117,10 +117,10 @@ suite("Debug Launch Failures – no-match (T021)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: first-match wins (replaces ambiguous-profile, T021)
+// Suite: first-match wins (replaces ambiguous-profile)
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch Failures – first-match-wins (T021)", () => {
+suite("Debug Launch Failures – first-match-wins", () => {
   test("resolveActiveExecutableArtifact selects first matching entry in declaration order", () => {
     const first = makeComponentDebugProfile({ name: "first", template: "a.json", declarationIndex: 0 });
     const second = makeComponentDebugProfile({ name: "second", template: "b.json", declarationIndex: 1 });
@@ -151,10 +151,10 @@ suite("Debug Launch Failures – first-match-wins (T021)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: missing-executable failure (T021)
+// Suite: missing-executable failure
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch Failures – missing-executable (T021)", () => {
+suite("Debug Launch Failures – missing-executable", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -196,10 +196,10 @@ suite("Debug Launch Failures – missing-executable (T021)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: missing-template failure (T021)
+// Suite: missing-template failure
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch Failures – missing-template (T021)", () => {
+suite("Debug Launch Failures – missing-template", () => {
   test("loadDebugTemplate returns missing for non-existent template in failures fixture", () => {
     const result = loadDebugTemplate("missing-template.json", failuresTemplatesRoot);
     assert.strictEqual(result.parseState, "missing");
@@ -235,10 +235,10 @@ suite("Debug Launch Failures – missing-template (T021)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: malformed-template failure (T021)
+// Suite: malformed-template failure
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch Failures – malformed-template (T021)", () => {
+suite("Debug Launch Failures – malformed-template", () => {
   test("loadDebugTemplate returns invalid for malformed-template.json fixture", () => {
     const result = loadDebugTemplate("malformed-template.json", failuresTemplatesRoot);
     assert.strictEqual(result.parseState, "invalid");
@@ -276,10 +276,10 @@ suite("Debug Launch Failures – malformed-template (T021)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: unresolved-variable failure (T021)
+// Suite: unresolved-variable failure
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch Failures – unresolved-variable (T021)", () => {
+suite("Debug Launch Failures – unresolved-variable", () => {
   test("unknown-var-template.json fixture contains a non-existent tfTools variable", () => {
     const result = loadDebugTemplate("unknown-var-template.json", failuresTemplatesRoot);
     assert.strictEqual(result.parseState, "loaded");
@@ -328,10 +328,10 @@ suite("Debug Launch Failures – unresolved-variable (T021)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: traversal failure (T021)
+// Suite: traversal failure
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch Failures – traversal (T021)", () => {
+suite("Debug Launch Failures – traversal", () => {
   test("loadDebugTemplate returns traversal-blocked for ../escaped/ path", () => {
     const result = loadDebugTemplate("../escaped/template.json", failuresTemplatesRoot);
     assert.strictEqual(result.parseState, "traversal-blocked");
@@ -365,10 +365,10 @@ suite("Debug Launch Failures – traversal (T021)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: manifest-invalid failure (T021)
+// Suite: manifest-invalid failure
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch Failures – manifest-invalid (T021)", () => {
+suite("Debug Launch Failures – manifest-invalid", () => {
   test("resolveActiveExecutableArtifact returns manifest-invalid when hasDebugBlockingIssues is true", () => {
     const manifest = makeDebugLoadedState([], { hasDebugBlockingIssues: true });
     const result = resolveActiveExecutableArtifact(manifest, makeConfig("T2T1"), "/some/root");
@@ -393,10 +393,10 @@ suite("Debug Launch Failures – manifest-invalid (T021)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: unsupported-workspace failure (T021)
+// Suite: unsupported-workspace failure
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch Failures – unsupported-workspace (T021)", () => {
+suite("Debug Launch Failures – unsupported-workspace", () => {
   test("tfTools.startDebugging command is registered and completes without throwing", async () => {
     const cmds = await vscode.commands.getCommands(false);
     assert.ok(

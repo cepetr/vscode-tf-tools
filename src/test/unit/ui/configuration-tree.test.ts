@@ -20,7 +20,7 @@ import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } fro
 
 // ---------------------------------------------------------------------------
 // Regression target: all three root sections must default to Expanded (UI-02)
-// Refs: informal_spec/user-spec.md UI-02, specs/001-configuration-experience/spec.md FR-018
+// Refs: specs/product-spec.md root-section expansion requirement
 // ---------------------------------------------------------------------------
 const EXPECTED_EXPANDED_SECTIONS: Array<{ id: SectionId; label: string }> = [
   { id: "build-context",   label: "Build Selection"  },
@@ -225,7 +225,7 @@ suite("BuildOptionStateItem tooltip", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T020: CompileCommandsArtifactItem rendering
+// CompileCommandsArtifactItem rendering
 // ---------------------------------------------------------------------------
 
 function makeValidArtifact(overrides: Partial<ActiveCompileCommandsArtifact> = {}): ActiveCompileCommandsArtifact {
@@ -330,9 +330,9 @@ suite("CompileCommandsArtifactItem – missing artifact", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T003: SectionItem default expansion (UI-02)
+// SectionItem default expansion (UI-02)
 // All three root sections must default to vscode.TreeItemCollapsibleState.Expanded.
-// These tests MUST FAIL before T005 removes the collapsing override.
+// These tests protect against regressions in the collapsing override.
 // ---------------------------------------------------------------------------
 
 suite("SectionItem default expansion (UI-02)", () => {
@@ -364,7 +364,7 @@ suite("SectionItem default expansion (UI-02)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T013: BinaryArtifactItem rendering
+// BinaryArtifactItem rendering
 // ---------------------------------------------------------------------------
 
 function makeValidBinaryArtifact(overrides: Partial<ActiveBinaryArtifact> = {}): ActiveBinaryArtifact {
@@ -473,7 +473,7 @@ suite("BinaryArtifactItem – missing artifact", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T013: MapArtifactItem rendering
+// MapArtifactItem rendering
 // ---------------------------------------------------------------------------
 
 function makeValidMapArtifact(overrides: Partial<ActiveMapArtifact> = {}): ActiveMapArtifact {
@@ -670,7 +670,7 @@ suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T015: ExecutableArtifactItem rendering (Debug Launch slice – US2)
+// ExecutableArtifactItem rendering
 // ---------------------------------------------------------------------------
 
 function makeValidExecutableArtifact(overrides: Partial<ActiveExecutableArtifact> = {}): ActiveExecutableArtifact {
@@ -778,7 +778,7 @@ suite("ExecutableArtifactItem – missing status rendering", () => {
   });
 });
 
-suite("ConfigurationTreeProvider – Executable row (T015, T017)", () => {
+suite("ConfigurationTreeProvider – Executable row", () => {
   let provider: ConfigurationTreeProvider;
 
   setup(() => {

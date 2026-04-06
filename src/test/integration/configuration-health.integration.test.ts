@@ -17,7 +17,7 @@ import { SectionItem, ConfigurationTreeProvider } from "../../ui/configuration-t
 
 // ---------------------------------------------------------------------------
 // Regression target: all three root sections must default to Expanded (UI-02)
-// Refs: informal_spec/user-spec.md UI-02, specs/001-configuration-experience/spec.md FR-018
+// Refs: specs/product-spec.md root-section expansion requirement
 // ---------------------------------------------------------------------------
 const EXPECTED_ROOT_SECTION_COUNT = 3;
 
@@ -149,7 +149,7 @@ suite("ManifestService - health states", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T021: Compile-commands status and tooltip refresh (real filesystem checks)
+// Compile-commands status and tooltip refresh using real filesystem checks
 // ---------------------------------------------------------------------------
 
 function makeIntellisenseLoadedState(overrides: Partial<ManifestStateLoaded> = {}): ManifestStateLoaded {
@@ -176,7 +176,7 @@ function makeActiveConfig(modelId: string, targetId: string, componentId: string
   return { modelId, targetId, componentId, persistedAt: new Date().toISOString() };
 }
 
-suite("resolveActiveArtifact – filesystem integration (T021)", () => {
+suite("resolveActiveArtifact – filesystem integration", () => {
   let tmpDir: string;
 
   setup(async () => {
@@ -294,10 +294,10 @@ suite("resolveActiveArtifact – filesystem integration (T021)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T026: Provider-readiness and warning recovery (real VS Code host)
+// Provider-readiness and warning recovery using the real VS Code host
 // ---------------------------------------------------------------------------
 
-suite("checkProviderReadiness – integration (T026)", () => {
+suite("checkProviderReadiness – integration", () => {
   test("returns a defined readiness object", () => {
     const result = checkProviderReadiness();
     assert.ok(result, "expected checkProviderReadiness to return a value");
@@ -360,10 +360,10 @@ suite("checkProviderReadiness – integration (T026)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T004: ConfigurationTreeProvider root section expansion (UI-02)
+// ConfigurationTreeProvider root section expansion (UI-02)
 // Integration tests asserting all three root sections default to Expanded and
 // that their children (placeholder or status content) are reachable immediately.
-// These tests MUST FAIL for build-options and build-artifacts until T005 fixes
+// These tests protect against regressions in build-options and build-artifacts expansion.
 // the SectionItem constructor.
 // ---------------------------------------------------------------------------
 
@@ -464,10 +464,10 @@ suite("ConfigurationTreeProvider – root section expansion (UI-02)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T024: IntelliSenseService – provider-warning and warning recovery flows
+// IntelliSenseService – provider-warning and warning recovery flows
 // ---------------------------------------------------------------------------
 
-suite("IntelliSenseService – provider warning flows (T024)", () => {
+suite("IntelliSenseService – provider warning flows", () => {
   /** Waits for the pending refresh to drain (no public API, so we yield). */
   function drainRefresh(): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, 50));
@@ -564,10 +564,10 @@ suite("IntelliSenseService – provider warning flows (T024)", () => {
 
 
 // ---------------------------------------------------------------------------
-// T029/T031: IntelliSenseService – artifacts-path change regression
+// IntelliSenseService – artifacts-path change regression
 // ---------------------------------------------------------------------------
 
-suite("IntelliSenseService – artifacts-path change regression (T029/T031)", () => {
+suite("IntelliSenseService – artifacts-path change regression", () => {
   function drainRefresh(ms = 80): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }

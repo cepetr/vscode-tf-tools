@@ -2,7 +2,7 @@
  * Build Workflow command logic: label formatting, effective argument derivation,
  * and precondition evaluation for Build, Clippy, Check, and Clean actions.
  *
- * FR-014 through FR-025.
+ * Covers build workflow behavior for active-context task execution.
  */
 
 import * as vscode from "vscode";
@@ -47,11 +47,11 @@ export interface PreconditionInputs {
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Fixed label for the Clean task (FR-017). */
+/** Fixed label for the Clean task. */
 export const CLEAN_TASK_LABEL = "Clean";
 
 // ---------------------------------------------------------------------------
-// Label formatting (FR-014 through FR-018)
+// Label formatting
 // ---------------------------------------------------------------------------
 
 /**
@@ -68,14 +68,14 @@ export function formatTaskLabel(kind: WorkflowKind, ctx: WorkflowContext): strin
 }
 
 // ---------------------------------------------------------------------------
-// Effective argument derivation (FR-019 through FR-021)
+// Effective argument derivation
 // ---------------------------------------------------------------------------
 
 /**
  * Derives the ordered command-line arguments for Build, Clippy, or Check.
  *
- * Argument format: `<component-id> -m <model-id> [target-flag] [option-flags]`
- * (FR-019). The target flag comes from the manifest target `flag` field and is
+ * Argument format: `<component-id> -m <model-id> [target-flag] [option-flags]`.
+ * The target flag comes from the manifest target `flag` field and is
  * omitted when absent or null.
  */
 export function deriveWorkflowArguments(
@@ -91,7 +91,7 @@ export function deriveWorkflowArguments(
 
 /**
  * Derives the command-line arguments for Clean.
- * Clean runs with no arguments: `cargo xtask clean` (FR-021).
+ * Clean runs with no arguments: `cargo xtask clean`.
  */
 export function deriveCleanArguments(_ctx: {
   modelId: string;
@@ -102,7 +102,7 @@ export function deriveCleanArguments(_ctx: {
 }
 
 // ---------------------------------------------------------------------------
-// Precondition checks (FR-023 through FR-024)
+// Precondition checks
 // ---------------------------------------------------------------------------
 
 /**
@@ -165,7 +165,7 @@ export async function executeWorkflowTask(
 
 /**
  * Shows a visible failure message when a workflow action is blocked,
- * and logs to the output channel (FR-023).
+ * and logs to the output channel.
  */
 export function reportWorkflowBlocked(
   kind: WorkflowKind,

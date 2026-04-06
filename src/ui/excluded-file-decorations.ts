@@ -13,7 +13,7 @@
  *    changes so VS Code refreshes Explorer rows for affected URIs.
  *  - Decoration is suppressed for included and out-of-scope files by returning
  *    `undefined` from `provideFileDecoration`.
- *  - Full implementation of `provideFileDecoration` is delivered in T011.
+ *  - `provideFileDecoration` returns explorer state for excluded files.
  */
 
 import * as vscode from "vscode";
@@ -27,7 +27,7 @@ import { normalizeToForwardSlashes } from "../intellisense/excluded-files-servic
 /** Fixed Explorer badge for excluded files. */
 export const EXCLUDED_BADGE = "✗";
 
-/** Human-readable tooltip / overlay explanation text (FR-008). */
+/** Human-readable tooltip and overlay explanation text. */
 export const EXCLUDED_TOOLTIP = "Not included in the active build configuration";
 
 /** VS Code theme color id for the optional gray Explorer coloring. */
@@ -85,8 +85,8 @@ export class ExcludedFileDecorationsProvider implements vscode.FileDecorationPro
   }
 
   /**
-   * Returns the `FileDecoration` for the given URI, or `undefined` when the
-   * file is not excluded.  Implementation delivered in T011 — stub returns
+  * Returns the `FileDecoration` for the given URI, or `undefined` when the
+  * file is not excluded. The method returns
    * `undefined` so no decorations are shown until the implementation lands.
    */
   provideFileDecoration(

@@ -235,7 +235,7 @@ export function resolveActiveMapArtifact(
  * - Returns `status: "valid"` only when the exact expected file exists.
  * - Returns `status: "missing"` in all other cases: when the path cannot be
  *   derived (missing fields) or when the file does not exist on disk.
- * - Does NOT fall back to any other artifact path (FR-002).
+ * - Does not fall back to any other artifact path.
  */
 export function resolveActiveArtifact(
   inputs: ArtifactResolutionInputs,

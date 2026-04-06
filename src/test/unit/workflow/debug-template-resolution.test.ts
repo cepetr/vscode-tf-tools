@@ -1,5 +1,5 @@
 /**
- * Unit tests for debug template resolution failure paths and edge cases (T020).
+ * Unit tests for debug template resolution failure paths and edge cases.
  *
  * Covers:
  *  - loadDebugTemplate: template-root traversal edge cases (absolute path, simple "..",
@@ -26,7 +26,7 @@ import {
 // loadDebugTemplate: traversal edge cases
 // ---------------------------------------------------------------------------
 
-suite("loadDebugTemplate – traversal edge cases (T020)", () => {
+suite("loadDebugTemplate – traversal edge cases", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -90,7 +90,7 @@ suite("loadDebugTemplate – traversal edge cases (T020)", () => {
 // loadDebugTemplate: JSONC parse failure root value types
 // ---------------------------------------------------------------------------
 
-suite("loadDebugTemplate – JSONC non-object root values (T020)", () => {
+suite("loadDebugTemplate – JSONC non-object root values", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -174,7 +174,7 @@ suite("loadDebugTemplate – JSONC non-object root values (T020)", () => {
 // buildDebugVariableMap: cyclic and multi-cycle edge cases
 // ---------------------------------------------------------------------------
 
-suite("buildDebugVariableMap – cyclic variable edge cases (T020)", () => {
+suite("buildDebugVariableMap – cyclic variable edge cases", () => {
   const MODEL = "T2T1";
   const MODEL_NAME = "Trezor Model T (v1)";
   const TARGET = "hw";
@@ -241,7 +241,7 @@ suite("buildDebugVariableMap – cyclic variable edge cases (T020)", () => {
 // applyTfToolsSubstitution: unknown var and mixed-syntax edge cases
 // ---------------------------------------------------------------------------
 
-suite("applyTfToolsSubstitution – unknown and mixed variable edge cases (T020)", () => {
+suite("applyTfToolsSubstitution – unknown and mixed variable edge cases", () => {
   const RESOLVED = { [TFTOOLS_VAR_MODEL_ID]: "T2T1" };
 
   test("duplicate unknown tf-tools token is reported", () => {

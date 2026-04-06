@@ -276,7 +276,7 @@ export function createUploadTask(
  *
  * Post-execution failure is surfaced through VS Code's task-end event and
  * the logChannel, but successful completion deliberately does NOT trigger
- * any automatic extension refresh (FR-017).
+ * any automatic extension refresh.
  */
 export async function executeArtifactTask(
   task: vscode.Task,

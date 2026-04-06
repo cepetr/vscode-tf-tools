@@ -263,7 +263,7 @@ suite("ConfigurationTreeProvider – normalization integration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: IntelliSense artifact state in Build Artifacts section (T014)
+// Suite: IntelliSense artifact state in the Build Artifacts section
 // ---------------------------------------------------------------------------
 
 import {
@@ -414,7 +414,7 @@ suite("ConfigurationTreeProvider – Build Artifacts section (IntelliSense)", ()
 });
 
 // ---------------------------------------------------------------------------
-// Suite: T012 – active-context refresh and stale-state clearing
+// Suite: active-context refresh and stale-state clearing
 // ---------------------------------------------------------------------------
 
 suite("ConfigurationTreeProvider – active-context refresh and stale-state clearing", () => {

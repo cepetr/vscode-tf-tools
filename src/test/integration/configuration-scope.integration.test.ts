@@ -2,7 +2,7 @@
  * Integration tests asserting no cross-slice commands are contributed
  * beyond what is expected in the current slice (Debug Launch / Feature 6).
  *
- * FR-026 negative-scope tests: Debug and unrelated slice commands must not
+ * Negative-scope tests: Debug and unrelated commands must not
  * be present. Flash, Upload, openMapFile, and startDebugging are now part of the allowed set.
  */
 import * as assert from "assert";
@@ -25,7 +25,7 @@ const BANNED_COMMAND_PATTERNS = [
   /^tfTools\.intellisense\b/i,
 ];
 
-suite("Scope guard — no cross-slice commands (FR-026)", () => {
+suite("Scope guard — no cross-slice commands", () => {
   test("package.json does not use eager '*' activation", () => {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     assert.ok(ext, "expected cepetr.tf-tools extension to be available in the test host");
@@ -141,10 +141,10 @@ suite("Scope guard — no cross-slice commands (FR-026)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Debug Launch scope boundaries (T025)
+// Debug Launch scope boundaries
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch scope boundaries (T025)", () => {
+suite("Debug Launch scope boundaries", () => {
   function getExtPackageJson(): Record<string, unknown> {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
@@ -205,10 +205,10 @@ suite("Debug Launch scope boundaries (T025)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Debug Launch – no launch.json persistence (T031)
+// Debug Launch – no launch.json persistence
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – no launch.json persistence (T031)", () => {
+suite("Debug Launch – no launch.json persistence", () => {
   function makeExeManifest(): ManifestStateLoaded {
     const entry = makeComponentDebugProfile({ name: "gdb-remote", template: "gdb-remote.json" });
     return makeDebugLoadedState([entry], {

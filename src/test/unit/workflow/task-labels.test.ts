@@ -1,11 +1,11 @@
 /**
  * Unit tests for Build Workflow task label formatting.
  *
- * FR-014: Build task label = "Build {model-name} | {target-display} | {component-name}"
- * FR-015: Clippy task label = "Clippy {model-name} | {target-display} | {component-name}"
- * FR-016: Check task label = "Check {model-name} | {target-display} | {component-name}"
- * FR-017: Clean task label = "Clean"
- * FR-018: target-display = shortName when present, else full name
+ * Build task label = "Build {model-name} | {target-display} | {component-name}"
+ * Clippy task label = "Clippy {model-name} | {target-display} | {component-name}"
+ * Check task label = "Check {model-name} | {target-display} | {component-name}"
+ * Clean task label = "Clean"
+ * `target-display` uses `shortName` when present, else full name
  */
 import * as assert from "assert";
 import { formatTaskLabel, CLEAN_TASK_LABEL, WorkflowContext } from "../../../commands/build-workflow";

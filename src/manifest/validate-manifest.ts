@@ -546,7 +546,7 @@ function validateComponentDebugEntries(
 
 /**
  * Deterministic persistence key for a build option.
- * Uses only the flag since flags are required to be unique per FR-002
+ * Uses only the flag since flags are required to be unique.
  * (duplicate-flag validation) and serve as stable identifiers.
  */
 function buildOptionKey(flag: string): string {

@@ -94,8 +94,8 @@ export interface TaskProcessEndLike {
 }
 
 // ---------------------------------------------------------------------------
-// Scope guard (FR-016, FR-017 → now expanded for Build Workflow + IntelliSense
-// + Flash/Upload Actions slices)
+// Scope guard for the supported command surface, now expanded for
+// Build Workflow, IntelliSense, Flash/Upload, and Debug Launch.
 //
 // This extension contributes ONLY the commands listed below in these feature
 // slices. Debug and all other cross-slice commands are intentionally absent.
@@ -146,7 +146,7 @@ function assertNoUnauthorizedContributions(
 
   if (unauthorized.length > 0) {
     const msg =
-      `Trezor Firmware Tools scope violation (FR-016/FR-017): ` +
+      `Trezor Firmware Tools scope violation: ` +
       `unauthorized commands found in package.json: ${unauthorized.join(", ")}`;
     void vscode.window.showWarningMessage(msg);
   }
@@ -172,7 +172,7 @@ function computeResolvedOptions(
 
 /**
  * Updates the `tfTools.workflowBlocked` VS Code context key so that
- * view/title menu `enablement` clauses reflect the current state (T028).
+ * view/title menu `enablement` clauses reflect the current state.
  */
 function updateWorkflowBlockedContext(state: ManifestState): void {
   const loaded = state.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
@@ -342,7 +342,7 @@ export function isSuccessfulBuildTaskProcess(event: TaskProcessEndLike): boolean
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  // --- Scope guard: verify no cross-slice commands are registered (T019) ---
+  // --- Scope guard: verify no unrelated commands are registered. ---
   assertNoUnauthorizedContributions(context);
 
   // Always register the tree provider so VS Code never shows
@@ -445,7 +445,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     _intelliSenseService?.scheduleRefresh(trigger);
   };
 
-  // --- Status-bar presenter (T031) ---
+  // --- Status-bar presenter. ---
   _statusBar = new StatusBarPresenter();
   context.subscriptions.push(_statusBar);
 
@@ -458,7 +458,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
-  // --- Excluded-file visibility services (US1: Explorer badges, US2: editor overlays) ---
+  // --- Excluded-file visibility services: explorer badges and editor overlays. ---
   _excludedFilesService = new ExcludedFilesService();
   _excludedFilesRefreshCoordinator = new ExcludedFilesRefreshCoordinator(
     _excludedFilesService,
@@ -503,7 +503,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (state) {
         _treeProvider?.updateArtifact(artifact);
       }
-      // Show wrong-provider fix notification once per state entry (FR-005A fix path).
+      // Show the wrong-provider fix notification once per state entry.
       if (readiness.warningState === "wrong-provider" && readiness.warningState !== _lastShownProviderFixState) {
         _lastShownProviderFixState = "wrong-provider";
         vscode.window.showWarningMessage(
@@ -579,8 +579,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     },
   });
 
-  // Connect manifest state changes to the tree provider, diagnostics and logs (T020)
-  // On each state change, restore and normalize the active config (T026/T031)
+  // Connect manifest state changes to the tree provider, diagnostics, and logs.
+  // On each state change, restore and normalize the active config.
   const onManifestStateChange = async (state: ManifestState): Promise<void> => {
     _manifestState = state;
     let activeConfig: ActiveConfig | undefined;
@@ -611,14 +611,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- Refresh IntelliSense command (FR-005, FR-005A) ---
+  // --- Refresh IntelliSense command. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.refreshIntelliSense", () => {
       _intelliSenseService?.scheduleRefresh("manual-refresh");
     })
   );
 
-  // --- Flash command (FR-005 Feature 5) ---
+  // --- Flash command. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.flash", async () => {
       const state = _manifestState;
@@ -649,7 +649,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- Upload command (FR-005 Feature 5) ---
+  // --- Upload command. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.upload", async () => {
       const state = _manifestState;
@@ -704,7 +704,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- openMapFile command (FR-005 Feature 5, row-only) ---
+  // --- openMapFile command, scoped to the artifact row. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.openMapFile", async () => {
       const mapArtifact = _mapArtifact;
@@ -717,14 +717,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- Provider-change refresh — re-evaluate readiness when extensions change (FR-005B, T031) ---
+  // --- Provider-change refresh: re-evaluate readiness when extensions change. ---
   context.subscriptions.push(
     vscode.extensions.onDidChange(() => {
       _intelliSenseService?.scheduleRefresh("provider-change");
     })
   );
 
-  // --- Build-context selector commands (T026+T031) ---
+  // --- Build-context selector commands. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.selectModel", async (modelId: string) => {
       const state = _manifestState;
@@ -767,7 +767,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  // --- Workflow commands: Build / Clippy / Check / Clean (T027) ---
+  // --- Workflow commands: Build / Clippy / Check / Clean. ---
   const registerWorkflowCommand = (kind: WorkflowKind): vscode.Disposable =>
     vscode.commands.registerCommand(`tfTools.${kind.toLowerCase()}`, async () => {
       const state = _manifestState;
@@ -804,7 +804,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     registerWorkflowCommand("Clean")
   );
 
-  // --- Build-option toggle/select commands (T027) ---
+  // --- Build-option toggle/select commands. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.toggleBuildOption", async (key: string) => {
       const resolved = _resolvedOptions.find((r) => r.option.key === key);
@@ -842,7 +842,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     )
   );
 
-  // --- Task provider (T027) ---
+  // --- Task provider. ---
   const taskProvider = new BuildTaskProvider({
     getManifestState: () =>
       _manifestState?.status === "loaded" ? (_manifestState as ManifestStateLoaded) : undefined,
@@ -852,7 +852,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
   context.subscriptions.push(vscode.tasks.registerTaskProvider(TASK_TYPE, taskProvider));
 
-  // Trigger IntelliSense refresh after a successful Build task completion (FR-004).
+  // Trigger IntelliSense refresh after a successful Build task completion.
   context.subscriptions.push(
     vscode.tasks.onDidEndTaskProcess((e) => {
       if (isSuccessfulBuildTaskProcess(e)) {
@@ -862,7 +862,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   // Trigger IntelliSense refresh when workspace folders change so excluded-file
-  // candidate paths are re-evaluated against the updated workspace root (US3).
+  // candidate paths are re-evaluated against the updated workspace root.
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       _intelliSenseService?.scheduleRefresh("workspace-change");
@@ -872,7 +872,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Start manifest service (loads and begins watching) ---
   await _manifestService.start();
 
-  // Schedule IntelliSense refresh on activation (FR-004).
+  // Schedule IntelliSense refresh on activation.
   _intelliSenseService?.scheduleRefresh("activation");
 }
 

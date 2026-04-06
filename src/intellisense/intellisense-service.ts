@@ -64,7 +64,7 @@ export class IntelliSenseService {
 
   /**
    * Last warning state emitted to guard against duplicate warning messages.
-   * Warnings are logged once per state transition (FR-005B).
+  * Warnings are logged once per state transition.
    */
   private _lastWarnedState: string = "none";
 
@@ -147,7 +147,7 @@ export class IntelliSenseService {
    * Schedules an IntelliSense refresh. Concurrent calls are serialized;
    * each refresh starts immediately after the previous one completes.
    * This ensures the final state always reflects the latest active
-   * configuration (FR-004, latest-refresh-wins).
+  * configuration, with latest-refresh-wins behavior.
    */
   scheduleRefresh(trigger: RefreshTrigger): void {
     this._pendingRefresh = (this._pendingRefresh ?? Promise.resolve()).then(

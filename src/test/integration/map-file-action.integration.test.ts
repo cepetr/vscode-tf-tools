@@ -1,5 +1,5 @@
 /**
- * Integration tests for the Map File open action (T019 - US3).
+ * Integration tests for the Map File open action.
  *
  * Covers:
  *  - tfTools.openMapFile command is registered after activation
@@ -32,10 +32,10 @@ function getExtPackageJson(): Record<string, unknown> | undefined {
 }
 
 // ---------------------------------------------------------------------------
-// Suite: openMapFile command registration (US3)
+// Suite: openMapFile command registration
 // ---------------------------------------------------------------------------
 
-suite("Map File Action – command registration (T019)", () => {
+suite("Map File Action – command registration", () => {
   test("tfTools.openMapFile is registered as a VS Code command", async () => {
     await activateExtension();
     const cmds = await vscode.commands.getCommands(false);
@@ -58,10 +58,10 @@ suite("Map File Action – command registration (T019)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Command Palette exclusion (US3, FR)
+// Suite: Command Palette exclusion
 // ---------------------------------------------------------------------------
 
-suite("Map File Action – Command Palette exclusion (T019)", () => {
+suite("Map File Action – Command Palette exclusion", () => {
   test("commandPalette entry for tfTools.openMapFile has when: false", () => {
     const pkg = getExtPackageJson();
     if (!pkg) { return; }
@@ -81,10 +81,10 @@ suite("Map File Action – Command Palette exclusion (T019)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: view/item/context row action (US3)
+// Suite: view/item/context row action
 // ---------------------------------------------------------------------------
 
-suite("Map File Action – view/item/context registration (T019)", () => {
+suite("Map File Action – view/item/context registration", () => {
   test("view/item/context has openMapFile entry scoped to artifact-map", () => {
     const pkg = getExtPackageJson();
     if (!pkg) { return; }
@@ -104,7 +104,7 @@ suite("Map File Action – view/item/context registration (T019)", () => {
 // Suite: MapArtifactItem contextValue for row-action scoping
 // ---------------------------------------------------------------------------
 
-suite("Map File Action – MapArtifactItem row scoping (T019)", () => {
+suite("Map File Action – MapArtifactItem row scoping", () => {
   function makeValidMap(): ActiveMapArtifact {
     return { path: "/build/firmware.map", exists: true, status: "valid", contextKey: "T2T1::hw::core" };
   }
@@ -130,10 +130,10 @@ suite("Map File Action – MapArtifactItem row scoping (T019)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: openMapFile function (US3 unit-level seam)
+// Suite: openMapFile function
 // ---------------------------------------------------------------------------
 
-suite("Map File Action – openMapFile function (T019)", () => {
+suite("Map File Action – openMapFile function", () => {
   test("resolves without throwing for empty path", async () => {
     let threw = false;
     try {

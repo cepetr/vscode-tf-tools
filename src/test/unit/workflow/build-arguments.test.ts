@@ -1,10 +1,10 @@
 /**
  * Unit tests for Build Workflow effective argument derivation.
  *
- * FR-019: Derive effective Build/Clippy/Check args from model, target,
- *         component, and currently applicable build-option selections.
- * FR-020: Build/Clippy/Check share the same effective configuration.
- * FR-021: Clean runs without build-option arguments.
+ * Derive effective Build/Clippy/Check args from model, target,
+ * component, and currently applicable build-option selections.
+ * Build/Clippy/Check share the same effective configuration.
+ * Clean runs without build-option arguments.
  */
 import * as assert from "assert";
 import {

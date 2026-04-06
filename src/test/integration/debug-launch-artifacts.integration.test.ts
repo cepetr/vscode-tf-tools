@@ -1,5 +1,5 @@
 /**
- * Integration tests for Debug Launch – User Story 2 (T016).
+ * Integration tests for Debug Launch artifact availability.
  *
  * Covers:
  *  - Executable row is rendered for valid, missing, no-match, ambiguous, and manifest-invalid states
@@ -83,10 +83,10 @@ function makeExeManifest(
 }
 
 // ---------------------------------------------------------------------------
-// Suite: Executable row rendering under all resolution states (T016)
+// Suite: Executable row rendering under all resolution states
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – Executable row rendering under resolution states (T016)", () => {
+suite("Debug Launch – Executable row rendering under resolution states", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -181,10 +181,10 @@ suite("Debug Launch – Executable row rendering under resolution states (T016)"
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Executable row position in Build Artifacts tree (T016)
+// Suite: Executable row position in Build Artifacts tree
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – Executable row position in Build Artifacts tree (T016)", () => {
+suite("Debug Launch – Executable row position in Build Artifacts tree", () => {
   let provider: ConfigurationTreeProvider;
 
   setup(() => {
@@ -250,10 +250,10 @@ suite("Debug Launch – Executable row position in Build Artifacts tree (T016)",
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Availability refresh after context change (T016)
+// Suite: Availability refresh after context change
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – Executable availability refresh after context change (T016)", () => {
+suite("Debug Launch – Executable availability refresh after context change", () => {
   let tmpDir: string;
 
   setup(() => {
@@ -340,10 +340,10 @@ suite("Debug Launch – Executable availability refresh after context change (T0
 });
 
 // ---------------------------------------------------------------------------
-// Suite: package.json menu contributions for US2 (T016)
+// Suite: package.json menu contributions for executable availability
 // ---------------------------------------------------------------------------
 
-suite("Debug Launch – package.json US2 menu contributions (T016)", () => {
+suite("Debug Launch – package.json executable menu contributions", () => {
   test("commandPalette entry for tfTools.startDebugging uses tfTools.startDebuggingEnabled when-clause", () => {
     const pkg = getExtPackageJson();
     const menus = pkg?.contributes as { menus: Record<string, unknown[]> };

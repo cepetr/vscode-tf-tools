@@ -153,10 +153,10 @@ suite("Build Workflow – command registration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: T030 – blocked manifest and missing fixture
+// Suite: blocked manifest and missing fixture
 // ---------------------------------------------------------------------------
 
-suite("Build Workflow – blocked manifest (T030)", () => {
+suite("Build Workflow – blocked manifest", () => {
   test("invalid-when manifest marks hasWorkflowBlockingIssues", () => {
     const parsed = parseManifest(fixtureManifestSource("invalid-when"));
     assert.strictEqual(parsed.hasWorkflowBlockingIssues, true);
@@ -307,10 +307,10 @@ suite("Build Workflow – blocked manifest (T030)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: Refresh IntelliSense command contributions (T027)
+// Suite: Refresh IntelliSense command contributions
 // ---------------------------------------------------------------------------
 
-suite("Refresh IntelliSense – command contributions (T027)", () => {
+suite("Refresh IntelliSense – command contributions", () => {
   test("package.json declares tfTools.refreshIntelliSense command", () => {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {

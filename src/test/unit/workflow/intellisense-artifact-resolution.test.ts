@@ -237,10 +237,10 @@ suite("buildResolutionInputs", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T033: Regression coverage for artifactsPath changes and suffix transitions
+// Regression coverage for artifactsPath changes and suffix transitions
 // ---------------------------------------------------------------------------
 
-suite("T033 — artifactsPath change regression", () => {
+suite("artifactsPath change regression", () => {
   test("changing artifactsRoot produces a different path", () => {
     const pathA = deriveArtifactPath(makeInputs({ artifactsRoot: "/build/v1" }));
     const pathB = deriveArtifactPath(makeInputs({ artifactsRoot: "/build/v2" }));
@@ -273,7 +273,7 @@ suite("T033 — artifactsPath change regression", () => {
   });
 });
 
-suite("T033 — target suffix transition regression", () => {
+suite("target suffix transition regression", () => {
   test("switching from no-suffix target to suffixed target changes the path", () => {
     const noSuffix = deriveArtifactPath(makeInputs({ artifactSuffix: "" }));
     const withSuffix = deriveArtifactPath(makeInputs({ artifactSuffix: "_emu" }));
@@ -315,7 +315,7 @@ suite("T033 — target suffix transition regression", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T013: deriveBinaryArtifactPath
+// deriveBinaryArtifactPath
 // ---------------------------------------------------------------------------
 
 suite("deriveBinaryArtifactPath", () => {
@@ -354,7 +354,7 @@ suite("deriveBinaryArtifactPath", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T013: deriveMapArtifactPath
+// deriveMapArtifactPath
 // ---------------------------------------------------------------------------
 
 suite("deriveMapArtifactPath", () => {
@@ -393,7 +393,7 @@ suite("deriveMapArtifactPath", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T013: resolveActiveBinaryArtifact
+// resolveActiveBinaryArtifact
 // ---------------------------------------------------------------------------
 
 suite("resolveActiveBinaryArtifact", () => {
@@ -432,7 +432,7 @@ suite("resolveActiveBinaryArtifact", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T013: resolveActiveMapArtifact
+// resolveActiveMapArtifact
 // ---------------------------------------------------------------------------
 
 suite("resolveActiveMapArtifact", () => {
@@ -471,7 +471,7 @@ suite("resolveActiveMapArtifact", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T015: resolveActiveExecutableArtifact
+// resolveActiveExecutableArtifact
 // ---------------------------------------------------------------------------
 
 suite("resolveActiveExecutableArtifact", () => {
