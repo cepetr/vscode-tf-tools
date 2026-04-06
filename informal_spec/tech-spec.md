@@ -64,8 +64,8 @@ The active configuration contains:
 The manifest model contains:
 
 - `models[]`: `id`, `name`, required `artifactFolder`
-- `targets[]`: `id`, `name`, optional `shortName`, optional `artifactSuffix`, `flag`
-- `components[]`: `id`, `name`, required `artifactName`, optional `flashWhen`, optional `uploadWhen`
+- `targets[]`: `id`, `name`, optional `shortName`, optional `artifactSuffix`, optional `executableExtension`, `flag`
+- `components[]`: `id`, `name`, required `artifactName`, optional `flashWhen`, optional `uploadWhen`, optional `debug[]`
 - `options[]`: option metadata with label, command-line flag, type, optional group, optional `when` expression, and optional states
 
 Manifest status has three states:
@@ -206,17 +206,17 @@ The Build Options section preserves YAML order while consolidating repeated grou
 
 Option availability is evaluated against the active build context before rendering. Options whose `when` expression evaluates to `false` are omitted from the visible tree, but their persisted values remain stored in workspace state.
 
-Debug availability is evaluated against the active build context from the manifest-defined `debug` profiles together with the resolved executable artifact state. The side-bar header `Start Debugging` action, the overflow-menu `Start Debugging` action, and the `Executable` row action are enabled only when exactly one valid debug profile can be resolved for the active build context and the resolved executable artifact exists. The Command Palette contribution for `Trezor: Start Debugging` is shown only under that same condition.
+Debug availability is evaluated against the active build context from the selected component's manifest-defined `debug` entries together with the derived executable artifact state. The side-bar header `Start Debugging` action, the overflow-menu `Start Debugging` action, and the `Executable` row action are enabled only when the selected component yields a first matching debug entry for the active build context and the derived executable artifact exists. The Command Palette contribution for `Trezor: Start Debugging` is shown only under that same condition.
 
-The `Start Debugging` actions remain visible even when disabled so the user can discover debugger support from the main configuration view. Disabled-state tooltips explain whether debugging is unavailable because no profile matched, matching profiles were ambiguous, or the executable artifact is missing.
+The `Start Debugging` actions remain visible even when disabled so the user can discover debugger support from the main configuration view. Disabled-state tooltips explain whether debugging is unavailable because no selected-component debug entry matched or the executable artifact is missing.
 
-The resolved debug executable path is part of Build Artifacts state and Start Debugging action enablement. When the executable artifact is missing, the `Executable` row reports the missing path and all visible Start Debugging actions stay disabled until the artifact becomes available.
+The resolved debug executable path is part of Build Artifacts state and Start Debugging action enablement. The executable filename is derived as `<artifactName><artifactSuffix><executableExtension>`, where `artifactSuffix` and `executableExtension` come from the selected target and default to empty strings when omitted. When the executable artifact is missing, the `Executable` row reports the missing path and all visible Start Debugging actions stay disabled until the artifact becomes available.
 
 ## Command And Task Execution
 
 Build, clippy, check, and clean execution is centered on a VS Code task-provider layer.
 
-Debug execution is centered on a separate debug-profile selection and template-resolution layer that launches the final configuration through the VS Code debug API.
+Debug execution is centered on a separate component-scoped debug-entry selection and template-resolution layer that launches the final configuration through the VS Code debug API.
 
 Task behavior:
 
@@ -253,8 +253,8 @@ Additional command behavior:
 - `Start Debugging` uses the user-facing title `Trezor: Start Debugging` and launches the resolved debugger template for the active build context
 - `Flash` is available only when the selected component's `flashWhen` expression evaluates to `true`
 - `Upload` is available only when the selected component's `uploadWhen` expression evaluates to `true`
-- `Start Debugging` is available only when exactly one valid debug profile can be resolved for the active build context
-- `Trezor: Start Debugging` is contributed to the Command Palette only when exactly one valid debug profile can be resolved for the active build context and the executable artifact exists
+- `Start Debugging` is available only when the selected component yields a first matching debug entry for the active build context
+- `Trezor: Start Debugging` is contributed to the Command Palette only when the selected component yields a first matching debug entry for the active build context and the executable artifact exists
 - omitted `flashWhen` and `uploadWhen` values make the corresponding action unavailable
 - artifact-row actions remain visible whenever their action is applicable
 - applicable `Flash` and `Upload` actions are also contributed to the Configuration view overflow menu and stay visible there, but disabled, when the binary artifact is missing
@@ -268,9 +268,8 @@ Additional command behavior:
 Debug-template behavior:
 
 - template root: resolved from `tfTools.debug.templatesPath`
-- selection source: manifest `debug[]` entries
-- matching rules: evaluate `debug.when` expressions against the active build context
-- tie-breaking: prefer the highest `priority`; equal highest-priority matches are treated as ambiguous and block launch
+- selection source: manifest `components[].debug[]` entries from the selected component only
+- matching rules: evaluate `debug.when` expressions against the active build context in declaration order and use the first matching entry
 - template loading: read the referenced template file from the configured template root and reject path traversal outside that root
 - template path semantics: `debug.template` is a relative file path under the configured template root and may include subdirectories
 - template reload timing: read the template file fresh on each `Trezor: Start Debugging` invocation rather than preloading or caching the whole template set
@@ -284,7 +283,7 @@ Debug-template behavior:
 - substitution failures: unknown variables, cyclic `debug.vars` expansion, or unresolved required tf-tools values block launch
 - adapter-field validation: do not pre-validate debug-adapter-specific fields such as `type`, `request`, or adapter-owned options before invoking the VS Code debug API
 - launch mechanism: call the VS Code debug API with the resolved configuration instead of generating or persisting launch.json entries automatically
-- failure behavior: surface user-facing errors for missing templates, invalid template content, ambiguous debug-profile matches, and unresolved debug variables, and write detailed information to the log channel
+- failure behavior: surface user-facing errors for missing templates, invalid template content, no-match debug resolution, and unresolved debug variables, and write detailed information to the log channel
 - logging behavior: include template path, profile identity, parse errors, unresolved variable names, and field-location context when available
 
 The built-in debug variables are:
@@ -292,6 +291,7 @@ The built-in debug variables are:
 - `${tfTools.artifactPath}`
 - `${tfTools.component.id}`
 - `${tfTools.component.name}`
+- `${tfTools.debugProfileName}`
 - `${tfTools.model.id}`
 - `${tfTools.model.name}`
 - `${tfTools.target.id}`
@@ -304,16 +304,17 @@ Additional variables from the selected manifest `debug.vars` mapping are exposed
 Debug variable semantics:
 
 - `${tfTools.artifactPath}` resolves to the active model artifact folder `<tfTools.artifactsPath>/<artifactFolder>`, where `artifactFolder` comes from the selected model's required manifest field
-- `${tfTools.executable}` resolves to the selected manifest `debug.executable` value after tf-tools substitution
-- `${tfTools.executablePath}` resolves to the absolute executable path derived from `${tfTools.artifactPath}` and `${tfTools.executable}` when the executable value is relative, or to the already absolute substituted path otherwise
+- `${tfTools.debugProfileName}` resolves to the selected manifest `debug.name` value
+- `${tfTools.executable}` resolves to the derived executable filename `<artifactName><artifactSuffix><executableExtension>`
+- `${tfTools.executablePath}` resolves to the absolute executable path derived from `${tfTools.artifactPath}` and `${tfTools.executable}`
 
 Debug launch flow:
 
 1. Resolve the active build context from the current tree-view state.
-2. Evaluate manifest `debug[]` entries against that context.
-3. Select the single matching profile after applying `priority` rules.
+2. Evaluate the selected component's manifest `debug[]` entries against that context in declaration order.
+3. Select the first matching entry.
 4. Resolve and read the referenced template JSON file from `tfTools.debug.templatesPath`.
-5. Build the substitution map from active model, target, component, resolved debug executable values, and expanded `debug.vars` values.
+5. Build the substitution map from active model, target, component, selected debug configuration name, derived executable values, and expanded `debug.vars` values.
 6. Recursively substitute string fields in the parsed template JSON object.
 7. Optionally inject an internal configuration name for logging and diagnostics.
 8. Launch the resolved configuration through the VS Code debug API.
@@ -397,7 +398,7 @@ The Build Artifacts section supports row-scoped actions in addition to artifact 
 
 Design:
 
-- the Executable row is always rendered and resolves from the selected debug profile's `executable` value, interpreted relative to `<artifacts-root>/<artifactFolder>/` when the value is relative
+- the Executable row is always rendered and resolves from the derived executable path `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix><executableExtension>`
 - the Binary and Map File rows are rendered only when at least one of the selected component's `flashWhen` or `uploadWhen` expressions evaluates to `true` for the active build context
 - the Executable row appears after Map File when Binary and Map File are present, and immediately after Compile Commands otherwise
 - when both `flashWhen` and `uploadWhen` are unavailable for the active build context, the Binary and Map File rows are omitted entirely
