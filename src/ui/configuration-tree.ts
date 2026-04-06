@@ -107,6 +107,7 @@ export class MapArtifactItem extends vscode.TreeItem {
  * contextValue "artifact-executable" enables the Start Debugging row action via menus.view/item/context.
  * This row is always rendered when an ExecutableArtifact state has been computed — it remains
  * visible but disabled when the executable is missing or the profile cannot be resolved.
+ * Start Debugging is invoked only through the inline row action, not by clicking the row.
  */
 export class ExecutableArtifactItem extends vscode.TreeItem {
   constructor(artifact: ActiveExecutableArtifact) {
@@ -118,12 +119,6 @@ export class ExecutableArtifactItem extends vscode.TreeItem {
     );
     this.description = artifact.status;
     this.tooltip = artifact.tooltip;
-    // Clicking the row also invokes Start Debugging, surfacing blocked-launch
-    // errors even when the row action icon is disabled (T023).
-    this.command = {
-      title: "Start Debugging",
-      command: "tfTools.startDebugging",
-    };
   }
 }
 

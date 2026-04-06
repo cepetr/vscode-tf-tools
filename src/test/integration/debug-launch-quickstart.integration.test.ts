@@ -119,17 +119,6 @@ suite("QS1 – Unique highest-priority profile (T026)", () => {
     );
   });
 
-  test("ExecutableArtifactItem has command set to tfTools.startDebugging", () => {
-    const entry = makeComponentDebugEntry({ name: "gdb", template: "gdb-remote.json" });
-    const manifest = makeExeManifest([entry]);
-    const config = makeConfig("T2T1");
-    const artifact = resolveActiveExecutableArtifact(manifest, config, tmpDir);
-    const item = new ExecutableArtifactItem(artifact);
-
-    assert.ok(item.command, "expected command to be set on ExecutableArtifactItem");
-    assert.strictEqual(item.command.command, "tfTools.startDebugging");
-  });
-
   test("executeDebugLaunch resolves without throwing when valid fixture template exists and executable present", async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
