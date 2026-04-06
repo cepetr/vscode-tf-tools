@@ -1,7 +1,7 @@
 {
   "type": "gdb",
   "request": "launch",
-  "name": "Debug ${tfTools.model}",
+  "name": "${tfTools.debugProfileName}",
   "program": "${tfTools.executablePath}",
   "unknownArg": "${tfTools.nonExistentVariable}",
   "cwd": "${workspaceFolder}",

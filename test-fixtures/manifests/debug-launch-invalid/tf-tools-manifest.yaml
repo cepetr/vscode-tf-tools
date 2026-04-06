@@ -1,9 +1,13 @@
-# Debug Launch: manifest containing invalid debug profile entries.
+# Debug Launch: manifest containing invalid debug entries.
 #
-# This manifest has valid models, targets, and components but debug profiles
-# with various validation errors (missing required fields, invalid when
-# expressions). The manifest loads successfully with status "loaded" but
-# validation issues are reported for each invalid debug entry.
+# This manifest exercises two categories of failures:
+#   1. Legacy top-level `debug` section → hard-cutover rejection
+#   2. Component-scoped debug entries with validation errors
+#
+# The manifest has valid models, targets and components but debug entries
+# that have various validation errors.  The manifest loads with status
+# "loaded" (structural fields are valid) but hasDebugBlockingIssues is true
+# and validation issues are reported for each invalid debug entry.
 
 models:
   - id: T2T1
@@ -24,26 +28,19 @@ components:
   - id: core
     name: Core
     artifactName: compile_commands_core
+    debug:
+      # invalid: missing required "name" field
+      - template: gdb-remote.json
 
-debug:
-  # invalid: missing required "template" field
-  - when: model(T2T1)
-    priority: 5
-    executable: firmware.elf
+      # invalid: missing required "template" field
+      - name: GDB Remote
 
-  # invalid: missing required "executable" field
-  - when: model(T2T1)
-    priority: 5
-    template: gdb-remote.json
+      # invalid: bad "when" expression (unknown function name)
+      - name: GDB Remote (bad-when)
+        template: gdb-remote.json
+        when: "unknownFunc(T2T1)"
 
-  # invalid: bad "when" expression (unknown function name)
-  - when: "unknownFunc(T2T1)"
-    priority: 5
-    template: gdb-remote.json
-    executable: firmware.elf
-
-  # invalid: "when" expression references unknown model id
-  - when: "model(UNKNOWN_MODEL)"
-    priority: 5
-    template: gdb-remote.json
-    executable: firmware.elf
+      # invalid: "when" expression references unknown model id
+      - name: GDB Remote (unknown-id)
+        template: gdb-remote.json
+        when: "model(UNKNOWN_MODEL)"

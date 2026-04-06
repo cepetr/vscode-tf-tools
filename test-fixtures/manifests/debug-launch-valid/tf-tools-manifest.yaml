@@ -1,17 +1,15 @@
-# Debug Launch: valid manifest with debug profiles covering various resolution scenarios.
+# Debug Launch: valid manifest with component-scoped debug entries.
 #
-# Active context → debug resolution outcome:
-#   T2T1 :: hw  :: *          → profile-a (priority 10), unique
-#   T2T1 :: emu :: *          → profile-a (priority 10) AND profile-b (priority 5)
-#                                → profile-a wins (highest priority), unique
-#   T3W1 :: hw  :: *          → profile-c (priority 10) AND profile-d (priority 10)
-#                                → AMBIGUOUS (tied highest priority)
-#   T3W1 :: emu :: *          → no match
-#   *    :: *   :: prodtest   → profile-e (priority 20) + any context-specific profiles
-#                                → profile-e wins when priority > others, unique for T2T1/T3W1 emu
-#   T2T1 :: hw  :: prodtest   → profile-a (10) AND profile-e (20) → profile-e wins (unique)
-#   T3W1 :: hw  :: prodtest   → profile-c (10) AND profile-d (10) AND profile-e (20)
-#                                → profile-e wins (unique, highest priority)
+# Resolution rules (new schema – declaration-order first-match per component):
+#   core + T2T1 + hw   → entry[0] (when: model(T2T1)) wins – matches first
+#   core + T2T1 + emu  → entry[0] (when: model(T2T1)) wins – matches first; entry[1] also matches but is second
+#   core + T3W1 + hw   → entry[1] (when: target(hw)) wins – entry[0] only matches T2T1; entry[1] matches
+#   core + T3W1 + emu  → entry[2] (no when) wins – entry[0]/entry[1] don't match; entry[2] is match-all
+#   prodtest + *       → single entry (no when) always matches
+#
+# Derived executable:
+#   hw  target: artifactSuffix = ""   executableExtension = ".elf"  → <name>.elf
+#   emu target: artifactSuffix = _emu executableExtension = ".elf"  → <name>_emu.elf
 
 models:
   - id: T2T1
@@ -25,39 +23,37 @@ targets:
   - id: hw
     name: Hardware
     shortName: HW
+    executableExtension: ".elf"
   - id: emu
     name: Emulator
     artifactSuffix: _emu
+    executableExtension: ".elf"
 
 components:
   - id: core
     name: Core
     artifactName: compile_commands_core
+    debug:
+      # entry[0]: matches T2T1 only (declaration order applies)
+      - name: GDB Remote (T2T1)
+        template: gdb-remote.json
+        when: model(T2T1)
+        vars:
+          port: "3333"
+      # entry[1]: matches hw target only
+      - name: GDB Remote (hw)
+        template: gdb-remote.json
+        when: target(hw)
+      # entry[2]: no when = match-all; catches T3W1+emu and any other combination
+      - name: GDB Remote (fallback)
+        template: gdb-remote.json
   - id: prodtest
     name: Prodtest
     artifactName: compile_commands_prodtest
-
-debug:
-  # profile-a: matches any T2T1 context, priority 10
-  - when: model(T2T1)
-    priority: 10
-    template: gdb-remote.json
-    executable: firmware.elf
-
-  # profile-b: matches T2T1 emulator specifically, lower priority (profile-a wins)
-  - when: all(model(T2T1), target(emu))
-    priority: 5
-    template: emu-debug.json
-    executable: firmware_emu.elf
-
-  # profile-c: matches T3W1 hw context, priority 10 (tied with profile-d → ambiguous)
-  - when: all(model(T3W1), target(hw))
-    priority: 10
-    template: gdb-hw-t3.json
-    executable: firmware_t3_hw.elf
-
-  # profile-d: also matches T3W1 hw context, same priority as profile-c → ambiguous
-  - when: all(model(T3W1), target(hw))
+    debug:
+      # single entry with no when → always matches for this component
+      - name: GDB Remote (prodtest)
+        template: gdb-remote.json
     priority: 10
     template: gdb-hw-t3-alt.json
     executable: firmware_t3_hw_alt.elf

@@ -17,10 +17,10 @@
 
 **Purpose**: Refresh fixtures and shared test seams for the revised Debug Launch contract.
 
-- [ ] T001 Refresh the valid component-scoped debug manifest fixture in `test-fixtures/manifests/debug-launch-valid/tf-tools-manifest.yaml`
-- [ ] T002 [P] Refresh the invalid legacy-schema and validation-error manifest fixture in `test-fixtures/manifests/debug-launch-invalid/tf-tools-manifest.yaml`
-- [ ] T003 [P] Update the successful debug workspace fixture in `test-fixtures/workspaces/debug-launch-valid/tf-tools-manifest.yaml`, `test-fixtures/workspaces/debug-launch-valid/.vscode/settings.json`, and `test-fixtures/workspaces/debug-launch-valid/debug-templates/gdb-remote.json`
-- [ ] T004 [P] Update the failure-path debug workspace fixture in `test-fixtures/workspaces/debug-launch-failures/tf-tools-manifest.yaml`, `test-fixtures/workspaces/debug-launch-failures/.vscode/settings.json`, `test-fixtures/workspaces/debug-launch-failures/debug-templates/malformed-template.json`, and `test-fixtures/workspaces/debug-launch-failures/debug-templates/unknown-var-template.json`
+- [X] T001 Refresh the valid component-scoped debug manifest fixture in `test-fixtures/manifests/debug-launch-valid/tf-tools-manifest.yaml`
+- [X] T002 [P] Refresh the invalid legacy-schema and validation-error manifest fixture in `test-fixtures/manifests/debug-launch-invalid/tf-tools-manifest.yaml`
+- [X] T003 [P] Update the successful debug workspace fixture in `test-fixtures/workspaces/debug-launch-valid/tf-tools-manifest.yaml`, `test-fixtures/workspaces/debug-launch-valid/.vscode/settings.json`, and `test-fixtures/workspaces/debug-launch-valid/debug-templates/gdb-remote.json`
+- [X] T004 [P] Update the failure-path debug workspace fixture in `test-fixtures/workspaces/debug-launch-failures/tf-tools-manifest.yaml`, `test-fixtures/workspaces/debug-launch-failures/.vscode/settings.json`, `test-fixtures/workspaces/debug-launch-failures/debug-templates/malformed-template.json`, and `test-fixtures/workspaces/debug-launch-failures/debug-templates/unknown-var-template.json`
 - [ ] T005 [P] Extend shared debug-launch test helpers for debug API spies, output-channel assertions, and settings refresh in `src/test/unit/vscode-mock.ts`, `src/test/unit/workflow-test-helpers.ts`, and `src/test/integration/index.ts`
 
 ---
@@ -31,11 +31,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T006 Add the `tfTools.debug.templatesPath` setting contribution and Start Debugging command metadata updates in `package.json`
-- [ ] T007 [P] Add debug templates-path setting helpers and refresh wiring support in `src/workspace/settings.ts`
-- [ ] T008 [P] Update debug-related manifest model types for component-scoped `debug[]` entries and target `executableExtension` in `src/manifest/manifest-types.ts`
+- [X] T006 Add the `tfTools.debug.templatesPath` setting contribution and Start Debugging command metadata updates in `package.json`
+- [X] T007 [P] Add debug templates-path setting helpers and refresh wiring support in `src/workspace/settings.ts`
+- [X] T008 [P] Update debug-related manifest model types for component-scoped `debug[]` entries and target `executableExtension` in `src/manifest/manifest-types.ts`
 - [ ] T009 [P] Add unit coverage for component-scoped debug schema, optional `when`, and legacy-schema rejection in `src/test/unit/manifest/validate-manifest.test.ts`
-- [ ] T010 Parse and validate component-scoped debug entries, optional `when`, target `executableExtension`, and hard-cutover legacy-schema rejection in `src/manifest/validate-manifest.ts`
+- [X] T010 Parse and validate component-scoped debug entries, optional `when`, target `executableExtension`, and hard-cutover legacy-schema rejection in `src/manifest/validate-manifest.ts`
 - [ ] T011 [P] Rework shared executable artifact derivation for `<artifactName><artifactSuffix><executableExtension>` in `src/intellisense/artifact-resolution.ts`
 
 **Checkpoint**: The manifest schema, templates-path setting, and executable derivation rules are ready for story work.

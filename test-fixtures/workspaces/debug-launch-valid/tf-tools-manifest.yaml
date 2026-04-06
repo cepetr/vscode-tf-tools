@@ -10,16 +10,19 @@ targets:
   - id: hw
     name: Hardware
     shortName: HW
+    executableExtension: ".elf"
   - id: emu
     name: Emulator
+    artifactSuffix: _emu
+    executableExtension: ".elf"
 
 components:
   - id: core
     name: Core
     artifactName: compile_commands_core
-
-debug:
-  - when: model(T2T1)
-    priority: 10
-    template: gdb-remote.json
-    executable: firmware.elf
+    debug:
+      - name: GDB Remote
+        template: gdb-remote.json
+        when: model(T2T1)
+        vars:
+          port: "3333"

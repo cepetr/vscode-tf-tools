@@ -23,6 +23,42 @@ export interface ManifestTarget {
   readonly flag?: string | null;
   /** Optional suffix appended to the artifact basename for this target. Defaults to "". */
   readonly artifactSuffix?: string;
+  /**
+   * Optional extension appended after `<artifactName><artifactSuffix>` for executable
+   * derivation (e.g. ".elf"). Defaults to "" when omitted.
+   */
+  readonly executableExtension?: string;
+}
+
+/**
+ * A single component-scoped debug entry parsed from `component.debug[]`.
+ * Evaluated in declaration order; the first matching entry wins.
+ */
+export interface ManifestComponentDebugEntry {
+  /**
+   * Stable internal identifier: `"<componentId>:debug[<N>]"` where N is the
+   * 0-based position inside the owning component's `debug` array.
+   */
+  readonly id: string;
+  /** Owning component's identifier. */
+  readonly componentId: string;
+  /** User-facing profile name, exposed as `${tfTools.debugProfileName}`. */
+  readonly name: string;
+  /** Relative path under `tfTools.debug.templatesPath` for the JSONC template. */
+  readonly template: string;
+  /**
+   * Parsed availability expression. When absent the entry matches all active
+   * contexts for the owning component.
+   */
+  readonly when?: WhenExpression;
+  /**
+   * Optional entry-defined tf-tools substitution variables.
+   * Keys are short names used as `${tfTools.<key>}` in templates.
+   * Values are raw string templates that may reference built-in tf-tools variables.
+   */
+  readonly vars?: Readonly<Record<string, string>>;
+  /** Zero-based position inside the owning component's `debug` array. */
+  readonly declarationIndex: number;
 }
 
 export interface ManifestComponent {
@@ -35,6 +71,11 @@ export interface ManifestComponent {
   readonly flashWhen?: WhenExpression;
   /** Parsed Upload availability rule. Absent means Upload is never available for this component. */
   readonly uploadWhen?: WhenExpression;
+  /**
+   * Ordered debug entries declared under this component.
+   * Absent when no `debug` array was defined in the manifest.
+   */
+  readonly debug?: ReadonlyArray<ManifestComponentDebugEntry>;
 }
 
 // --- Validation issues ---
@@ -117,42 +158,6 @@ export interface BuildOption {
 
 export type ManifestStatus = "loaded" | "missing" | "invalid";
 
-// ---------------------------------------------------------------------------
-// Debug Profile
-// ---------------------------------------------------------------------------
-
-/**
- * A single manifest-defined debug profile entry.
- * Parsed during manifest validation and stored on ManifestStateLoaded.
- */
-export interface ManifestDebugProfile {
-  /**
-   * Declaration-order based identifier for logging and test assertions.
-   * Format: "debug[N]" where N is the 0-based index.
-   */
-  readonly id: string;
-  /**
-   * Parsed availability expression. When absent the profile always matches
-   * the active build context.
-   */
-  readonly when?: WhenExpression;
-  /** Integer priority used for tie-breaking. Defaults to 0 when omitted. */
-  readonly priority: number;
-  /** Relative path under tfTools.debug.templatesPath to the JSONC template file. */
-  readonly template: string;
-  /**
-   * Profile-defined executable path.
-   * Relative to the active model artifact folder unless already absolute.
-   */
-  readonly executable: string;
-  /**
-   * Optional profile-defined tf-tools substitution variables.
-   * Keys are variable names (used as ${tfTools.<key>} in templates).
-   * Values are raw string templates that may reference built-in tf-tools variables.
-   */
-  readonly vars?: Readonly<Record<string, string>>;
-}
-
 export interface ManifestStateLoaded {
   readonly status: "loaded";
   readonly manifestUri: vscode.Uri;
@@ -166,16 +171,9 @@ export interface ManifestStateLoaded {
    */
   readonly hasWorkflowBlockingIssues: boolean;
   /**
-   * Parsed and validated debug profiles from the manifest `debug` section.
-   * Only profiles that pass validation are included; invalid entries are
-   * reported in validationIssues and skipped.
-   */
-  readonly debugProfiles: ReadonlyArray<ManifestDebugProfile>;
-  /**
-   * True when any debug profile entry has a validation error that would
-   * prevent reliable debug profile resolution.
-   * When true, the Start Debugging action should be considered blocked
-   * due to a manifest issue.
+   * True when any component's `debug` entries have a validation error that
+   * would prevent reliable debug entry resolution for that component.
+   * When true, the Start Debugging action should be considered blocked.
    */
   readonly hasDebugBlockingIssues: boolean;
   readonly validationIssues: ReadonlyArray<ValidationIssue>;
