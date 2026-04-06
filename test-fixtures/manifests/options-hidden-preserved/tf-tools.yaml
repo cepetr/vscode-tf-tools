@@ -21,7 +21,7 @@ components:
   - id: prodtest
     name: Prodtest
 
-buildOptions:
+options:
   # Always visible
   - label: "Debug Build"
     flag: "--debug"

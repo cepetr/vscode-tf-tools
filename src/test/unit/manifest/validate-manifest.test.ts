@@ -320,11 +320,11 @@ components:
 });
 
 // ---------------------------------------------------------------------------
-// parseManifest – Build Options
+// parseManifest – options
 // ---------------------------------------------------------------------------
 
-suite("parseManifest – buildOptions", () => {
-  function baseManifest(buildOptions: string): string {
+suite("parseManifest – options", () => {
+  function baseManifest(options: string): string {
     return `
 models:
   - id: T2T1
@@ -339,7 +339,7 @@ targets:
 components:
   - id: core
     name: Core
-${buildOptions}
+${options}
 `.trim();
   }
 
@@ -347,7 +347,7 @@ ${buildOptions}
   // No build options
   // -------------------------------------------------------------------------
 
-  test("parses manifest without buildOptions without error", () => {
+  test("parses manifest without options without error", () => {
     const source = baseManifest("");
     const result = parseManifest(source);
     assert.deepStrictEqual(result.buildOptions, []);
@@ -361,7 +361,7 @@ ${buildOptions}
 
   test("parses a valid ungrouped checkbox option", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "Debug Build"
     flag: "--debug"
     kind: checkbox
@@ -379,7 +379,7 @@ buildOptions:
 
   test("parses a grouped checkbox option", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "Fast"
     flag: "--fast"
     kind: checkbox
@@ -391,7 +391,7 @@ buildOptions:
 
   test("parses option description when present", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "Debug"
     flag: "--debug"
     kind: checkbox
@@ -403,7 +403,7 @@ buildOptions:
 
   test("assigns deterministic key derived from flag", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "Debug"
     flag: "--debug"
     kind: checkbox
@@ -419,7 +419,7 @@ buildOptions:
 
   test("parses a valid multistate option with explicit default", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "Verbosity"
     flag: "--verbose"
     kind: multistate
@@ -442,7 +442,7 @@ buildOptions:
 
   test("uses first state as default when no explicit default is set", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "Verbosity"
     flag: "--verbose"
     kind: multistate
@@ -464,7 +464,7 @@ buildOptions:
 
   test("parses a valid when expression and stores it as AST", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "T2T1 Only"
     flag: "--t2t1"
     kind: checkbox
@@ -478,7 +478,7 @@ buildOptions:
 
   test("reports invalid-when error and sets hasWorkflowBlockingIssues for syntactically invalid when", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "Broken"
     flag: "--broken"
     kind: checkbox
@@ -491,7 +491,7 @@ buildOptions:
 
   test("reports invalid-when error for unknown model id in when expression", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "Unknown"
     flag: "--unknown"
     kind: checkbox
@@ -504,7 +504,7 @@ buildOptions:
 
   test("does not block workflow for manifests with only valid when expressions", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "T2T1"
     flag: "--t2t1"
     kind: checkbox
@@ -520,7 +520,7 @@ buildOptions:
 
   test("reports duplicate-flag error for options with the same flag", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "First"
     flag: "--debug"
     kind: checkbox
@@ -538,7 +538,7 @@ buildOptions:
 
   test("preserves manifest declaration order for options", () => {
     const source = baseManifest(`
-buildOptions:
+options:
   - label: "Alpha"
     flag: "--alpha"
     kind: checkbox
@@ -1044,14 +1044,25 @@ ${extras}
   // -------------------------------------------------------------------------
 
   test("target with executableExtension is parsed correctly", () => {
-    const source = baseManifest(`
+    const source = `
+models:
+  - id: T2T1
+    name: Trezor Model T
+    artifactFolder: model-t
+  - id: T3W1
+    name: Trezor Model T3
+    artifactFolder: model-t3
 targets:
   - id: hw
     name: Hardware
     executableExtension: .elf
   - id: emu
     name: Emulator
-`).replace("targets:\n  - id: hw\n    name: Hardware\n  - id: emu\n    name: Emulator", "targets:\n  - id: hw\n    name: Hardware\n    executableExtension: .elf\n  - id: emu\n    name: Emulator");
+components:
+  - id: core
+    name: Core
+    artifactName: firmware
+`.trim();
     const result = parseManifest(source);
     const hw = result.targets.find((t) => t.id === "hw");
     assert.ok(hw, "expected hw target");
@@ -1216,9 +1227,13 @@ debug:
     const source = baseManifest(`    debug:
       - template: gdb.json`);
     const state = validateManifest(source, vscode.Uri.file("/workspace/manifest.yaml"));
-    assert.strictEqual(state.status, "loaded");
-    if (state.status === "loaded") {
-      assert.strictEqual(state.hasDebugBlockingIssues, true);
+    assert.strictEqual(state.status, "invalid");
+    if (state.status === "invalid") {
+      assert.ok(
+        state.validationIssues.some(
+          (issue) => issue.severity === "error" && issue.message.toLowerCase().includes("name")
+        )
+      );
     }
   });
 

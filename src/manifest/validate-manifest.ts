@@ -563,8 +563,7 @@ function validateBuildOptions(
   const options: BuildOption[] = [];
   let hasWorkflowBlockingIssues = false;
 
-  // Accept "options" (canonical per user spec) or "buildOptions" (legacy fixtures)
-  const seqNode = doc.get("options", true) ?? doc.get("buildOptions", true);
+  const seqNode = doc.get("options", true);
   if (seqNode === undefined || seqNode === null) {
     // options is optional; absence is not an error
     return { options, hasWorkflowBlockingIssues };

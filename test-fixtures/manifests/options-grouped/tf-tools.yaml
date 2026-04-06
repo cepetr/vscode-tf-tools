@@ -21,7 +21,7 @@ components:
   - id: prodtest
     name: Prodtest
 
-buildOptions:
+options:
   # Ungrouped checkbox option – always available
   - label: "Debug Build"
     flag: "--debug"
