@@ -381,7 +381,7 @@ export function makeDebugLoadedState(
     }
     return { ...c, debug: entries };
   });
-  return { ...base, components, hasDebugBlockingIssues: false };
+  return { ...base, components, hasDebugBlockingIssues: overrides.hasDebugBlockingIssues ?? false };
 }
 
 /**
