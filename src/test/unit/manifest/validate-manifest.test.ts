@@ -632,6 +632,32 @@ options:
     assert.strictEqual(opt.defaultState, "null");
   });
 
+  test("parses description for canonical multistate states", () => {
+    const source = baseManifest(`
+options:
+  - id: dbg-console
+    name: Debug Console
+    type: multistate
+    states:
+      - value: null
+        name: Default
+        description: Use the component default.
+        default: true
+      - value: swo
+        name: SWO
+        description: Route the debug console over SWO.
+`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const opt = result.buildOptions[0];
+    const defaultState = opt.states?.find((s) => s.id === "null");
+    assert.ok(defaultState);
+    assert.strictEqual(defaultState!.description, "Use the component default.");
+    const swoState = opt.states?.find((s) => s.id === "swo");
+    assert.ok(swoState);
+    assert.strictEqual(swoState!.description, "Route the debug console over SWO.");
+  });
+
   test("derives multistate flag as --{id}={value} for string values", () => {
     const source = baseManifest(`
 options:

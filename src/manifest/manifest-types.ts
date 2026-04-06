@@ -135,6 +135,7 @@ export interface BuildOptionState {
   readonly id: string;
   readonly label: string;
   readonly flag: string;
+  readonly description?: string;
 }
 
 export interface BuildOption {

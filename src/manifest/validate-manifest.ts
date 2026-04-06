@@ -787,6 +787,7 @@ function validateBuildOptionStates(
     let id: string;
     let label: string;
     let flag: string;
+    let description: string | undefined;
 
     // Detect schema: canonical ("value" + "name") vs legacy ("id" + "label")
     if (stateItem.has("value")) {
@@ -827,6 +828,11 @@ function validateBuildOptionStates(
         continue;
       }
       label = nameNode.value;
+
+      const descriptionNode = stateItem.get("description", true);
+      if (descriptionNode instanceof Scalar) {
+        description = typeof descriptionNode.value === "string" ? descriptionNode.value : undefined;
+      }
     } else {
       // Legacy schema — id + label + optional flag
       const idVal = validateStringField(stateItem, "id", lineCounter, issues, `options "${optionLabel}" state`);
@@ -861,7 +867,7 @@ function validateBuildOptionStates(
     if (isDefault) {
       defaultState = id;
     }
-    states.push({ id, label, flag });
+    states.push({ id, label, flag, description });
   }
 
   // If no explicit default, use the first state

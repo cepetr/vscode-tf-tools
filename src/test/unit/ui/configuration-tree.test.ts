@@ -212,6 +212,18 @@ suite("BuildOptionMultistateHeaderItem tooltip", () => {
   });
 });
 
+suite("BuildOptionStateItem tooltip", () => {
+  test("tooltip is set when state description is provided", () => {
+    const item = new BuildOptionStateItem("opt", "swo", "SWO", false, "Route the debug console over SWO.");
+    assert.strictEqual(item.tooltip, "Route the debug console over SWO.");
+  });
+
+  test("tooltip is undefined when state description is omitted", () => {
+    const item = new BuildOptionStateItem("opt", "swo", "SWO", false);
+    assert.strictEqual(item.tooltip, undefined);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // T020: CompileCommandsArtifactItem rendering
 // ---------------------------------------------------------------------------

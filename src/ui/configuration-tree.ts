@@ -253,12 +253,16 @@ export class BuildOptionStateItem extends vscode.TreeItem {
     public readonly optionKey: string,
     public readonly stateId: string,
     label: string,
-    isActive: boolean
+    isActive: boolean,
+    description?: string
   ) {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.id = `build-option-state:${optionKey}:${stateId}`;
     this.contextValue = "build-option-state";
     this.iconPath = isActive ? new vscode.ThemeIcon("check") : INACTIVE_CHOICE_ICON;
+    if (description) {
+      this.tooltip = description;
+    }
     this.command = {
       title: `Select ${label}`,
       command: SELECT_BUILD_OPTION_STATE_COMMAND,
@@ -639,7 +643,7 @@ export class ConfigurationTreeProvider
     const activeStateLabel =
       option.states?.find((s) => s.id === activeStateId)?.label ?? activeStateId;
     const stateChildren = (option.states ?? []).map(
-      (s) => new BuildOptionStateItem(option.key, s.id, s.label, s.id === activeStateId)
+      (s) => new BuildOptionStateItem(option.key, s.id, s.label, s.id === activeStateId, s.description)
     );
     const expanded = this._expandedMultistateKey === option.key;
     const defaultStateId = option.defaultState ?? option.states?.[0]?.id ?? "";
