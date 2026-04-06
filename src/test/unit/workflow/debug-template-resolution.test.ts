@@ -181,7 +181,6 @@ suite("buildDebugVariableMap – cyclic variable edge cases (T020)", () => {
   const TARGET_NAME = "Hardware";
   const COMPONENT = "core";
   const COMPONENT_NAME = "Core";
-  const FOLDER = "model-t";
   const ARTIFACT_PATH = "/build/model-t";
   const EXE_FILE = "firmware.elf";
   const EXE = "/build/model-t/firmware.elf";
@@ -189,7 +188,7 @@ suite("buildDebugVariableMap – cyclic variable edge cases (T020)", () => {
 
   test("self-referencing var (a → a) produces a resolution error", () => {
     const vars = { a: "${tfTools.debug.var:a}" };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, FOLDER, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     assert.ok(result.resolutionErrors.length > 0, "expected a resolution error for self-cycle");
     assert.ok(
       result.resolutionErrors.some((e) => e.toLowerCase().includes("cyclic") || e.toLowerCase().includes("cycle")),
@@ -203,7 +202,7 @@ suite("buildDebugVariableMap – cyclic variable edge cases (T020)", () => {
       b: "${tfTools.debug.var:c}",
       c: "${tfTools.debug.var:a}",
     };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, FOLDER, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     assert.ok(result.resolutionErrors.length > 0, "expected resolution error for 3-way cycle");
   });
 
@@ -212,7 +211,7 @@ suite("buildDebugVariableMap – cyclic variable edge cases (T020)", () => {
       b: "hello",
       a: "${tfTools.debug.var:b}-world",
     };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, FOLDER, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     assert.strictEqual(result.resolutionErrors.length, 0);
     assert.strictEqual(result.resolvedVars["tfTools.debug.var:a"], "hello-world");
     assert.strictEqual(result.resolvedVars["tfTools.debug.var:b"], "hello");
@@ -222,14 +221,14 @@ suite("buildDebugVariableMap – cyclic variable edge cases (T020)", () => {
     const vars = {
       x: "${tfTools.debug.var:x}", // self-cycle
     };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, FOLDER, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     // Built-ins must still be present even when profile vars cycle
     assert.strictEqual(result.resolvedVars[TFTOOLS_VAR_MODEL_ID], MODEL);
   });
 
   test("profile var referencing undefined tfTools var produces a resolution error", () => {
     const vars = { foo: "${tfTools.undefined_key}" };
-    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, FOLDER, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
+    const result = buildDebugVariableMap(MODEL, MODEL_NAME, TARGET, TARGET_NAME, COMPONENT, COMPONENT_NAME, ARTIFACT_PATH, EXE_FILE, EXE, PROFILE_NAME, vars);
     assert.ok(result.resolutionErrors.length > 0);
     assert.ok(
       result.resolutionErrors.some((e) => e.includes("undefined_key")),

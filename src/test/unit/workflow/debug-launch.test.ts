@@ -218,7 +218,6 @@ suite("buildDebugVariableMap", () => {
   const targetName = "Hardware";
   const componentId = "core";
   const componentName = "Core";
-  const artifactFolder = "model-t";
   const artifactPath = "/build/model-t";
   const executableFileName = "firmware.elf";
   const executablePath = "/build/model-t/firmware.elf";
@@ -232,7 +231,6 @@ suite("buildDebugVariableMap", () => {
       targetName,
       componentId,
       componentName,
-      artifactFolder,
       artifactPath,
       executableFileName,
       executablePath,
@@ -303,13 +301,13 @@ suite("buildDebugVariableMap", () => {
   });
 
   test("executable variable contains filename (not full path)", () => {
-    const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactFolder, artifactPath, "my-firmware.elf", "/a/b/c/my-firmware.elf", debugProfileName, undefined);
+    const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactPath, "my-firmware.elf", "/a/b/c/my-firmware.elf", debugProfileName, undefined);
     assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_EXECUTABLE], "my-firmware.elf");
     assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_EXECUTABLE_PATH], "/a/b/c/my-firmware.elf");
   });
 
   test("debugProfileName is exposed as tfTools.debugProfileName", () => {
-    const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactFolder, artifactPath, executableFileName, executablePath, "my-profile", undefined);
+    const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactPath, executableFileName, executablePath, "my-profile", undefined);
     assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_DEBUG_PROFILE_NAME], "my-profile");
   });
 });

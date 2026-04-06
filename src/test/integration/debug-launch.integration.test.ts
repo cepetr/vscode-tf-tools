@@ -217,7 +217,6 @@ suite("Debug Launch – substitution pipeline integration (T011)", () => {
       "Hardware",
       "core",
       "Core",
-      "model-t",
       "/build/model-t",
       "firmware.elf",
       "/build/model-t/firmware.elf",
@@ -241,7 +240,7 @@ suite("Debug Launch – substitution pipeline integration (T011)", () => {
     const templateResult = loadDebugTemplate("gdb-remote.json", templatesRoot);
     assert.strictEqual(templateResult.parseState, "loaded");
 
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "model-t", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
     const { value } = applyTfToolsSubstitution(templateResult.configuration, varMap.resolvedVars);
     const cfg = value as Record<string, unknown>;
 
@@ -253,7 +252,7 @@ suite("Debug Launch – substitution pipeline integration (T011)", () => {
     const templateResult = loadDebugTemplate("gdb-remote.json", templatesRoot);
     assert.strictEqual(templateResult.parseState, "loaded");
 
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "model-t", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
     const { value } = applyTfToolsSubstitution(templateResult.configuration, varMap.resolvedVars);
     const cfg = value as { environment: Array<{ name: string; value: string }> };
     const targetEnv = cfg.environment.find((e) => e.name === "TARGET");
@@ -271,7 +270,7 @@ suite("Debug Launch – substitution pipeline integration (T011)", () => {
       vars: { debugPort: "3333" },
     });
     const varMap = buildDebugVariableMap(
-      "T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "model-t", "/build/model-t", "firmware.elf", "/build/firmware.elf", entry.name, entry.vars
+      "T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", entry.name, entry.vars
     );
     assert.strictEqual(varMap.resolvedVars["tfTools.debug.var:debugPort"], "3333");
     assert.strictEqual(varMap.resolutionErrors.length, 0);

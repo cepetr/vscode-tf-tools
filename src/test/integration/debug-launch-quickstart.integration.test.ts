@@ -375,7 +375,7 @@ suite("QS5 – Template failures at invocation time (T026)", () => {
 
 suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T026)", () => {
   test("buildDebugVariableMap includes all built-in tf-tools variables", () => {
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "model-t", "/artifacts/model-t", "firmware.elf", "/artifacts/model-t/firmware.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/artifacts/model-t", "firmware.elf", "/artifacts/model-t/firmware.elf", "gdb-remote", undefined);
     assert.strictEqual(varMap.resolvedVars["tfTools.model.id"], "T2T1");
     assert.strictEqual(varMap.resolvedVars["tfTools.target.id"], "hw");
     assert.strictEqual(varMap.resolvedVars["tfTools.component.id"], "core");
@@ -385,7 +385,7 @@ suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T02
   });
 
   test("applyTfToolsSubstitution resolves nested object and array string fields", () => {
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "model-t", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "firmware.elf", "/build/firmware.elf", "gdb-remote", undefined);
     const template = {
       type: "cortex-debug",
       executable: "${tfTools.executablePath}",
@@ -402,7 +402,7 @@ suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T02
   });
 
   test("applyTfToolsSubstitution leaves non-tf-tools VS Code variables untouched", () => {
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "model-t", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
     const template = {
       cwd: "${workspaceFolder}",
       serverPath: "${env:OPENOCD_PATH}",
@@ -418,7 +418,7 @@ suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T02
   });
 
   test("applyTfToolsSubstitution reports unknown tf-tools variables", () => {
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "model-t", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
+    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", undefined);
     const template = { serverPort: "${tfTools.nonExistentPort}" };
     const { unknownVars } = applyTfToolsSubstitution(template, varMap.resolvedVars);
 
@@ -430,7 +430,7 @@ suite("QS6 – tf-tools substitution and non-tf-tools variable pass-through (T02
 
   test("buildDebugVariableMap surface cyclic profile vars as resolution errors", () => {
     const vars = { a: "${tfTools.debug.var:b}", b: "${tfTools.debug.var:a}" };
-    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "model-t", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", vars);
+    const varMap = buildDebugVariableMap("T2T1", "Trezor Model T (v1)", "hw", "Hardware", "core", "Core", "/build/model-t", "fw.elf", "/build/fw.elf", "gdb-remote", vars);
 
     assert.ok(
       varMap.resolutionErrors.length > 0,

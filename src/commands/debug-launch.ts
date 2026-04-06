@@ -168,13 +168,6 @@ export const TFTOOLS_VAR_COMPONENT_NAME = "tfTools.component.name";
 export const TFTOOLS_VAR_EXECUTABLE_PATH = "tfTools.executablePath";
 export const TFTOOLS_VAR_EXECUTABLE = "tfTools.executable";
 export const TFTOOLS_VAR_DEBUG_PROFILE_NAME = "tfTools.debugProfileName";
-
-// Legacy aliases kept to avoid breaking existing templates while the documented
-// token set becomes the primary contract.
-export const TFTOOLS_VAR_MODEL = "tfTools.model";
-export const TFTOOLS_VAR_TARGET = "tfTools.target";
-export const TFTOOLS_VAR_COMPONENT = "tfTools.component";
-export const TFTOOLS_VAR_ARTIFACT_FOLDER = "tfTools.artifactFolder";
 const TFTOOLS_DEBUG_VAR_PREFIX = "tfTools.debug.var:";
 
 /** Matches `${tfTools.varName}` tokens inside template strings. */
@@ -191,8 +184,8 @@ export interface DebugVariableMap {
 /**
  * Builds the complete tf-tools variable map for the active debug context.
  *
- * Built-in variables derive from the active model, target, component, artifact
- * folder, derived executable file name and path, and the selected debug profile name.
+ * Built-in variables derive from the active model, target, component,
+ * derived executable file name and path, and the selected debug profile name.
  * Profile-defined `vars` may reference built-ins and other profile vars; cycles and
  * unknown tf-tools references in profile vars are reported as resolution errors
  * that block launch.
@@ -204,7 +197,6 @@ export function buildDebugVariableMap(
   targetName: string,
   componentId: string,
   componentName: string,
-  artifactFolder: string,
   artifactPath: string,
   executableFileName: string,
   executablePath: string,
@@ -219,10 +211,6 @@ export function buildDebugVariableMap(
     [TFTOOLS_VAR_TARGET_NAME]: targetName,
     [TFTOOLS_VAR_COMPONENT_ID]: componentId,
     [TFTOOLS_VAR_COMPONENT_NAME]: componentName,
-    [TFTOOLS_VAR_MODEL]: modelId,
-    [TFTOOLS_VAR_TARGET]: targetId,
-    [TFTOOLS_VAR_COMPONENT]: componentId,
-    [TFTOOLS_VAR_ARTIFACT_FOLDER]: artifactFolder,
     [TFTOOLS_VAR_EXECUTABLE]: executableFileName,
     [TFTOOLS_VAR_EXECUTABLE_PATH]: executablePath,
     [TFTOOLS_VAR_DEBUG_PROFILE_NAME]: debugProfileName,
@@ -542,7 +530,6 @@ export async function executeDebugLaunch(
     target.name,
     config.componentId,
     component.name,
-    artifactFolder,
     artifactPath,
     executableFileName,
     executablePath,
