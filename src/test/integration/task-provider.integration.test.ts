@@ -113,6 +113,7 @@ suite("Build Task Provider – task failure visibility (T031)", () => {
       components: [{ kind: "component" as const, id: "core", name: "Core" }],
       buildOptions: [],
       hasWorkflowBlockingIssues: false,
+      hasDebugBlockingIssues: false,
       validationIssues: [],
       loadedAt: new Date("2026-01-01T00:00:00Z"),
     };

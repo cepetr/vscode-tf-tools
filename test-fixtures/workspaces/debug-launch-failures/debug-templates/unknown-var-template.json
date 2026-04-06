@@ -1,0 +1,14 @@
+{
+  "type": "gdb",
+  "request": "launch",
+  "name": "${tfTools.debugProfileName}",
+  "program": "${tfTools.executablePath}",
+  "unknownArg": "${tfTools.nonExistentVariable}",
+  "cwd": "${workspaceFolder}",
+  "environment": [
+    {
+      "name": "TARGET",
+      "value": "${tfTools.target.id}"
+    }
+  ]
+}

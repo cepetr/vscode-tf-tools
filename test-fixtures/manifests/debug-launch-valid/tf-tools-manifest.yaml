@@ -1,0 +1,68 @@
+# Debug Launch: valid manifest with component-scoped debug entries.
+#
+# Resolution rules (new schema – declaration-order first-match per component):
+#   core + T2T1 + hw   → entry[0] (when: model(T2T1)) wins – matches first
+#   core + T2T1 + emu  → entry[0] (when: model(T2T1)) wins – matches first; entry[1] also matches but is second
+#   core + T3W1 + hw   → entry[1] (when: target(hw)) wins – entry[0] only matches T2T1; entry[1] matches
+#   core + T3W1 + emu  → entry[2] (no when) wins – entry[0]/entry[1] don't match; entry[2] is match-all
+#   prodtest + *       → single entry (no when) always matches
+#
+# Derived executable:
+#   hw  target: artifactSuffix = ""   executableExtension = ".elf"  → <name>.elf
+#   emu target: artifactSuffix = _emu executableExtension = ".elf"  → <name>_emu.elf
+
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifactFolder: model-t
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+    artifactFolder: model-t3
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+    executableExtension: ".elf"
+  - id: emu
+    name: Emulator
+    artifactSuffix: _emu
+    executableExtension: ".elf"
+
+components:
+  - id: core
+    name: Core
+    artifactName: compile_commands_core
+    debug:
+      # entry[0]: matches T2T1 only (declaration order applies)
+      - name: GDB Remote (T2T1)
+        template: gdb-remote.json
+        when: model(T2T1)
+        vars:
+          port: "3333"
+      # entry[1]: matches hw target only
+      - name: GDB Remote (hw)
+        template: gdb-remote.json
+        when: target(hw)
+      # entry[2]: no when = match-all; catches T3W1+emu and any other combination
+      - name: GDB Remote (fallback)
+        template: gdb-remote.json
+  - id: prodtest
+    name: Prodtest
+    artifactName: compile_commands_prodtest
+    debug:
+      # single entry with no when → always matches for this component
+      - name: GDB Remote (prodtest)
+        template: gdb-remote.json
+    priority: 10
+    template: gdb-hw-t3-alt.json
+    executable: firmware_t3_hw_alt.elf
+
+  # profile-e: matches prodtest component, highest priority with vars
+  - when: component(prodtest)
+    priority: 20
+    template: prodtest-debug.json
+    executable: prodtest.elf
+    vars:
+      debugPort: "3333"
+      programArgs: "--model ${tfTools.model.id} --port ${tfTools.debug.var:debugPort}"

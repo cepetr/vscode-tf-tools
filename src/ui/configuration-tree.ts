@@ -4,7 +4,7 @@ import { ManifestState, ManifestStateLoaded } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
 import { ResolvedOption } from "../configuration/build-options";
 import { ActiveCompileCommandsArtifact } from "../intellisense/intellisense-types";
-import { ActiveBinaryArtifact, ActiveMapArtifact } from "../intellisense/artifact-resolution";
+import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../intellisense/artifact-resolution";
 
 // ---------------------------------------------------------------------------
 // Tree item types
@@ -99,6 +99,26 @@ export class MapArtifactItem extends vscode.TreeItem {
       : (artifact.missingReason
           ? artifact.missingReason
           : `Expected: ${artifact.path}`);
+  }
+}
+
+/**
+ * The Executable row in the Build Artifacts section (Debug Launch slice).
+ * contextValue "artifact-executable" enables the Start Debugging row action via menus.view/item/context.
+ * This row is always rendered when an ExecutableArtifact state has been computed — it remains
+ * visible but disabled when the executable is missing or the profile cannot be resolved.
+ * Start Debugging is invoked only through the inline row action, not by clicking the row.
+ */
+export class ExecutableArtifactItem extends vscode.TreeItem {
+  constructor(artifact: ActiveExecutableArtifact) {
+    super("Executable", vscode.TreeItemCollapsibleState.None);
+    this.id = "artifact:executable";
+    this.contextValue = "artifact-executable";
+    this.iconPath = new vscode.ThemeIcon(
+      artifact.status === "valid" ? "pass" : "error"
+    );
+    this.description = artifact.status;
+    this.tooltip = artifact.tooltip;
   }
 }
 
@@ -282,6 +302,7 @@ export class ConfigurationTreeProvider
   private _artifact: ActiveCompileCommandsArtifact | null = null;
   private _binaryArtifact: ActiveBinaryArtifact | null = null;
   private _mapArtifact: ActiveMapArtifact | null = null;
+  private _executableArtifact: ActiveExecutableArtifact | null = null;
 
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<
     vscode.TreeItem | undefined
@@ -328,6 +349,15 @@ export class ConfigurationTreeProvider
    */
   updateMapArtifact(artifact: ActiveMapArtifact | null | undefined, _workspaceFolder?: vscode.WorkspaceFolder): void {
     this._mapArtifact = artifact ?? null;
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Updates the executable artifact state and refreshes the Build Artifacts section.
+   * The Executable row is always rendered when this is non-null, regardless of status.
+   */
+  updateExecutableArtifact(artifact: ActiveExecutableArtifact | null | undefined): void {
+    this._executableArtifact = artifact ?? null;
     this._onDidChangeTreeData.fire(undefined);
   }
 
@@ -644,6 +674,9 @@ export class ConfigurationTreeProvider
     }
     if (this._mapArtifact) {
       items.push(new MapArtifactItem(this._mapArtifact));
+    }
+    if (this._executableArtifact) {
+      items.push(new ExecutableArtifactItem(this._executableArtifact));
     }
     return items;
   }

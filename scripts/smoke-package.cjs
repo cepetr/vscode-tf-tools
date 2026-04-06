@@ -92,6 +92,28 @@ function ensureVsixHasExpectedFiles(vsixPath) {
   }
 }
 
+function ensureVsixBundleLoads(vsixPath) {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-vsix-smoke-"));
+
+  try {
+    execFileSync("unzip", ["-q", vsixPath, "-d", tempDir], {
+      cwd: path.dirname(vsixPath),
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    const extractedBundle = path.join(tempDir, "extension", "out", "extension.js");
+    if (!fs.existsSync(extractedBundle)) {
+      fail(`extracted VSIX bundle not found at ${extractedBundle}`);
+    }
+
+    ensureBundleLoads(extractedBundle);
+  } catch (error) {
+    fail(`VSIX bundle could not be loaded after extraction: ${error.stderr?.toString() || error.message}`);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
 const repoRoot = path.resolve(__dirname, "..");
 const pkg = JSON.parse(
   fs.readFileSync(path.join(repoRoot, "package.json"), "utf8")
@@ -109,5 +131,6 @@ if (!fs.existsSync(vsixPath)) {
 
 ensureBundleLoads(bundlePath);
 ensureVsixHasExpectedFiles(vsixPath);
+ensureVsixBundleLoads(vsixPath);
 
 console.log(`Smoke check passed for ${path.basename(vsixPath)}`);

@@ -25,6 +25,8 @@
  */
 
 import * as assert from "assert";
+import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import {
   parseCompileCommandsFile,
@@ -53,25 +55,25 @@ suite("parseCompileCommandsFile – error cases", () => {
   });
 
   test("returns undefined when file contains a JSON object instead of array", () => {
-    const tmp = require("os").tmpdir();
+    const tmp = os.tmpdir();
     const p = path.join(tmp, "not-array.cc.json");
-    require("fs").writeFileSync(p, JSON.stringify({ entries: [] }));
+    fs.writeFileSync(p, JSON.stringify({ entries: [] }));
     const result = parseCompileCommandsFile(p, "ctx");
     assert.strictEqual(result, undefined);
   });
 
   test("returns undefined when file contains invalid JSON", () => {
-    const tmp = require("os").tmpdir();
+    const tmp = os.tmpdir();
     const p = path.join(tmp, "invalid.cc.json");
-    require("fs").writeFileSync(p, "not-json!!!");
+    fs.writeFileSync(p, "not-json!!!");
     const result = parseCompileCommandsFile(p, "ctx");
     assert.strictEqual(result, undefined);
   });
 
   test("returns a payload even for an empty JSON array", () => {
-    const tmp = require("os").tmpdir();
+    const tmp = os.tmpdir();
     const p = path.join(tmp, "empty.cc.json");
-    require("fs").writeFileSync(p, "[]");
+    fs.writeFileSync(p, "[]");
     const result = parseCompileCommandsFile(p, "ctx");
     assert.ok(result !== undefined, "expected payload for empty array");
     assert.strictEqual(result.entriesByFile.size, 0);
@@ -470,12 +472,9 @@ suite("tokenizeCommandString", () => {
 // ---------------------------------------------------------------------------
 
 suite("parseCompileCommandsFile – mixed-language regression (T029)", () => {
-  const os = require("os") as typeof import("os");
-  const fsSync = require("fs") as typeof import("fs");
-
   function writeTmpDb(entries: object[]): string {
     const tmpPath = path.join(os.tmpdir(), `mixed-lang-${Date.now()}.cc.json`);
-    fsSync.writeFileSync(tmpPath, JSON.stringify(entries), "utf-8");
+    fs.writeFileSync(tmpPath, JSON.stringify(entries), "utf-8");
     return tmpPath;
   }
 

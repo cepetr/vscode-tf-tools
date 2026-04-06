@@ -14,6 +14,7 @@ import {
   ManifestStateInvalid,
   BuildOption,
   WhenExpression,
+  ManifestComponentDebugProfile,
 } from "../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
@@ -22,7 +23,7 @@ import {
 
 export function fixtureUri(relPath: string): vscode.Uri {
   return vscode.Uri.file(
-    path.resolve(__dirname, "../../../../test-fixtures", relPath)
+    path.resolve(__dirname, "../../../test-fixtures", relPath)
   );
 }
 
@@ -54,6 +55,7 @@ export function makeLoadedState(
     ],
     buildOptions: [],
     hasWorkflowBlockingIssues: false,
+    hasDebugBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
@@ -175,6 +177,7 @@ export function makeIntelliSenseLoadedState(
     ],
     buildOptions: [],
     hasWorkflowBlockingIssues: false,
+    hasDebugBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
@@ -249,7 +252,7 @@ export function loadCompileCommandsFixture(fixturePath: string): RawCompileEntry
  * fixture used by excluded-file visibility unit tests.
  */
 export function excludedFilesScopeWorkspaceRoot(): string {
-  return path.resolve(__dirname, "../../../../test-fixtures/workspaces/excluded-files-scope");
+  return path.resolve(__dirname, "../../../test-fixtures/workspaces/excluded-files-scope");
 }
 
 /**
@@ -318,3 +321,87 @@ export function makeExcludedFilesSnapshot(
     ...overrides,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Debug launch profile factories (feature 006)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns a minimal ManifestComponentDebugProfile fixture.
+ * Individual fields can be overridden for specific test scenarios.
+ */
+export function makeComponentDebugProfile(
+  overrides: { name: string; template: string } & Partial<ManifestComponentDebugProfile>
+): ManifestComponentDebugProfile {
+  const componentId = overrides.componentId ?? "core";
+  const declarationIndex = overrides.declarationIndex ?? 0;
+  return {
+    id: overrides.id ?? `${componentId}:debug[${declarationIndex}]`,
+    componentId,
+    name: overrides.name,
+    template: overrides.template,
+    when: overrides.when,
+    vars: overrides.vars,
+    declarationIndex,
+  };
+}
+
+/**
+ * Returns a target fixture that includes an executableExtension field.
+ */
+export function makeDebugTargetWithExtension(
+  id: string,
+  executableExtension: string,
+  artifactSuffix?: string
+): ManifestStateLoaded["targets"][0] {
+  return {
+    kind: "target",
+    id,
+    name: id,
+    artifactSuffix,
+    executableExtension,
+  } as ManifestStateLoaded["targets"][0];
+}
+
+/**
+ * Returns a loaded manifest state that includes component-scoped debug profiles.
+ * All profiles are attached to their respective components by componentId.
+ * If a profile's componentId does not match an existing component, it is ignored.
+ */
+export function makeDebugLoadedState(
+  debugProfiles: ManifestComponentDebugProfile[] = [],
+  overrides: Partial<ManifestStateLoaded> = {}
+): ManifestStateLoaded {
+  const base = makeIntelliSenseLoadedState(overrides);
+  // Attach debug profiles to matching components
+  const components = base.components.map((c) => {
+    const profiles = debugProfiles.filter((profile) => profile.componentId === c.id);
+    if (profiles.length === 0) {
+      return c;
+    }
+    return { ...c, debug: profiles };
+  });
+  return { ...base, components, hasDebugBlockingIssues: overrides.hasDebugBlockingIssues ?? false };
+}
+
+/**
+ * Returns the absolute path to the debug-launch-valid workspace fixture root.
+ */
+export function debugLaunchValidWorkspaceRoot(): string {
+  return path.resolve(__dirname, "../../../test-fixtures/workspaces/debug-launch-valid");
+}
+
+/**
+ * Returns the absolute path to the debug-launch-failures workspace fixture root.
+ */
+export function debugLaunchFailuresWorkspaceRoot(): string {
+  return path.resolve(__dirname, "../../../test-fixtures/workspaces/debug-launch-failures");
+}
+
+/**
+ * Returns the absolute path to the debug templates root inside the valid workspace fixture.
+ */
+export function debugLaunchValidTemplatesRoot(): string {
+  return path.join(debugLaunchValidWorkspaceRoot(), "debug-templates");
+}
+

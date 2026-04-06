@@ -27,7 +27,7 @@ This contract captures the user-visible VS Code surfaces relevant to the root-se
 
 ## View Title Actions
 
-- This feature contributes no `Build` or `Debug` actions to the `Configuration` view title bar.
+- This feature contributes no `Build` or `Start Debugging` actions to the `Configuration` view title bar.
 
 ## Status Bar
 
@@ -62,5 +62,5 @@ This contract captures the user-visible VS Code surfaces relevant to the root-se
 
 - No build task contributions
 - No artifact-row commands
-- No debug launch command
+- No `Start Debugging` command
 - No IntelliSense provider registration

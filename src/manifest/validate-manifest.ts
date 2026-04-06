@@ -5,6 +5,7 @@ import {
   ManifestModel,
   ManifestTarget,
   ManifestComponent,
+  ManifestComponentDebugProfile,
   BuildOption,
   BuildOptionState,
   ValidationIssue,
@@ -263,7 +264,8 @@ function validateTargets(
           ? null
           : undefined;
     const artifactSuffix = getScalarStringField(item, "artifactSuffix", "artifact-suffix");
-    targets.push({ kind: "target", id, name, shortName, flag, artifactSuffix });
+    const executableExtension = getScalarStringField(item, "executableExtension", "executable-extension");
+    targets.push({ kind: "target", id, name, shortName, flag, artifactSuffix, executableExtension });
   }
   return targets;
 }
@@ -272,7 +274,8 @@ function validateComponents(
   doc: YAMLMap,
   lineCounter: LineCounter,
   issues: ValidationIssue[],
-  baseWhenContext: Omit<WhenContext, "componentIds">
+  baseWhenContext: Omit<WhenContext, "componentIds">,
+  hasDebugBlockingIssuesRef: { value: boolean }
 ): ManifestComponent[] {
   const components: ManifestComponent[] = [];
   const seqNode = doc.get("components", true);
@@ -357,14 +360,189 @@ function validateComponents(
       artifactName: draft.artifactName,
       flashWhen,
       uploadWhen,
+      debug: validateComponentDebugEntries(draft.item, lineCounter, issues, draft.id, whenContext, hasDebugBlockingIssuesRef),
     });
   }
   return components;
 }
 
 // ---------------------------------------------------------------------------
-// Build options validator
+// Component-scoped debug profile validator
 // ---------------------------------------------------------------------------
+
+function validateComponentDebugEntries(
+  componentItem: YAMLMap,
+  lineCounter: LineCounter,
+  issues: ValidationIssue[],
+  componentId: string,
+  whenContext: WhenContext,
+  hasDebugBlockingIssuesRef: { value: boolean }
+): ManifestComponentDebugProfile[] | undefined {
+  const seqNode = componentItem.get("debug", true);
+  if (seqNode === undefined || seqNode === null) {
+    return undefined;
+  }
+
+  if (!(seqNode instanceof YAMLSeq)) {
+    const seqRange = seqNode as unknown as { range?: [number, number, number] };
+    issues.push(
+      issue(
+        "error",
+        "invalid-type",
+        `components entry "${componentId}": "debug" must be a YAML sequence`,
+        toVsRange(lineCounter, seqRange.range)
+      )
+    );
+    hasDebugBlockingIssuesRef.value = true;
+    return undefined;
+  }
+
+  const entries: ManifestComponentDebugProfile[] = [];
+
+  for (let idx = 0; idx < seqNode.items.length; idx++) {
+    const item = seqNode.items[idx];
+    if (!(item instanceof YAMLMap)) {
+      continue;
+    }
+    const contextLabel = `components entry "${componentId}" debug[${idx}]`;
+    let entryHasError = false;
+
+    // Required: name
+    const name = validateStringField(item, "name", lineCounter, issues, contextLabel);
+    if (!name) {
+      hasDebugBlockingIssuesRef.value = true;
+      entryHasError = true;
+    }
+
+    // Required: template
+    const template = validateStringField(item, "template", lineCounter, issues, contextLabel);
+    if (!template) {
+      hasDebugBlockingIssuesRef.value = true;
+      entryHasError = true;
+    }
+
+    if (entryHasError) {
+      continue;
+    }
+
+    // Optional: when expression
+    let whenExpr = undefined;
+    const whenNode = item.get("when", true);
+    if (whenNode !== undefined && whenNode !== null) {
+      if (!(whenNode instanceof Scalar) || typeof whenNode.value !== "string") {
+        const nodeRange = whenNode as unknown as { range?: [number, number, number] };
+        issues.push(
+          issue(
+            "error",
+            "invalid-when",
+            `${contextLabel}: "when" must be a string expression`,
+            toVsRange(lineCounter, nodeRange?.range)
+          )
+        );
+        hasDebugBlockingIssuesRef.value = true;
+        continue;
+      }
+      const parseResult = parseWhenExpression(whenNode.value);
+      if (!parseResult.ok) {
+        const nodeRange = whenNode as unknown as { range?: [number, number, number] };
+        issues.push(
+          issue(
+            "error",
+            "invalid-when",
+            `${contextLabel}: invalid "when" expression — ${parseResult.error}`,
+            toVsRange(lineCounter, nodeRange?.range)
+          )
+        );
+        hasDebugBlockingIssuesRef.value = true;
+        continue;
+      }
+      const unknownIds = findUnknownIds(parseResult.expr, whenContext);
+      if (unknownIds.length > 0) {
+        const nodeRange = whenNode as unknown as { range?: [number, number, number] };
+        issues.push(
+          issue(
+            "error",
+            "invalid-when",
+            `${contextLabel}: "when" expression references unknown ids: ${unknownIds.join(", ")}`,
+            toVsRange(lineCounter, nodeRange?.range)
+          )
+        );
+        hasDebugBlockingIssuesRef.value = true;
+        continue;
+      }
+      whenExpr = parseResult.expr;
+    }
+
+    // Optional: vars (map of string → string)
+    let vars: Record<string, string> | undefined;
+    const varsNode = item.get("vars", true);
+    if (varsNode !== undefined && varsNode !== null) {
+      if (!(varsNode instanceof YAMLMap)) {
+        const nodeRange = varsNode as unknown as { range?: [number, number, number] };
+        issues.push(
+          issue(
+            "error",
+            "invalid-type",
+            `${contextLabel}: "vars" must be a YAML mapping`,
+            toVsRange(lineCounter, nodeRange?.range)
+          )
+        );
+        hasDebugBlockingIssuesRef.value = true;
+        continue;
+      }
+      vars = {};
+      let varsHasError = false;
+      for (const pair of varsNode.items) {
+        const keyNode = pair.key as unknown;
+        const valNode = pair.value as unknown;
+        if (!(keyNode instanceof Scalar) || typeof keyNode.value !== "string" || !keyNode.value.trim()) {
+          const keyRange = keyNode as unknown as { range?: [number, number, number] };
+          issues.push(
+            issue(
+              "error",
+              "invalid-type",
+              `${contextLabel}: vars key must be a non-empty string`,
+              toVsRange(lineCounter, (keyRange as { range?: [number, number, number] })?.range)
+            )
+          );
+          hasDebugBlockingIssuesRef.value = true;
+          varsHasError = true;
+          break;
+        }
+        if (!(valNode instanceof Scalar) || typeof valNode.value !== "string") {
+          const valRange = valNode as unknown as { range?: [number, number, number] };
+          issues.push(
+            issue(
+              "error",
+              "invalid-type",
+              `${contextLabel}: vars value for key "${keyNode.value}" must be a string`,
+              toVsRange(lineCounter, valRange?.range)
+            )
+          );
+          hasDebugBlockingIssuesRef.value = true;
+          varsHasError = true;
+          break;
+        }
+        vars[keyNode.value] = valNode.value;
+      }
+      if (varsHasError) {
+        continue;
+      }
+    }
+
+    entries.push({
+      id: `${componentId}:debug[${idx}]`,
+      componentId,
+      name: name!,
+      template: template!,
+      when: whenExpr,
+      vars: vars ? Object.freeze(vars) : undefined,
+      declarationIndex: idx,
+    });
+  }
+
+  return entries.length > 0 ? entries : undefined;
+}
 
 /**
  * Deterministic persistence key for a build option.
@@ -711,6 +889,7 @@ export function parseManifest(source: string): {
   components: ManifestComponent[];
   buildOptions: BuildOption[];
   hasWorkflowBlockingIssues: boolean;
+  hasDebugBlockingIssues: boolean;
   issues: ValidationIssue[];
 } {
   const lineCounter = new LineCounter();
@@ -734,21 +913,37 @@ export function parseManifest(source: string): {
   }
 
   if (issues.length > 0) {
-    return { models: [], targets: [], components: [], buildOptions: [], hasWorkflowBlockingIssues: false, issues };
+    return { models: [], targets: [], components: [], buildOptions: [], hasWorkflowBlockingIssues: false, hasDebugBlockingIssues: false, issues };
   }
 
   const root = doc.contents;
   if (!(root instanceof YAMLMap)) {
     issues.push(issue("error", "invalid-type", "manifest root must be a YAML mapping"));
-    return { models: [], targets: [], components: [], buildOptions: [], hasWorkflowBlockingIssues: false, issues };
+    return { models: [], targets: [], components: [], buildOptions: [], hasWorkflowBlockingIssues: false, hasDebugBlockingIssues: false, issues };
+  }
+
+  // Reject legacy top-level "debug" section
+  if (root.has("debug")) {
+    const debugNode = root.get("debug", true);
+    const nodeRange = debugNode as unknown as { range?: [number, number, number] };
+    issues.push(
+      issue(
+        "error",
+        "invalid-type",
+        'Legacy top-level "debug" section is not supported. Use per-component "debug" entries instead.',
+        toVsRange(lineCounter, nodeRange?.range)
+      )
+    );
+    return { models: [], targets: [], components: [], buildOptions: [], hasWorkflowBlockingIssues: false, hasDebugBlockingIssues: true, issues };
   }
 
   const models = validateModels(root, lineCounter, issues);
   const targets = validateTargets(root, lineCounter, issues);
+  const hasDebugBlockingIssuesRef = { value: false };
   const components = validateComponents(root, lineCounter, issues, {
     modelIds: new Set(models.map((m) => m.id)),
     targetIds: new Set(targets.map((t) => t.id)),
-  });
+  }, hasDebugBlockingIssuesRef);
 
   // Build options validation requires known ids for `when` expression validation
   const whenContext: WhenContext = {
@@ -763,7 +958,7 @@ export function parseManifest(source: string): {
     whenContext
   );
 
-  return { models, targets, components, buildOptions, hasWorkflowBlockingIssues, issues };
+  return { models, targets, components, buildOptions, hasWorkflowBlockingIssues, hasDebugBlockingIssues: hasDebugBlockingIssuesRef.value, issues };
 }
 
 /**
@@ -775,7 +970,7 @@ export function validateManifest(
   source: string,
   uri: vscode.Uri
 ): ManifestState {
-  const { models, targets, components, buildOptions, hasWorkflowBlockingIssues, issues } = parseManifest(source);
+  const { models, targets, components, buildOptions, hasWorkflowBlockingIssues, hasDebugBlockingIssues, issues } = parseManifest(source);
 
   const structuralErrors = issues.filter((i) => i.severity === "error");
 
@@ -796,6 +991,7 @@ export function validateManifest(
     components,
     buildOptions,
     hasWorkflowBlockingIssues,
+    hasDebugBlockingIssues,
     validationIssues: issues, // may contain warnings
     loadedAt: new Date(),
   };

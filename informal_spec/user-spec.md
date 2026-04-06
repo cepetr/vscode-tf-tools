@@ -38,7 +38,7 @@ Where the extension needs a short internal identifier, abbreviation, or compact 
 - The `Build` task shall use a dynamic label constructed as `Build {model-name} | {target-display} | {component-name}`, for example `Build T3W1 | EMU | Prodtest`.
 - The `Clippy` task shall use a dynamic label constructed as `Clippy {model-name} | {target-display} | {component-name}`.
 - The `Check` task shall use a dynamic label constructed as `Check {model-name} | {target-display} | {component-name}`.
-- The command family shall also include `Flash`, `Upload`, and `Debug` actions for the active build context.
+- The command family shall also include `Flash`, `Upload`, and `Start Debugging` actions for the active build context.
 - `Flash` and `Upload` shall run through VS Code task execution rather than direct ad hoc process execution.
 - Build arguments are derived from the active configuration and the manifest. Target-specific flags and enabled build-option flags are appended automatically. Build-option flags come from the manifest's explicit `flag` fields.
 - The `Clippy` task shall invoke `xtask clippy` with the same active-configuration-derived arguments as the `Build` task.
@@ -46,10 +46,10 @@ Where the extension needs a short internal identifier, abbreviation, or compact 
 - The `Flash` command shall use a dynamic title in the form `Trezor: Flash to Device {model-name} | {target-display} | {component-name}` and shall invoke `xtask flash <component-id> -m <model-id>`.
 - The `Upload` command shall use a dynamic title in the form `Trezor: Upload to Device {model-name} | {target-display} | {component-name}` and shall invoke `xtask upload <component-id> -m <model-id>`.
 - Successful `Flash` and `Upload` completion shall not trigger an automatic extension refresh.
-- The `Debug` command shall use the title `Trezor: Debug` and shall launch the selected debug configuration for the active build context through the VS Code debug API.
+- The `Start Debugging` command shall use the title `Trezor: Start Debugging` and shall launch the selected debug configuration for the active build context through the VS Code debug API.
 - IntelliSense state is derived from compile-commands artifacts in `tfTools.artifactsPath` and is refreshed on activation, on configuration changes, after successful builds, on manual refresh, and when relevant extension state changes.
-- Build artifacts shall be resolved from the artifact base path `<tfTools.artifactsPath>/<artifactFolder>/`, where `<artifactFolder>` comes from the selected model's required `artifactFolder` manifest field and is interpreted relative to `tfTools.artifactsPath`, and an artifact basename constructed as `<artifactName><artifactSuffix>`, where `<artifactName>` comes from the selected component's required `artifactName` manifest field and `<artifactSuffix>` comes from the selected target's optional `artifactSuffix` manifest field and defaults to an empty string when omitted.
-- Debug configuration selection is driven by manifest-defined debug profiles together with debugger template files loaded from a configurable template path.
+- Build artifacts shall be resolved from the artifact base path `<tfTools.artifactsPath>/<artifactFolder>/`, where `<artifactFolder>` comes from the selected model's required `artifactFolder` manifest field and is interpreted relative to `tfTools.artifactsPath`; the compile-commands, binary, and map-file artifact basename shall be constructed as `<artifactName><artifactSuffix>`, where `<artifactName>` comes from the selected component's required `artifactName` manifest field and `<artifactSuffix>` comes from the selected target's optional `artifactSuffix` manifest field and defaults to an empty string when omitted; the executable artifact path shall be constructed as `<artifactName><artifactSuffix><executableExtension>`, where `<executableExtension>` comes from the selected target's optional `executableExtension` manifest field and defaults to an empty string when omitted.
+- Debug configuration selection is driven by component-scoped manifest-defined debug entries together with debugger template files loaded from a configurable template path. The extension evaluates only the selected component's `debug` entries, chooses the first entry whose `when` expression matches the active build context, and uses the derived executable artifact path for launch readiness.
 - The extension integrates with Microsoft C/C++ (`ms-vscode.cpptools`) through a custom configuration provider.
 - When the active compile-commands artifact exists, the provider eagerly parses the `.cc.json` file, indexes entries by normalized absolute source-file path, and serves cpptools per-file `SourceFileConfiguration` objects derived from the indexed entries rather than passing only the compile-database path.
 - C versus C++ language mode is inferred per compile entry from `-std=` flags first, then from the source-file extension, then from the compiler frontend name when the standard flag is absent or ambiguous.
@@ -84,7 +84,7 @@ The extension shall restore the last active configuration on restart. If saved v
 
 ### HR-06 In-Editor Command Execution
 
-The user shall be able to run command workflows directly from VS Code. The initial task set shall support clean, build, clippy, and check actions. `Build`, `Clippy`, `Check`, and `Clean` shall be exposed as VS Code build tasks, not only as commands. The `Build`, `Clippy`, and `Check` task labels shall include the active build context in the form `{Task} {model-name} | {target-display} | {component-name}` so the task picker shows what will be run. `Clean` shall use the label `Clean`. If a target defines a short name, that short name shall be used as `target-display`; otherwise the full target name shall be used. `Clippy` and `Check` shall use the same active-configuration-derived arguments as `Build`, with `xtask clippy` and `xtask check` used in place of `xtask build`. `Clean` shall invoke `xtask clean` without active-build-context-derived arguments when it is allowed to start. If the manifest is missing, invalid, or contains invalid build-option `when` logic, `Build`, `Clippy`, `Check`, and `Clean` shall all be blocked and shall show an error instead of starting a task. User-facing command titles shall use the `Trezor:` prefix. The Build Workflow command titles shall be `Trezor: Build`, `Trezor: Run Clippy`, `Trezor: Run Check`, and `Trezor: Run Clean`. The Build command shall use the VS Code `tools` codicon. In the Configuration view title area, `Build` shall remain the primary header action and shall also be available from the view overflow menu, while `Run Clippy`, `Run Check`, and `Run Clean` shall be available from the view overflow menu. `Flash to Device` and `Upload to Device` shall also be available from the view overflow menu when the corresponding action is applicable for the active build context; when the binary artifact is missing they shall remain visible there but disabled. `Refresh IntelliSense` shall appear after the Build Workflow and applicable Flash/Upload overflow items as the last overflow entry once that command is implemented. The command model shall also support `Flash` and `Upload` actions from the Build Artifacts section when the selected component's `flashWhen` or `uploadWhen` expression evaluates to `true`. `Flash` and `Upload` shall also be available from the Command Palette when applicable for the active build context. `Flash` and `Upload` shall be launched as VS Code tasks. `Flash` shall use the dynamic title `Trezor: Flash to Device {model-name} | {target-display} | {component-name}` and shall invoke `xtask flash <component-id> -m <model-id>`. `Upload` shall use the dynamic title `Trezor: Upload to Device {model-name} | {target-display} | {component-name}` and shall invoke `xtask upload <component-id> -m <model-id>`. Successful `Flash` and `Upload` completion shall not trigger an automatic extension refresh. The internal command that backs the `Map File` row action shall not be shown in the Command Palette. The command model shall also support a `Trezor: Debug` action that resolves the active build context to exactly one manifest-defined debug profile, loads the referenced debugger template, applies tf-tools substitution variables, and launches the resulting VS Code debug configuration. If no debug profile matches, if more than one matching profile remains after priority-based tie-breaking, or if the referenced template cannot be loaded, the extension shall show an error instead of starting the debugger.
+The user shall be able to run command workflows directly from VS Code. The initial task set shall support clean, build, clippy, and check actions. `Build`, `Clippy`, `Check`, and `Clean` shall be exposed as VS Code build tasks, not only as commands. The `Build`, `Clippy`, and `Check` task labels shall include the active build context in the form `{Task} {model-name} | {target-display} | {component-name}` so the task picker shows what will be run. `Clean` shall use the label `Clean`. If a target defines a short name, that short name shall be used as `target-display`; otherwise the full target name shall be used. `Clippy` and `Check` shall use the same active-configuration-derived arguments as `Build`, with `xtask clippy` and `xtask check` used in place of `xtask build`. `Clean` shall invoke `xtask clean` without active-build-context-derived arguments when it is allowed to start. If the manifest is missing, invalid, or contains invalid build-option `when` logic, `Build`, `Clippy`, `Check`, and `Clean` shall all be blocked and shall show an error instead of starting a task. User-facing command titles shall use the `Trezor:` prefix. The Build Workflow command titles shall be `Trezor: Build`, `Trezor: Run Clippy`, `Trezor: Run Check`, and `Trezor: Run Clean`. The Build command shall use the VS Code `tools` codicon. In the Configuration view title area, `Build` shall remain the primary header action and shall also be available from the view overflow menu, while `Run Clippy`, `Run Check`, and `Run Clean` shall be available from the view overflow menu. `Flash to Device` and `Upload to Device` shall also be available from the view overflow menu when the corresponding action is applicable for the active build context; when the binary artifact is missing they shall remain visible there but disabled. `Start Debugging` shall appear as a side-bar header action and shall also be available from the view overflow menu. `Refresh IntelliSense` shall appear after the Build Workflow, applicable Flash/Upload overflow items, and `Start Debugging` as the last overflow entry once that command is implemented. The command model shall also support `Flash` and `Upload` actions from the Build Artifacts section when the selected component's `flashWhen` or `uploadWhen` expression evaluates to `true`. `Flash` and `Upload` shall also be available from the Command Palette when applicable for the active build context. `Flash` and `Upload` shall be launched as VS Code tasks. `Flash` shall use the dynamic title `Trezor: Flash to Device {model-name} | {target-display} | {component-name}` and shall invoke `xtask flash <component-id> -m <model-id>`. `Upload` shall use the dynamic title `Trezor: Upload to Device {model-name} | {target-display} | {component-name}` and shall invoke `xtask upload <component-id> -m <model-id>`. Successful `Flash` and `Upload` completion shall not trigger an automatic extension refresh. The internal command that backs the `Map File` row action shall not be shown in the Command Palette. The command model shall also support a `Trezor: Start Debugging` action from the side-bar header, the view overflow menu, the `Executable` row in the `Build Artifacts` section, and the Command Palette. The `Executable` row action shall be labeled `Start Debugging`. The Command Palette shall show `Trezor: Start Debugging` only when the selected component yields a matching debug profile for the active build context and the derived executable artifact exists. `Start Debugging` shall evaluate the selected component's `debug` entries in declaration order, resolve the first matching profile, load the referenced debugger template, apply tf-tools substitution variables, and launch the resulting VS Code debug configuration. If no matching debug profile exists for the selected component, or if the referenced template cannot be loaded, the extension shall show an error instead of starting the debugger.
 
 ### HR-07 IntelliSense Aligned With Active Configuration
 
@@ -129,12 +129,15 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 ### UI-03 View Title Actions
 
-- The Configuration Experience slice shall not expose `Build`, `Debug`, `Clippy`, `Check`, `Clean`, or `Refresh IntelliSense` actions in the view title bar or its overflow menu.
+- The Configuration Experience slice shall not expose `Build`, `Start Debugging`, `Clippy`, `Check`, `Clean`, or `Refresh IntelliSense` actions in the view title bar or its overflow menu.
 - These actions are deferred to later feature slices and shall not be contributed until their behavior is implemented.
 - After Build Workflow is implemented, the Configuration view shall keep `Build` as the primary view-title action and shall include `Build`, `Run Clippy`, `Run Check`, and `Run Clean` in the view overflow menu.
 - After Flash/Upload Actions is implemented, the Configuration view overflow menu shall also include `Flash` and `Upload` when the corresponding action is applicable for the active build context.
 - When `Flash` or `Upload` is applicable but the binary artifact is missing, the corresponding overflow action shall remain visible but disabled.
-- After IntelliSense Integration is implemented, `Refresh IntelliSense` shall be placed in the view overflow menu after the Build Workflow and applicable Flash/Upload overflow actions, rather than added as another primary view-title action.
+- After Debug Launch is implemented, the Configuration view shall also include `Start Debugging` as a visible side-bar header action and in the view overflow menu.
+- When the executable artifact is missing, the side-bar header `Start Debugging` action and the overflow-menu `Start Debugging` action shall remain visible but disabled.
+- Missing templates or malformed template content shall not by themselves disable the visible `Start Debugging` actions before invocation when a matching debug profile is resolved and the executable artifact exists.
+- After IntelliSense Integration is implemented, `Refresh IntelliSense` shall be placed in the view overflow menu after the Build Workflow, applicable Flash/Upload overflow actions, and `Start Debugging`, rather than added as another primary view-title action.
 - The UI model shall still allow future view-title and overflow actions to be added without redesigning the view structure.
 
 ### UI-04 Build Selection Section
@@ -174,14 +177,17 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 ### UI-06 Build Artifacts Section
 
 - The `Build Artifacts` section shall show artifact status rows.
-- It shall always include a row labeled `Compile Commands`.
+- It shall always include rows labeled `Compile Commands` and `Executable`.
 - It shall include rows labeled `Binary` and `Map File`, in that order after `Compile Commands`, only when the selected component's `flashWhen` or `uploadWhen` expression evaluates to `true` for the active build context.
+- The `Executable` row shall appear after `Map File` when those rows are present, and immediately after `Compile Commands` when they are not.
 - If both `flashWhen` and `uploadWhen` are omitted or evaluate to `false` for the active build context, the `Binary` and `Map File` rows shall be hidden.
 - The artifact base path shall be constructed as `<artifacts-root>/<artifactFolder>/`, where `<artifactFolder>` comes from the selected model's required `artifactFolder` manifest field and is interpreted relative to `tfTools.artifactsPath`.
-- The artifact basename shall be constructed as `<artifactName><artifactSuffix>`, where `<artifactName>` comes from the selected component's required `artifactName` manifest field and `<artifactSuffix>` comes from the selected target's optional `artifactSuffix` manifest field and defaults to an empty string when omitted.
+- The compile-commands, binary, and map-file artifact basename shall be constructed as `<artifactName><artifactSuffix>`, where `<artifactName>` comes from the selected component's required `artifactName` manifest field and `<artifactSuffix>` comes from the selected target's optional `artifactSuffix` manifest field and defaults to an empty string when omitted.
+- The executable artifact path shall be constructed as `<artifactName><artifactSuffix><executableExtension>` under `<artifacts-root>/<artifactFolder>/`, where `<artifactName>` comes from the selected component, `<artifactSuffix>` comes from the selected target and defaults to an empty string, and `<executableExtension>` comes from the selected target and defaults to an empty string.
 - `Compile Commands` shall resolve its expected path from `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.cc.json`.
 - `Binary` shall resolve its expected path from `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.bin`.
 - `Map File` shall resolve its expected path from `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix>.map`.
+- `Executable` shall resolve its expected path from `<artifacts-root>/<artifactFolder>/<artifactName><artifactSuffix><executableExtension>`.
 - Each row shall display the text `valid` or `missing`.
 - Each row tooltip shall show the expected artifact path.
 - When an artifact is missing, its tooltip shall also explain why the artifact is missing.
@@ -190,13 +196,17 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - If VS Code requires the row action to be command-backed, that command may remain internal and shall not be exposed as a standalone Command Palette entry.
 - The `Binary` row shall expose an icon-only action button backed by the `Trezor: Flash to Device {model-name} | {target-display} | {component-name}` command when the selected component's `flashWhen` expression evaluates to `true`.
 - The `Binary` row shall expose an icon-only action button backed by the `Trezor: Upload to Device {model-name} | {target-display} | {component-name}` command when the selected component's `uploadWhen` expression evaluates to `true`.
+- The `Executable` row shall expose an icon-only `Start Debugging` action button backed by the `Trezor: Start Debugging` command.
 - A component may expose both `Flash` and `Upload` action buttons at the same time.
 - The `Binary` row and its `Flash` and `Upload` action buttons belong to the Flash/Upload Actions slice.
 - The `Map File` row action belongs to the Flash/Upload Actions slice.
+- The `Executable` row and its `Start Debugging` action button belong to the Debug Launch slice.
 - Artifact-row action buttons shall remain visible whenever their action is applicable.
 - If the binary artifact is missing, the `Flash` and `Upload` action buttons shall be disabled.
 - If the map artifact is missing, the `Map File` action button shall be disabled.
-- If no unique valid debug profile can be resolved for the active build context, the `Debug` action shall be disabled.
+- If the executable artifact is missing, the `Start Debugging` action button shall be disabled.
+- If no matching debug profile can be resolved for the active build context, the `Start Debugging` action shall be disabled.
+- If a matching debug profile is resolved and the executable artifact exists, missing templates or malformed template content shall not by themselves disable the visible `Start Debugging` actions before invocation.
 
 ### UI-07 Tree View Icons
 
@@ -211,6 +221,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - The `Map File` row action shall use the VS Code `go-to-file` theme icon.
 - The `Trezor: Flash to Device {model-name} | {target-display} | {component-name}` action shall use the VS Code `zap` theme icon.
 - The `Trezor: Upload to Device {model-name} | {target-display} | {component-name}` action shall use the VS Code `arrow-up` theme icon.
+- The `Start Debugging` action shall use the VS Code `play` theme icon.
 - Active choice rows may use the VS Code `check` theme icon.
 - Inactive choice rows shall use an empty spacer icon so choice labels remain aligned without presenting an additional semantic icon.
 - Checkbox option rows shall rely on checkbox state and shall not require additional dedicated icons.
@@ -225,10 +236,11 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 - If any task cannot start because the workspace is unsupported, the extension shall show an error instead of starting a task.
 - If `Flash` or `Upload` cannot start because the manifest is unavailable or invalid, because the workspace is unsupported, because the action is not applicable for the selected component, or because the binary artifact is missing, the extension shall show an error instead of starting the task.
 - If `Flash` or `Upload` fails after starting, the extension shall show an error and shall not trigger an automatic refresh.
-- If `Debug` cannot start because no unique matching debug profile can be resolved, because the selected debug template is invalid, or because required debug variables cannot be resolved, the extension shall show an error instead of starting the debugger.
+- If `Start Debugging` cannot start because no matching debug profile can be resolved, because the selected debug template is invalid, because required debug variables cannot be resolved, or because the executable artifact is missing, the extension shall show an error instead of starting the debugger.
+- If `Trezor: Start Debugging` appears in the Command Palette, it shall do so only when a matching debug profile is resolved for the active build context and the executable artifact exists.
 - If the selected debug template file is malformed JSON, the extension shall show an error notification when debug launch is attempted.
 - If the selected debug template references an unknown or invalid tf-tools substitution variable, the extension shall show an error notification when debug launch is attempted.
-- If the resolved `${tfTools.executablePath}` does not exist, that fact alone shall not disable `Trezor: Debug` and shall not block an attempted debug launch.
+- If the resolved `${tfTools.executablePath}` does not exist, the `Executable` row shall report the artifact as missing and the corresponding Start Debugging actions shall remain visible but disabled.
 - Transient notifications shall complement persistent diagnostics and logs rather than replace them.
 
 ### UI-09 Diagnostics And Logs
@@ -266,7 +278,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
   - `tfTools.cargoWorkspacePath`: `${workspaceFolder}/core/embed`
   - `tfTools.manifestPath`: `${workspaceFolder}/tf-tools-manifest.yaml`
   - `tfTools.artifactsPath`: `${workspaceFolder}/core/build-xtask/artifacts`
-  - `tfTools.debug.templatesPath`: `${workspaceFolder}/.vscode/tf-tools/debug`
+  - `tfTools.debug.templatesPath`: `${workspaceFolder}/core/embed/.tf-tools`
   - `tfTools.showConfigurationInStatusBar`: `true`
   - `tfTools.excludedFiles.grayInTree`: `true`
   - `tfTools.excludedFiles.showEditorOverlay`: `true`
@@ -298,7 +310,7 @@ The UI shall use a dedicated activity-bar container and a tree view as the main 
 
 `tf-tools-manifest.yaml` defines the selectable build metadata for the extension. The file shall be loaded from the path referenced by `tfTools.manifestPath`.
 
-The manifest also defines debug-profile selection for the `Trezor: Debug` command. Debugger adapter details remain in external template files loaded from `tfTools.debug.templatesPath`.
+The manifest also defines debug-profile selection for the `Trezor: Start Debugging` command. Debugger adapter details remain in external template files loaded from `tfTools.debug.templatesPath`.
 
 ### Top-Level Structure
 
@@ -326,6 +338,7 @@ Each `targets` entry shall be a mapping with:
 - `shortName`: optional non-empty string; compact label used in the status bar and build-task label when provided
 - `flag`: string or `null`; when set to a string, it is appended to the build command for that target
 - `artifactSuffix`: optional string; when set, it is appended to the selected component's required `artifactName` to derive the artifact basename for Build Artifacts and IntelliSense resolution
+- `executableExtension`: optional string; when set, it is appended after `<artifactName><artifactSuffix>` to derive the executable artifact filename for debugging
 
 ### components
 
@@ -336,22 +349,20 @@ Each `components` entry shall be a mapping with:
 - `artifactName`: non-empty string; artifact basename stem used for Build Artifacts and IntelliSense resolution before applying the selected target's optional `artifactSuffix`
 - `flashWhen`: optional string expression that determines whether the `Flash` action is available for the active build context
 - `uploadWhen`: optional string expression that determines whether the `Upload` action is available for the active build context
+- `debug`: optional array of debug entries scoped to that component
 
-### debug
+### component debug
 
-Each `debug` entry shall be a mapping with:
+Each `components[].debug` entry shall be a mapping with:
 
+- `name`: non-empty string; the debug profile name exposed to templates as `${tfTools.debugProfileName}`
 - `template`: non-empty string; the relative path to a template file under `tfTools.debug.templatesPath`
 - `when`: string expression that determines whether the debug profile applies to the active build context
-- `executable`: non-empty string; the primary debug executable filename or relative path under the active model artifact folder selected through that model's `artifactFolder`
-- `priority`: optional integer; higher values take precedence when multiple profiles match the active build context
 - `vars`: optional mapping of additional debug variable names to string values
 
-`debug` entries are ordered. When multiple matching debug profiles have the same priority, earlier entries take precedence only for deterministic validation and diagnostics; the extension shall still treat the configuration as ambiguous and shall not start debugging automatically.
+`components[].debug` entries are ordered. The extension shall evaluate only the selected component's `debug` list and shall use the first entry whose `when` expression evaluates to `true` for the active build context.
 
 The `when` expression for `debug` entries shall use the same condition-expression language and validation rules as option `when`.
-
-The `executable` field may reference tf-tools variables that are already known before template expansion.
 
 Values in `vars` may reference tf-tools variables and other keys from the same `vars` mapping only when the references can be resolved without cycles.
 
@@ -380,7 +391,7 @@ Each `options` entry shall be a mapping with:
 
 Shared condition expression language:
 
-- `when`, `flashWhen`, `uploadWhen`, and `debug.when` shall use the same function-style condition expression language.
+- `when`, `flashWhen`, `uploadWhen`, and `components[].debug.when` shall use the same function-style condition expression language.
 - If a condition expression evaluates to `false` for the active build context, the corresponding option or action shall be unavailable.
 
 `when` expression semantics:
@@ -426,31 +437,43 @@ options:
     type: checkbox
     when: not(any(component(bootloader), component(boardloader)))
 
-debug:
-  - template: stm32f4-openocd.json
-    when: all(model(T2T1), target(hardware), component(firmware))
-    executable: kernel.elf
-    vars:
-      mainSymbol: firmware.elf
+targets:
+  - id: hardware
+    name: Hardware
+    flag: null
+    executableExtension: .elf
 
-  - template: stm32u5-openocd.json
-    when: all(model(T3T1), target(hardware), component(firmware))
-    executable: firmware.elf
-    vars:
-      mainSymbol: kernel.elf
+components:
+  - id: firmware
+    name: Firmware
+    artifactName: firmware
+    debug:
+      - name: F4 Firmware
+        template: stm32f4-openocd.json
+        when: all(model(T2T1), target(hardware), component(firmware))
+        vars:
+          mainSymbol: firmware.elf
 
-  - template: emulator.json
-    when: all(target(emulator), component(firmware))
-    executable: firmware-emu
+      - name: U5 Firmware
+        template: stm32u5-openocd.json
+        when: all(model(T3T1), target(hardware), component(firmware))
+        vars:
+          mainSymbol: kernel.elf
+
+      - name: Emulator Firmware
+        template: emulator.json
+        when: all(target(emulator), component(firmware))
 ```
 
 Debug profile semantics:
 
-- A debug profile is applicable only when its `when` expression evaluates to `true` for the active build context.
+- A debug profile is applicable only when it belongs to the selected component and its `when` expression evaluates to `true` for the active build context.
+- The first matching debug profile in the selected component's `debug` array shall be used for launch.
 - The selected debug profile shall expose the following built-in substitution variables to the loaded debugger template:
   - `${tfTools.artifactPath}`
   - `${tfTools.component.id}`
   - `${tfTools.component.name}`
+  - `${tfTools.debugProfileName}`
   - `${tfTools.model.id}`
   - `${tfTools.model.name}`
   - `${tfTools.target.id}`
@@ -458,26 +481,26 @@ Debug profile semantics:
   - `${tfTools.executable}`
   - `${tfTools.executablePath}`
 - `${tfTools.artifactPath}` shall resolve to the active model artifact folder, using the form `<tfTools.artifactsPath>/<artifactFolder>`, where `<artifactFolder>` comes from the selected model's required `artifactFolder` field.
-- `${tfTools.executable}` shall resolve to the selected debug profile's `executable` value after tf-tools variable substitution.
-- `${tfTools.executablePath}` shall resolve to the absolute path obtained by combining `${tfTools.artifactPath}` with `${tfTools.executable}` when the executable value is relative, or to the substituted absolute path when the executable value is already absolute.
+- `${tfTools.debugProfileName}` shall resolve to the selected debug profile's required `name` value.
+- `${tfTools.executable}` shall resolve to the derived executable filename `<artifactName><artifactSuffix><executableExtension>`, where `<artifactName>` comes from the selected component, `<artifactSuffix>` comes from the selected target and defaults to an empty string, and `<executableExtension>` comes from the selected target and defaults to an empty string.
+- `${tfTools.executablePath}` shall resolve to the absolute path `<tfTools.artifactsPath>/<artifactFolder>/<artifactName><artifactSuffix><executableExtension>`.
 - Each entry in `debug.vars` shall be exposed to the selected debugger template as `${tfTools.debug.var:<name>}`.
 - A debugger template shall be loaded from the path `<tfTools.debug.templatesPath>/<template>`.
 - `template` values may include subdirectories under `tfTools.debug.templatesPath`.
-- The extension shall start debugging only when exactly one debug profile matches the active build context after applying priority rules.
-- If no debug profile matches, the `Trezor: Debug` command shall be unavailable for the active build context.
-- If multiple profiles match and the highest `priority` value is shared by more than one profile, the manifest shall be treated as ambiguous for that build context and the debugger shall not start.
+- The extension shall start debugging only when the selected component provides a first matching debug profile for the active build context.
+- If no debug profile matches, the `Trezor: Start Debugging` command shall be unavailable for the active build context.
 - Debugger templates are extension-owned launch configuration templates. They may use tf-tools substitution variables in string-valued fields.
 
 Debugger template processing:
 
 - Debugger templates shall be JSONC files loaded from the directory referenced by `tfTools.debug.templatesPath`.
 - The extension shall resolve the selected debug profile's `template` value relative to `tfTools.debug.templatesPath` and shall reject any resolved path that escapes that directory.
-- The extension shall read and parse the selected template file on each `Trezor: Debug` invocation.
+- The extension shall read and parse the selected template file on each `Trezor: Start Debugging` invocation.
 - The extension shall parse the selected template file as JSONC and shall require the top-level value to be a JSON object representing a single VS Code debug configuration.
 - The extension shall apply tf-tools substitution only to string values in the loaded JSON object.
 - The extension shall inspect string values throughout the loaded JSON object, including strings inside nested objects and arrays.
 - Non-string JSON values shall remain unchanged.
-- The extension shall support substitution of `${tfTools.artifactPath}`, `${tfTools.component.id}`, `${tfTools.component.name}`, `${tfTools.model.id}`, `${tfTools.model.name}`, `${tfTools.target.id}`, `${tfTools.target.name}`, `${tfTools.executable}`, `${tfTools.executablePath}`, and `${tfTools.debug.var:<name>}` inside template string values.
+- The extension shall support substitution of `${tfTools.artifactPath}`, `${tfTools.component.id}`, `${tfTools.component.name}`, `${tfTools.debugProfileName}`, `${tfTools.model.id}`, `${tfTools.model.name}`, `${tfTools.target.id}`, `${tfTools.target.name}`, `${tfTools.executable}`, `${tfTools.executablePath}`, and `${tfTools.debug.var:<name>}` inside template string values.
 - Within a string value, the extension shall replace every occurrence of a supported tf-tools substitution token.
 - The extension shall resolve tf-tools substitution variables only. Other variable syntax that remains after tf-tools substitution shall be left unchanged for VS Code or the downstream debug extension to process.
 - Tf-tools substitution is single-pass. Replacement text produced by tf-tools substitution shall not be scanned again for additional tf-tools substitutions.
@@ -488,15 +511,15 @@ Debugger template processing:
 - The extension shall not independently validate debug-adapter-specific configuration fields such as `type`, `request`, or other adapter-owned properties before launch.
 - If the selected template file is malformed JSON, the extension shall log the template path and parse failure details to the `Trezor Firmware Tools` output channel.
 - If a selected template references an unknown or otherwise invalid tf-tools substitution variable, the extension shall log the template path, the unresolved variable reference, and enough context to identify the failing template field.
-- If the selected template file is malformed JSON, the extension shall also show an error notification when the user invokes `Trezor: Debug`.
-- If a selected template references an unknown or otherwise invalid tf-tools substitution variable, the extension shall also show an error notification when the user invokes `Trezor: Debug`.
+- If the selected template file is malformed JSON, the extension shall also show an error notification when the user invokes `Trezor: Start Debugging`.
+- If a selected template references an unknown or otherwise invalid tf-tools substitution variable, the extension shall also show an error notification when the user invokes `Trezor: Start Debugging`.
 
 Example debugger template:
 
 ```jsonc
 {
   // Example template for a hardware attach session.
-  "name": "Debug ${tfTools.model.id} ${tfTools.executable}",
+  "name": "${tfTools.debugProfileName}",
   "type": "cortex-debug",
   "request": "attach",
   "cwd": "${workspaceFolder}",
@@ -515,7 +538,7 @@ Example debugger template:
 
 In this example:
 
-- `${tfTools.executable}` contributes the executable filename to the user-visible debug configuration name.
+- `${tfTools.debugProfileName}` provides the manifest-defined debug profile name.
 - `${tfTools.executablePath}` provides the full resolved path to the primary debug executable.
 - `${tfTools.artifactPath}` provides the active model artifact folder so additional symbol files can be referenced relative to it.
 
@@ -543,11 +566,10 @@ Multistate option semantics:
 - Duplicate ids within `models`, `targets`, and `components` shall be invalid.
 - Duplicate `flag` values within `options` shall be invalid.
 - Duplicate multistate values within one option shall be invalid.
-- Invalid `when`, `flashWhen`, `uploadWhen`, and `debug.when` expressions and references to unknown model, target, or component ids shall be invalid.
+- Invalid `when`, `flashWhen`, `uploadWhen`, and `components[].debug.when` expressions and references to unknown model, target, or component ids shall be invalid.
 - Missing required fields in `debug` entries shall be invalid.
 - A `debug.template` value shall be treated as invalid when it escapes the configured template directory through path traversal.
 - Cycles in debug-variable expansion shall be invalid.
-- If more than one `debug` entry can match the same active build context at the highest resolved `priority`, the manifest shall be invalid for that build context.
 - `debug.template` values are relative paths and may point to files in subdirectories under `tfTools.debug.templatesPath`.
 - Required string fields shall not be empty.
 
@@ -563,9 +585,11 @@ targets:
   - id: hardware
     name: Hardware
     flag: null
+    executableExtension: .elf
   - id: emulator
     name: Emulator
     flag: --emulator
+    artifactSuffix: -emu
 
 components:
   - id: firmware
@@ -573,17 +597,15 @@ components:
     artifactName: firmware
     flashWhen: not(target(emulator))
     uploadWhen: not(target(emulator))
-
-debug:
-  - template: default-hardware.json
-    when: all(target(hardware), component(firmware))
-    executable: firmware.elf
-    vars:
-      mainSymbol: kernel.elf
-
-  - template: default-emulator.json
-    when: all(target(emulator), component(firmware))
-    executable: firmware-emu
+    debug:
+      - name: Default Hardware
+        template: default-hardware.json
+        when: all(target(hardware), component(firmware))
+        vars:
+          mainSymbol: kernel.elf
+      - name: Default Emulator
+        template: default-emulator.json
+        when: all(target(emulator), component(firmware))
 
 options:
   - flag: --production

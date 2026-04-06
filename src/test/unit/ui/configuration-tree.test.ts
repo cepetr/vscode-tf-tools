@@ -13,9 +13,10 @@ import {
   CompileCommandsArtifactItem,
   BinaryArtifactItem,
   MapArtifactItem,
+  ExecutableArtifactItem,
 } from "../../../ui/configuration-tree";
 import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisense-types";
-import { ActiveBinaryArtifact, ActiveMapArtifact } from "../../../intellisense/artifact-resolution";
+import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../../../intellisense/artifact-resolution";
 
 // ---------------------------------------------------------------------------
 // Regression target: all three root sections must default to Expanded (UI-02)
@@ -653,5 +654,213 @@ suite("ConfigurationTreeProvider – Binary/Map artifact refresh", () => {
     const children = getBuildArtifactsChildren();
     assert.strictEqual(children.length, 1, "only compile-commands row should remain");
     assert.ok(children[0] instanceof CompileCommandsArtifactItem);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T015: ExecutableArtifactItem rendering (Debug Launch slice – US2)
+// ---------------------------------------------------------------------------
+
+function makeValidExecutableArtifact(overrides: Partial<ActiveExecutableArtifact> = {}): ActiveExecutableArtifact {
+  return {
+    contextKey: "T2T1::hw::core",
+    profileResolutionState: "selected",
+    expectedPath: "/build/model-t/firmware.elf",
+    exists: true,
+    status: "valid",
+    tooltip: "/build/model-t/firmware.elf",
+    ...overrides,
+  };
+}
+
+function makeMissingExecutableArtifact(overrides: Partial<ActiveExecutableArtifact> = {}): ActiveExecutableArtifact {
+  return {
+    contextKey: "T2T1::hw::core",
+    profileResolutionState: "selected",
+    expectedPath: "/build/model-t/firmware.elf",
+    exists: false,
+    status: "missing",
+    missingReason: "Executable artifact not found at the expected path: /build/model-t/firmware.elf",
+    tooltip: "Executable not found: /build/model-t/firmware.elf",
+    ...overrides,
+  };
+}
+
+suite("ExecutableArtifactItem – label and identity", () => {
+  test("label is 'Executable'", () => {
+    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    assert.strictEqual(item.label, "Executable");
+  });
+
+  test("id is 'artifact:executable'", () => {
+    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    assert.strictEqual(item.id, "artifact:executable");
+  });
+
+  test("contextValue is 'artifact-executable'", () => {
+    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    assert.strictEqual(item.contextValue, "artifact-executable");
+  });
+
+  test("collapsibleState is None", () => {
+    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.None);
+  });
+});
+
+suite("ExecutableArtifactItem – valid status rendering", () => {
+  test("icon is 'pass' when status is valid", () => {
+    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "pass");
+  });
+
+  test("description is 'valid'", () => {
+    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    assert.strictEqual(item.description, "valid");
+  });
+
+  test("tooltip contains the executable path", () => {
+    const item = new ExecutableArtifactItem(makeValidExecutableArtifact());
+    assert.ok(
+      String(item.tooltip).includes("/build/model-t/firmware.elf"),
+      `expected tooltip to include the executable path, got: ${item.tooltip}`
+    );
+  });
+});
+
+suite("ExecutableArtifactItem – missing status rendering", () => {
+  test("icon is 'error' when status is missing", () => {
+    const item = new ExecutableArtifactItem(makeMissingExecutableArtifact());
+    assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, "error");
+  });
+
+  test("description is 'missing'", () => {
+    const item = new ExecutableArtifactItem(makeMissingExecutableArtifact());
+    assert.strictEqual(item.description, "missing");
+  });
+
+  test("tooltip reflects the missing reason", () => {
+    const item = new ExecutableArtifactItem(makeMissingExecutableArtifact());
+    assert.ok(
+      String(item.tooltip).length > 0,
+      "expected a non-empty tooltip for missing executable"
+    );
+  });
+
+  test("missing-reason entries: no-match tooltip is non-empty", () => {
+    const item = new ExecutableArtifactItem(makeMissingExecutableArtifact({
+      profileResolutionState: "no-match",
+      tooltip: "No debug profile matches the active build context.",
+      expectedPath: "",
+    }));
+    assert.ok(String(item.tooltip).length > 0);
+  });
+
+  test("missing-reason entries: manifest-invalid tooltip is non-empty", () => {
+    const item = new ExecutableArtifactItem(makeMissingExecutableArtifact({
+      profileResolutionState: "manifest-invalid",
+      tooltip: "Debug configuration has validation errors.",
+      expectedPath: "",
+    }));
+    assert.ok(String(item.tooltip).length > 0);
+  });
+});
+
+suite("ConfigurationTreeProvider – Executable row (T015, T017)", () => {
+  let provider: ConfigurationTreeProvider;
+
+  setup(() => {
+    provider = new ConfigurationTreeProvider();
+  });
+
+  function getBuildArtifactsChildrenExec(): vscode.TreeItem[] {
+    const section = new SectionItem("build-artifacts", "Build Artifacts");
+    return provider.getChildren(section);
+  }
+
+  test("Executable row appears when updateExecutableArtifact is called with valid artifact", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+    const children = getBuildArtifactsChildrenExec();
+    assert.ok(
+      children.some((c) => c instanceof ExecutableArtifactItem),
+      "expected ExecutableArtifactItem in Build Artifacts"
+    );
+  });
+
+  test("Executable row appears even when status is missing", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateExecutableArtifact(makeMissingExecutableArtifact());
+    const children = getBuildArtifactsChildrenExec();
+    assert.ok(
+      children.some((c) => c instanceof ExecutableArtifactItem),
+      "expected ExecutableArtifactItem even when status is missing"
+    );
+  });
+
+  test("Executable row does not appear when updateExecutableArtifact is not called", () => {
+    provider.updateArtifact(makeValidArtifact());
+    const children = getBuildArtifactsChildrenExec();
+    assert.ok(
+      !children.some((c) => c instanceof ExecutableArtifactItem),
+      "unexpected ExecutableArtifactItem when artifact not set"
+    );
+  });
+
+  test("Executable row does not appear after updateExecutableArtifact(null)", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+    provider.updateExecutableArtifact(null);
+    const children = getBuildArtifactsChildrenExec();
+    assert.ok(
+      !children.some((c) => c instanceof ExecutableArtifactItem),
+      "expected no ExecutableArtifactItem after clearing"
+    );
+  });
+
+  test("Executable row appears after Map File row when Binary and Map are present", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateBinaryArtifact(makeValidBinaryArtifact());
+    provider.updateMapArtifact(makeValidMapArtifact());
+    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+    const children = getBuildArtifactsChildrenExec();
+    const binaryIdx = children.findIndex((c) => c instanceof BinaryArtifactItem);
+    const mapIdx = children.findIndex((c) => c instanceof MapArtifactItem);
+    const execIdx = children.findIndex((c) => c instanceof ExecutableArtifactItem);
+    assert.ok(binaryIdx >= 0, "expected BinaryArtifactItem");
+    assert.ok(mapIdx >= 0, "expected MapArtifactItem");
+    assert.ok(execIdx > mapIdx, `expected Executable after Map (map@${mapIdx}, exec@${execIdx})`);
+  });
+
+  test("Executable row appears immediately after Compile Commands when no Binary/Map", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+    const children = getBuildArtifactsChildrenExec();
+    const ccIdx = children.findIndex((c) => c instanceof CompileCommandsArtifactItem);
+    const execIdx = children.findIndex((c) => c instanceof ExecutableArtifactItem);
+    assert.strictEqual(ccIdx, 0, "CompileCommands should be first");
+    assert.strictEqual(execIdx, 1, "Executable should be immediately after CompileCommands");
+  });
+
+  test("clearing Executable artifact removes the row", () => {
+    provider.updateArtifact(makeValidArtifact());
+    provider.updateExecutableArtifact(makeValidExecutableArtifact());
+    provider.updateExecutableArtifact(null);
+    const children = getBuildArtifactsChildrenExec();
+    assert.strictEqual(children.length, 1, "only compile-commands row should remain");
+    assert.ok(children[0] instanceof CompileCommandsArtifactItem);
+  });
+
+  test("Executable row tooltip reflects the tooltip from the artifact", () => {
+    provider.updateArtifact(makeValidArtifact());
+    const artifact = makeValidExecutableArtifact({ tooltip: "/custom/path/to/firmware.elf" });
+    provider.updateExecutableArtifact(artifact);
+    const children = getBuildArtifactsChildrenExec();
+    const execItem = children.find((c) => c instanceof ExecutableArtifactItem) as ExecutableArtifactItem | undefined;
+    assert.ok(execItem, "expected ExecutableArtifactItem");
+    assert.ok(
+      String(execItem.tooltip).includes("/custom/path/to/firmware.elf"),
+      `expected tooltip to include the path, got: ${execItem.tooltip}`
+    );
   });
 });

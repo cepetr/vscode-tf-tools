@@ -11,6 +11,11 @@ import {
   ManifestComponent,
 } from "../manifest/manifest-types";
 import { ActiveConfig } from "../configuration/active-config";
+import {
+  DebugProfileResolutionState,
+  resolveDebugProfile,
+  deriveExecutableFileName,
+} from "../commands/debug-launch";
 
 // ---------------------------------------------------------------------------
 // Context key
@@ -317,4 +322,135 @@ function buildMapMissingReason(inputs: ArtifactResolutionInputs): string {
     return "The active component does not define artifactName in the manifest; cannot resolve the map artifact.";
   }
   return "Cannot resolve the map artifact path.";
+}
+
+// ---------------------------------------------------------------------------
+// Executable artifact state resolution (feature 006)
+// ---------------------------------------------------------------------------
+
+export type ExecutableArtifactStatus = "valid" | "missing";
+
+/** User-visible executable artifact state for the active build context. */
+export interface ActiveExecutableArtifact {
+  readonly contextKey: string;
+  readonly profileResolutionState: DebugProfileResolutionState | "manifest-invalid";
+  readonly expectedPath: string;
+  readonly exists: boolean;
+  readonly status: ExecutableArtifactStatus;
+  readonly missingReason?: string;
+  readonly tooltip: string;
+}
+
+/**
+ * Resolves the active executable artifact state for the given manifest, config,
+ * and artifacts root.
+ *
+ * - Returns `status: "valid"` only when the first matching component debug profile
+ *   is found, its derived executable file exists on disk, and the manifest has no
+ *   debug-blocking validation errors.
+ * - Returns `status: "missing"` for all other cases with an explanatory reason.
+ */
+export function resolveActiveExecutableArtifact(
+  manifest: ManifestStateLoaded,
+  config: ActiveConfig,
+  artifactsRoot: string
+): ActiveExecutableArtifact {
+  const contextKey = makeContextKey(config);
+
+  if (manifest.hasDebugBlockingIssues) {
+    return {
+      contextKey,
+      profileResolutionState: "manifest-invalid",
+      expectedPath: "",
+      exists: false,
+      status: "missing",
+      missingReason: "The manifest has debug blocking issues; cannot resolve an executable.",
+      tooltip: "The manifest has debug blocking issues; cannot resolve an executable.",
+    };
+  }
+
+  const component = manifest.components.find((c) => c.id === config.componentId);
+  const target = manifest.targets.find((t) => t.id === config.targetId);
+  const model = manifest.models.find((m) => m.id === config.modelId);
+
+  if (!component || !target || !model) {
+    const reason = "Active configuration references an unknown component, target, or model.";
+    return {
+      contextKey,
+      profileResolutionState: "no-match",
+      expectedPath: "",
+      exists: false,
+      status: "missing",
+      missingReason: reason,
+      tooltip: reason,
+    };
+  }
+
+  const evalCtx = { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId };
+  const profiles = component.debug ?? [];
+  const resolution = resolveDebugProfile(profiles, evalCtx);
+
+  if (resolution.resolutionState === "no-match") {
+    return {
+      contextKey,
+      profileResolutionState: "no-match",
+      expectedPath: "",
+      exists: false,
+      status: "missing",
+      missingReason: "No debug profile matches the active build context.",
+      tooltip: "No debug profile matches the active build context.",
+    };
+  }
+
+  // Profile resolved — derive executable path
+  const artifactFolder = model.artifactFolder ?? "";
+  const executableFileName = deriveExecutableFileName(
+    component.artifactName ?? "",
+    target.artifactSuffix ?? "",
+    target.executableExtension ?? ""
+  );
+
+  if (!artifactsRoot || !artifactFolder || !executableFileName) {
+    let reason: string;
+    if (!artifactsRoot) {
+      reason = "tfTools.artifactsPath is not configured; cannot resolve the executable artifact.";
+    } else if (!artifactFolder) {
+      reason = "The active model does not define artifactFolder in the manifest; cannot resolve the executable artifact.";
+    } else {
+      reason = "The active component does not define artifactName in the manifest; cannot resolve the executable artifact.";
+    }
+    return {
+      contextKey,
+      profileResolutionState: "selected",
+      expectedPath: "",
+      exists: false,
+      status: "missing",
+      missingReason: reason,
+      tooltip: reason,
+    };
+  }
+
+  const expectedPath = path.join(artifactsRoot, artifactFolder, executableFileName);
+
+  const exists = checkFileExists(expectedPath);
+  if (exists) {
+    return {
+      contextKey,
+      profileResolutionState: "selected",
+      expectedPath,
+      exists: true,
+      status: "valid",
+      tooltip: expectedPath,
+    };
+  }
+
+  return {
+    contextKey,
+    profileResolutionState: "selected",
+    expectedPath,
+    exists: false,
+    status: "missing",
+    missingReason: `Executable artifact not found at the expected path: ${expectedPath}`,
+    tooltip: `Executable not found: ${expectedPath}`,
+  };
 }

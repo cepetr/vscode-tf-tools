@@ -1011,3 +1011,227 @@ components:
     assert.strictEqual(actionIssues.length, 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T009/T024: Component-scoped debug profile and executableExtension coverage
+// ---------------------------------------------------------------------------
+
+suite("parseManifest – component-scoped debug profiles (T009)", () => {
+  function baseManifest(extras: string): string {
+    return `
+models:
+  - id: T2T1
+    name: Trezor Model T
+    artifactFolder: model-t
+  - id: T3W1
+    name: Trezor Model T3
+    artifactFolder: model-t3
+targets:
+  - id: hw
+    name: Hardware
+  - id: emu
+    name: Emulator
+components:
+  - id: core
+    name: Core
+    artifactName: firmware
+${extras}
+`.trim();
+  }
+
+  // -------------------------------------------------------------------------
+  // executableExtension on targets
+  // -------------------------------------------------------------------------
+
+  test("target with executableExtension is parsed correctly", () => {
+    const source = baseManifest(`
+targets:
+  - id: hw
+    name: Hardware
+    executableExtension: .elf
+  - id: emu
+    name: Emulator
+`).replace("targets:\n  - id: hw\n    name: Hardware\n  - id: emu\n    name: Emulator", "targets:\n  - id: hw\n    name: Hardware\n    executableExtension: .elf\n  - id: emu\n    name: Emulator");
+    const result = parseManifest(source);
+    const hw = result.targets.find((t) => t.id === "hw");
+    assert.ok(hw, "expected hw target");
+    assert.strictEqual((hw as unknown as { executableExtension?: string }).executableExtension, ".elf");
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  // -------------------------------------------------------------------------
+  // Component-scoped debug profiles
+  // -------------------------------------------------------------------------
+
+  test("component without debug section parses without debug profiles", () => {
+    const source = baseManifest("");
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.length, 0);
+    const core = result.components.find((c) => c.id === "core");
+    assert.ok(core, "expected core component");
+    assert.strictEqual(core.debug, undefined);
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  test("component with valid debug profile is parsed", () => {
+    const source = baseManifest(`    debug:
+      - name: gdb-remote
+        template: gdb-remote.json`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const core = result.components.find((c) => c.id === "core");
+    assert.ok(core?.debug, "expected debug profiles");
+    assert.strictEqual(core.debug!.length, 1);
+    const profile = core.debug![0];
+    assert.strictEqual(profile.name, "gdb-remote");
+    assert.strictEqual(profile.template, "gdb-remote.json");
+    assert.strictEqual(profile.when, undefined);
+    assert.strictEqual(profile.vars, undefined);
+    assert.strictEqual(profile.declarationIndex, 0);
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  test("component debug profile with optional when is parsed", () => {
+    const source = baseManifest(`    debug:
+      - name: hw-only
+        template: gdb.json
+        when: model(T2T1)`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const core = result.components.find((c) => c.id === "core");
+    const profile = core?.debug?.[0];
+    assert.ok(profile, "expected debug profile");
+    assert.deepStrictEqual(profile.when, { type: "model", id: "T2T1" });
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  test("component debug profile with vars is parsed", () => {
+    const source = baseManifest(`    debug:
+      - name: gdb
+        template: gdb.json
+        vars:
+          port: "3333"
+          server: localhost`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const core = result.components.find((c) => c.id === "core");
+    const profile = core?.debug?.[0];
+    assert.ok(profile, "expected debug profile");
+    assert.deepStrictEqual(profile.vars, { port: "3333", server: "localhost" });
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  test("multiple debug profiles on same component are parsed in order", () => {
+    const source = baseManifest(`    debug:
+      - name: first
+        template: a.json
+      - name: second
+        template: b.json
+        when: model(T2T1)`);
+    const result = parseManifest(source);
+    assert.strictEqual(result.issues.filter((i) => i.severity === "error").length, 0);
+    const core = result.components.find((c) => c.id === "core");
+    assert.ok(core?.debug, "expected debug profiles");
+    assert.strictEqual(core.debug!.length, 2);
+    assert.strictEqual(core.debug![0].name, "first");
+    assert.strictEqual(core.debug![0].declarationIndex, 0);
+    assert.strictEqual(core.debug![1].name, "second");
+    assert.strictEqual(core.debug![1].declarationIndex, 1);
+    assert.strictEqual(result.hasDebugBlockingIssues, false);
+  });
+
+  // -------------------------------------------------------------------------
+  // Missing required fields → hasDebugBlockingIssues
+  // -------------------------------------------------------------------------
+
+  test("missing name field sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`    debug:
+      - template: gdb.json`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.toLowerCase().includes("name")));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  test("missing template field sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`    debug:
+      - name: gdb`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.toLowerCase().includes("template")));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  // -------------------------------------------------------------------------
+  // Invalid when expression → hasDebugBlockingIssues
+  // -------------------------------------------------------------------------
+
+  test("invalid when expression on debug profile sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`    debug:
+      - name: gdb
+        template: gdb.json
+        when: "not-valid()"`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "invalid-when"));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  test("when expression with unknown model id sets hasDebugBlockingIssues", () => {
+    const source = baseManifest(`    debug:
+      - name: gdb
+        template: gdb.json
+        when: model(NONEXISTENT)`);
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.code === "invalid-when"));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  // -------------------------------------------------------------------------
+  // Legacy top-level debug → rejected
+  // -------------------------------------------------------------------------
+
+  test("legacy top-level debug section is rejected with hasDebugBlockingIssues", () => {
+    const source = `
+models:
+  - id: T2T1
+    name: Trezor Model T
+targets:
+  - id: hw
+    name: Hardware
+components:
+  - id: core
+    name: Core
+debug:
+  - name: gdb
+    template: gdb.json
+`.trim();
+    const result = parseManifest(source);
+    assert.ok(result.issues.some((i) => i.severity === "error" && i.message.toLowerCase().includes("legacy")));
+    assert.strictEqual(result.hasDebugBlockingIssues, true);
+  });
+
+  // -------------------------------------------------------------------------
+  // validateManifest propagates hasDebugBlockingIssues
+  // -------------------------------------------------------------------------
+
+  test("validateManifest sets hasDebugBlockingIssues for missing component debug name", () => {
+    const source = baseManifest(`    debug:
+      - template: gdb.json`);
+    const state = validateManifest(source, vscode.Uri.file("/workspace/manifest.yaml"));
+    assert.strictEqual(state.status, "loaded");
+    if (state.status === "loaded") {
+      assert.strictEqual(state.hasDebugBlockingIssues, true);
+    }
+  });
+
+  test("validateManifest loaded state has debug profiles on component for valid config", () => {
+    const source = baseManifest(`    debug:
+      - name: gdb
+        template: gdb.json`);
+    const state = validateManifest(source, vscode.Uri.file("/workspace/manifest.yaml"));
+    assert.strictEqual(state.status, "loaded");
+    if (state.status === "loaded") {
+      assert.strictEqual(state.hasDebugBlockingIssues, false);
+      const core = state.components.find((c) => c.id === "core");
+      assert.ok(core?.debug && core.debug.length === 1, "expected 1 debug profile on core component");
+    }
+  });
+});

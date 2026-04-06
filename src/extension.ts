@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { hasSupportedWorkspace, requireWorkspaceFolder, isWorkflowWorkspaceSupported } from "./workspace/workspace-guard";
-import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath } from "./workspace/settings";
+import { resolveManifestUri, isStatusBarEnabled, resolveArtifactsPath, resolveDebugTemplatesPath } from "./workspace/settings";
 import { ManifestService } from "./manifest/manifest-service";
 import { ConfigurationTreeProvider, SelectorHeaderItem, BuildOptionMultistateHeaderItem, BuildOptionCheckboxItem, BuildOptionGroupItem } from "./ui/configuration-tree";
 import { StatusBarPresenter } from "./ui/status-bar";
@@ -56,9 +56,12 @@ import {
   resolveActiveArtifact,
   resolveActiveBinaryArtifact,
   resolveActiveMapArtifact,
+  resolveActiveExecutableArtifact,
   ActiveBinaryArtifact,
   ActiveMapArtifact,
 } from "./intellisense/artifact-resolution";
+import { executeDebugLaunch } from "./commands/debug-launch";
+import { logDebugLaunchFailure } from "./observability/log-channel";
 import { EvalContext } from "./manifest/when-expressions";
 
 let _manifestService: ManifestService | undefined;
@@ -108,6 +111,7 @@ export interface TaskProcessEndLike {
 //   tfTools.flash                 — launch Flash task (Flash/Upload slice)
 //   tfTools.upload                — launch Upload task (Flash/Upload slice)
 //   tfTools.openMapFile           — open resolved map file (Flash/Upload slice)
+//   tfTools.startDebugging        — launch debug session (Debug Launch slice)
 // ---------------------------------------------------------------------------
 
 const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
@@ -120,6 +124,7 @@ const ALLOWED_CONTRIBUTION_COMMANDS = new Set([
   "tfTools.flash",
   "tfTools.upload",
   "tfTools.openMapFile",
+  "tfTools.startDebugging",
 ]);
 
 /**
@@ -238,6 +243,28 @@ function updateArtifactActionContext(
   vscode.commands.executeCommand("setContext", "tfTools.mapExists", mapExists);
 }
 
+/**
+ * Updates the `tfTools.startDebuggingEnabled` VS Code context key based on the
+ * current manifest state, active configuration, and executable artifact status.
+ */
+function updateDebugContext(
+  state: ManifestState,
+  config: ActiveConfig | undefined,
+  artifactsRoot: string
+): void {
+  if (state.status !== "loaded" || !config) {
+    vscode.commands.executeCommand("setContext", "tfTools.startDebuggingEnabled", false);
+    _treeProvider?.updateExecutableArtifact(null);
+    return;
+  }
+
+  const loaded = state as ManifestStateLoaded;
+  const artifact = resolveActiveExecutableArtifact(loaded, config, artifactsRoot);
+  const enabled = artifact.status === "valid";
+  vscode.commands.executeCommand("setContext", "tfTools.startDebuggingEnabled", enabled);
+  _treeProvider?.updateExecutableArtifact(artifact);
+}
+
 function updateCompileCommandsTreeArtifact(
   state: ManifestState,
   config: ActiveConfig | undefined,
@@ -289,6 +316,15 @@ function registerUnsupportedWorkspaceCommands(
     registerBlockedArtifact("tfTools.flash", "flash"),
     registerBlockedArtifact("tfTools.upload", "upload"),
     registerNoop("tfTools.openMapFile"),
+    vscode.commands.registerCommand("tfTools.startDebugging", () => {
+      logDebugLaunchFailure("unsupported-workspace", {
+        detail: "workspace is not supported",
+      });
+      revealLogs();
+      void vscode.window.showErrorMessage(
+        "Cannot start debugging: workspace is not supported."
+      );
+    }),
     registerNoop("tfTools.selectModel"),
     registerNoop("tfTools.selectTarget"),
     registerNoop("tfTools.selectComponent"),
@@ -379,6 +415,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _activeConfig,
       resolveArtifactsPath(workspaceFolder),
       workspaceFolder
+    );
+    updateDebugContext(
+      _manifestState,
+      _activeConfig,
+      resolveArtifactsPath(workspaceFolder)
     );
   };
   const refreshStatusBar = (): void => {
@@ -492,6 +533,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
         _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
         refreshBuildArtifacts("artifacts-path-change");
+      }
+      if (e.affectsConfiguration("tfTools.debug.templatesPath", workspaceFolder.uri)) {
+        // The templates path does not affect startDebuggingEnabled (templates are validated
+        // at invocation time, not pre-checked). Trigger a context refresh to keep the tree
+        // and context keys consistent with the new setting if future logic depends on it.
+        refreshArtifactActionState();
       }
       if (e.affectsConfiguration("tfTools.showConfigurationInStatusBar", workspaceFolder.uri)) {
         refreshStatusBar();
@@ -630,6 +677,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       const task = createUploadTask(ctx, workspaceFolder);
       await executeArtifactTask(task, "upload");
+    })
+  );
+
+  // --- startDebugging command (Debug Launch slice) ---
+  context.subscriptions.push(
+    vscode.commands.registerCommand("tfTools.startDebugging", async () => {
+      const state = _manifestState;
+      const config = _activeConfig;
+      const loaded = state?.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
+      if (!loaded || !config) {
+        logDebugLaunchFailure("unsupported-workspace", {
+          detail: "manifest not loaded or no active configuration",
+        });
+        revealLogs();
+        void vscode.window.showErrorMessage("Cannot start debugging: manifest not loaded.");
+        return;
+      }
+      await executeDebugLaunch(
+        workspaceFolder,
+        loaded,
+        config,
+        resolveArtifactsPath(workspaceFolder),
+        resolveDebugTemplatesPath(workspaceFolder)
+      );
     })
   );
 

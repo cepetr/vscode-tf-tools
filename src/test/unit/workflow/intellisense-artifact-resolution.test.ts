@@ -8,6 +8,8 @@
  *  - resolveActiveArtifact: no-fallback — uses only the exact expected path
  *  - buildResolutionInputs: correctly extracts artifact fields from manifest
  *  - buildResolutionInputs: returns undefined for unknown model/target/component
+ *  - resolveActiveExecutableArtifact: status and profileResolutionState for all blocked cases
+ *  - resolveActiveExecutableArtifact: valid status when component entry resolves and file exists
  */
 
 import * as assert from "assert";
@@ -19,12 +21,14 @@ import {
   resolveActiveArtifact,
   resolveActiveBinaryArtifact,
   resolveActiveMapArtifact,
+  resolveActiveExecutableArtifact,
   buildResolutionInputs,
   makeContextKey,
 } from "../../../intellisense/artifact-resolution";
 import { ArtifactResolutionInputs } from "../../../intellisense/intellisense-types";
-import { makeIntelliSenseLoadedState } from "../workflow-test-helpers";
+import { makeIntelliSenseLoadedState, makeDebugLoadedState, makeComponentDebugProfile, makeDebugTargetWithExtension } from "../workflow-test-helpers";
 import { ActiveConfig } from "../../../configuration/active-config";
+import { ManifestStateLoaded } from "../../../manifest/manifest-types";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -463,5 +467,139 @@ suite("resolveActiveMapArtifact", () => {
     const inputs = makeInputs({ artifactsRoot: "" });
     const result = resolveActiveMapArtifact(inputs, makeActiveConfig());
     assert.strictEqual(result.path, "");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T015: resolveActiveExecutableArtifact
+// ---------------------------------------------------------------------------
+
+suite("resolveActiveExecutableArtifact", () => {
+  test("returns manifest-invalid state when hasDebugBlockingIssues is true", () => {
+    const manifest = makeDebugLoadedState([], { hasDebugBlockingIssues: true });
+    const config = makeActiveConfig();
+    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    assert.strictEqual(result.status, "missing");
+    assert.strictEqual(result.profileResolutionState, "manifest-invalid");
+    assert.ok(result.missingReason, "expected a missingReason for manifest-invalid");
+  });
+
+  test("returns no-match state when component has no debug profiles", () => {
+    const manifest = makeDebugLoadedState([]);
+    const config = makeActiveConfig();
+    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    assert.strictEqual(result.status, "missing");
+    assert.strictEqual(result.profileResolutionState, "no-match");
+    assert.ok(result.missingReason);
+  });
+
+  test("returns no-match state when all debug profiles have non-matching when", () => {
+    const profile = makeComponentDebugProfile({
+      name: "gdb",
+      template: "t.json",
+      when: { type: "model", id: "T3W1" },
+    });
+    const manifest = makeDebugLoadedState([profile]);
+    const config = makeActiveConfig({ modelId: "T2T1" });
+    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    assert.strictEqual(result.status, "missing");
+    assert.strictEqual(result.profileResolutionState, "no-match");
+    assert.ok(result.missingReason);
+  });
+
+  test("returns selected + missing when profile resolves but executable does not exist on disk", () => {
+    const profile = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
+    const manifest = makeIntelliSenseLoadedState({
+      targets: [makeDebugTargetWithExtension("hw", ".elf")],
+      components: [
+        { kind: "component", id: "core", name: "Core", artifactName: "firmware", debug: [profile] } as ManifestStateLoaded["components"][0],
+      ],
+      hasDebugBlockingIssues: false,
+    });
+    const config = makeActiveConfig();
+    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    assert.strictEqual(result.status, "missing");
+    assert.strictEqual(result.profileResolutionState, "selected");
+    assert.strictEqual(result.exists, false);
+    assert.ok(result.missingReason);
+    assert.ok(result.expectedPath.endsWith("firmware.elf"), `expectedPath should end with firmware.elf, got: ${result.expectedPath}`);
+  });
+
+  test("returns selected + valid when profile resolves and executable file exists", () => {
+    // Build a manifest whose derived path points to this test file (which exists).
+    const artifactsRoot = path.resolve(path.dirname(__filename), "../../..");
+    const artFolder = "test/unit/workflow";
+    const artName = path.basename(__filename, path.extname(__filename));
+    const artExt = path.extname(__filename);
+    const profile = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
+    const manifest = makeIntelliSenseLoadedState({
+      models: [{ kind: "model", id: "T2T1", name: "T", artifactFolder: artFolder } as ManifestStateLoaded["models"][0]],
+      targets: [makeDebugTargetWithExtension("hw", artExt)],
+      components: [
+        { kind: "component", id: "core", name: "Core", artifactName: artName, debug: [profile] } as ManifestStateLoaded["components"][0],
+      ],
+      hasDebugBlockingIssues: false,
+    });
+    const config = makeActiveConfig();
+    const result = resolveActiveExecutableArtifact(manifest, config, artifactsRoot);
+    assert.strictEqual(result.status, "valid");
+    assert.strictEqual(result.profileResolutionState, "selected");
+    assert.strictEqual(result.exists, true);
+    assert.strictEqual(result.expectedPath, __filename);
+  });
+
+  test("returns missing when artifactsRoot is empty", () => {
+    const profile = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
+    const manifest = makeIntelliSenseLoadedState({
+      targets: [makeDebugTargetWithExtension("hw", ".elf")],
+      components: [
+        { kind: "component", id: "core", name: "Core", artifactName: "fw", debug: [profile] } as ManifestStateLoaded["components"][0],
+      ],
+      hasDebugBlockingIssues: false,
+    });
+    const config = makeActiveConfig();
+    const result = resolveActiveExecutableArtifact(manifest, config, "");
+    assert.strictEqual(result.status, "missing");
+    assert.strictEqual(result.profileResolutionState, "selected");
+    assert.ok(result.missingReason);
+  });
+
+  test("contextKey contains modelId, targetId, and componentId", () => {
+    const manifest = makeDebugLoadedState([]);
+    const config = makeActiveConfig({ modelId: "T2T1", targetId: "hw", componentId: "core" });
+    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    assert.strictEqual(result.contextKey, "T2T1::hw::core");
+  });
+
+  test("tooltip is non-empty for all blocked cases", () => {
+    const cases = [
+      makeDebugLoadedState([], { hasDebugBlockingIssues: true }),
+      makeDebugLoadedState([]),
+    ];
+    for (const manifest of cases) {
+      const result = resolveActiveExecutableArtifact(manifest, makeActiveConfig(), ARTIFACTS_ROOT);
+      assert.ok(result.tooltip.length > 0, `expected non-empty tooltip, got: "${result.tooltip}"`);
+    }
+  });
+
+  test("expectedPath is empty when profile resolution returns no-match", () => {
+    const manifest = makeDebugLoadedState([]);
+    const config = makeActiveConfig();
+    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    assert.strictEqual(result.expectedPath, "");
+  });
+
+  test("selected profile with missing executable includes expectedPath in result", () => {
+    const profile = makeComponentDebugProfile({ name: "gdb", template: "t.json" });
+    const manifest = makeIntelliSenseLoadedState({
+      targets: [makeDebugTargetWithExtension("hw", ".elf")],
+      components: [
+        { kind: "component", id: "core", name: "Core", artifactName: "specific", debug: [profile] } as ManifestStateLoaded["components"][0],
+      ],
+      hasDebugBlockingIssues: false,
+    });
+    const config = makeActiveConfig();
+    const result = resolveActiveExecutableArtifact(manifest, config, ARTIFACTS_ROOT);
+    assert.ok(result.expectedPath.includes("specific.elf"), `expectedPath should include specific.elf, got: ${result.expectedPath}`);
   });
 });

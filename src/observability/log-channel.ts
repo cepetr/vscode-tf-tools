@@ -99,6 +99,23 @@ export function logWorkflowFailure(kind: string, message: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Debug launch failure logging (US3-T022)
+// ---------------------------------------------------------------------------
+
+/**
+ * Logs a persistent output-channel entry for a blocked or failed debug launch.
+ * Called from executeDebugLaunch before each early-return error path.
+ */
+export function logDebugLaunchFailure(
+  reason: string,
+  context: { modelId?: string; targetId?: string; componentId?: string; detail?: string } = {}
+): void {
+  const ctx = [context.modelId, context.targetId, context.componentId].filter(Boolean).join("/");
+  const detail = context.detail ? ` — ${context.detail}` : "";
+  log(`[DEBUG-LAUNCH-FAILURE] ${reason}${ctx ? ` [${ctx}]` : ""}${detail}`);
+}
+
+// ---------------------------------------------------------------------------
 // IntelliSense event logging (FR-003, FR-005)
 // ---------------------------------------------------------------------------
 

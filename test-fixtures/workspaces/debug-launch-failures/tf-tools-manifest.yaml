@@ -1,0 +1,39 @@
+models:
+  - id: T2T1
+    name: Trezor Model T (v1)
+    artifactFolder: model-t
+  - id: T3W1
+    name: Trezor Model T3 (w1)
+    artifactFolder: model-t3
+
+targets:
+  - id: hw
+    name: Hardware
+    shortName: HW
+    executableExtension: ".elf"
+  - id: emu
+    name: Emulator
+    artifactSuffix: _emu
+    executableExtension: ".elf"
+
+components:
+  - id: core
+    name: Core
+    artifactName: compile_commands_core
+    debug:
+      # T2T1+hw → template file missing on disk
+      - name: Debug (missing template)
+        template: missing-template.json
+        when: all(model(T2T1), target(hw))
+
+      # T2T1+emu → malformed JSONC template
+      - name: Debug (malformed template)
+        template: malformed-template.json
+        when: all(model(T2T1), target(emu))
+
+      # T3W1+hw → template with unknown tf-tools variable
+      - name: Debug (unknown variable)
+        template: unknown-var-template.json
+        when: all(model(T3W1), target(hw))
+
+      # T3W1+emu → no matching entry (falls through all conditions above)

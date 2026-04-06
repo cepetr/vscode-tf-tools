@@ -26,10 +26,12 @@ function makeManifest(overrides?: Partial<ManifestStateLoaded>): ManifestStateLo
     ],
     buildOptions: [],
     hasWorkflowBlockingIssues: false,
+    debugProfiles: [],
+    hasDebugBlockingIssues: false,
     validationIssues: [],
     loadedAt: new Date(),
     ...overrides,
-  };
+  } as ManifestStateLoaded;
 }
 
 function makeConfig(overrides?: Partial<ActiveConfig>): ActiveConfig {
