@@ -1,57 +1,57 @@
 # Research: Debug Launch
 
-## Decision 1: Parse manifest `debug` entries into a typed profile model using the existing `when` parser
+## Decision 1: Parse component-scoped `debug` entries directly on manifest components and reject the legacy debug schema
 
-- **Decision**: Extend manifest validation so `debug` entries are parsed and stored on the loaded manifest state with validated `when`, `priority`, `template`, `executable`, and optional `vars` fields, reusing the same `when` expression language, unknown-id validation, and diagnostics path already used for build-option, `flashWhen`, and `uploadWhen` rules.
-- **Rationale**: Debug availability is manifest-driven behavior. Parsing once during manifest load keeps the runtime resolution path deterministic, lets invalid profiles fail through existing manifest diagnostics instead of deferred runtime errors, and preserves one source of truth for model, target, and component matching semantics.
+- **Decision**: Extend manifest parsing so each component may declare an optional ordered `debug[]` array, each target may declare an optional `executableExtension`, and the loader rejects legacy top-level `debug`, `priority`, profile-level `executable`, and `${tfTools.debugConfigName}` usage instead of silently translating them.
+- **Rationale**: The revised spec is a hard cutover. Supporting only one schema keeps validation, runtime logic, fixtures, and tests coherent and avoids a dual-path implementation that would otherwise leak into command handling and UI state.
 - **Alternatives considered**:
-  - Evaluate raw debug-profile strings lazily at command invocation: rejected because it would defer structural and expression errors until runtime and fragment failure reporting.
-  - Implement a second matching language specific to debug profiles: rejected because it duplicates `when` semantics and risks inconsistent slice behavior.
+  - Accept both schemas temporarily and normalize them internally: rejected because it increases complexity across validation, selection, and tests for no lasting product benefit.
+  - Accept the new schema but warn on legacy token usage instead of failing: rejected because silent compatibility or partial compatibility contradicts the cutover clarification.
 
-## Decision 2: Resolve profile matches by highest priority, and treat equal highest-priority matches as a hard ambiguity
+## Decision 2: Treat omitted `component.debug[].when` as match-all and otherwise reuse the existing `when` parser
 
-- **Decision**: Build one pure resolution step that filters matching profiles for the active model, target, and component, selects the unique highest-priority profile when one exists, and returns an explicit ambiguous outcome when multiple matches share the same highest priority.
-- **Rationale**: The spec requires `priority` ordering without silent fallback. Representing unmatched, unique, and ambiguous outcomes explicitly gives the tree row, menu enablement, and command handler one authoritative answer, which keeps visible disabled states and blocked launches consistent.
+- **Decision**: Keep `component.debug[].when` optional. When absent, the entry matches all active contexts for that component. When present, parse and validate it with the same expression parser, unknown-id checks, and diagnostics used for build-option `when`, `flashWhen`, and `uploadWhen`.
+- **Rationale**: This matches the clarified spec, reduces YAML boilerplate for per-component default debug entries, and reuses an existing parser rather than adding a debug-specific rule language.
 - **Alternatives considered**:
-  - Pick the first declaration-order match after priority sort: rejected because declaration order is not part of the contract and would silently hide ambiguity.
-  - Disable debug support whenever more than one profile matches, even with different priorities: rejected because it ignores the required priority rule.
+  - Make `when` mandatory on every debug entry: rejected because it adds noise without improving determinism.
+  - Introduce a separate debug-only selector language: rejected because it would duplicate semantics and validation paths.
 
-## Decision 3: Load debugger templates from `tfTools.debug.templatesPath` on demand and parse them as JSONC with `jsonc-parser`
+## Decision 3: Resolve the selected component's debug entries by first-match declaration order
 
-- **Decision**: Resolve the configured templates root on each invocation, reject template paths that escape that root after normalization, read the referenced template file from disk at launch time, and parse it with `jsonc-parser` as one debug-configuration object.
-- **Rationale**: The selected slice explicitly requires invocation-time template loading and path-traversal rejection. JSONC is the best fit because the technical spec already calls templates JSONC, and `jsonc-parser` avoids brittle handwritten comment stripping while keeping the implementation small.
+- **Decision**: Build one pure selection helper that evaluates only the selected component's ordered debug entries and returns the first match; no ambiguity state and no priority calculation remain in the design.
+- **Rationale**: The revised manifest contract states that declaration order is the only precedence rule. A simple first-match helper keeps UI state, command handling, and tests aligned with that rule.
 - **Alternatives considered**:
-  - Preload or cache all template files when the manifest changes: rejected because template failures must not pre-disable visible actions and caching adds invalidation complexity.
-  - Parse templates with plain `JSON.parse` after ad hoc comment stripping: rejected because JSONC edge cases are easy to mishandle and the repository already favors small focused dependencies over bespoke parsers when behavior is format-sensitive.
+  - Preserve the old priority model internally while ignoring it in YAML: rejected because it keeps dead semantics alive and confuses the codebase.
+  - Continue evaluating all matches for diagnostics before choosing the first: rejected because it adds complexity without changing runtime behavior.
 
-## Decision 4: Resolve tf-tools substitutions through a cycle-aware variable map and one recursive string-walk over the parsed template
+## Decision 4: Derive executable state from component and target fields rather than from debug-entry fields
 
-- **Decision**: Construct a substitution map from built-in active-context variables plus optional profile-defined `vars`, resolve profile-defined variables with cycle detection, then walk the parsed template recursively so every string field in nested objects and arrays receives single-pass tf-tools token replacement while non-string values and non-tf-tools variable syntaxes remain untouched.
-- **Rationale**: The spec requires nested replacement, embedded token replacement, non-string preservation, non-tf-tools pass-through, and no re-expansion of replacement results. A single recursive walker over parsed JSONC values with a resolved map satisfies those semantics directly and is easy to unit-test.
+- **Decision**: Compute `${tfTools.executable}` as `<artifactName><artifactSuffix><executableExtension>` and `${tfTools.executablePath}` as `<tfTools.artifactsPath>/<artifactFolder>/<artifactName><artifactSuffix><executableExtension>`, using the selected component's `artifactName`, the selected target's optional `artifactSuffix`, the selected target's optional `executableExtension`, and the selected model's `artifactFolder`.
+- **Rationale**: The new spec removes profile-level executable ownership. Keeping executable derivation in one helper shared by runtime launch and the `Executable` row preserves one source of truth for status, tooltips, and launch readiness.
 - **Alternatives considered**:
-  - Perform repeated global substitution passes until strings stop changing: rejected because it violates the no-re-expansion rule and can hide variable cycles.
-  - Restrict substitution to a known list of top-level debug fields: rejected because the slice explicitly requires nested objects and arrays.
+  - Derive the path independently in the tree provider and again in the command handler: rejected because duplicated path rules would drift.
+  - Put executable path fragments back into debug entries: rejected because it contradicts the revised manifest contract.
 
-## Decision 5: Reuse the artifact-resolution seam for `Executable` state, but keep profile resolution separate from compile-commands and Flash/Upload ownership
+## Decision 5: Keep template loading invocation-time and expose `${tfTools.debugProfileName}` through the resolved variable map
 
-- **Decision**: Extend the existing artifact-resolution helper layer with executable-artifact derivation and status reporting, while keeping debug-profile resolution, template loading, and substitution in a focused debug-launch helper rather than mixing them into IntelliSense or Flash/Upload modules.
-- **Rationale**: The executable row is another Build Artifacts state computation, so path derivation and missing-reason handling belong with the existing artifact helpers. Profile matching and launch preparation are distinct concerns, and keeping them in one focused helper preserves slice boundaries and avoids turning `artifact-resolution.ts` into a general-purpose debug service.
+- **Decision**: Continue loading JSONC templates from `tfTools.debug.templatesPath` on each Start Debugging invocation, rejecting template-root traversal, and extend the built-in tf-tools substitution map with `${tfTools.debugProfileName}` while removing `${tfTools.debugConfigName}`.
+- **Rationale**: Invocation-time loading preserves the required enablement boundary, and the new name variable is a straightforward addition to the existing substitution walk.
 - **Alternatives considered**:
-  - Compute executable state directly inside the tree provider: rejected because row rendering should consume prepared state rather than own manifest and filesystem logic.
-  - Fold all debug logic into `src/extension.ts`: rejected because command handling, template parsing, and substitution would make the composition root harder to reason about and harder to test.
+  - Preload templates during refresh so UI can validate them early: rejected because template readability must not pre-disable visible actions.
+  - Support both `${tfTools.debugProfileName}` and `${tfTools.debugConfigName}`: rejected because the clarified spec requires a hard cutover.
 
-## Decision 6: Use one startability context key for Command Palette visibility and menu enablement, but keep visible surfaces unconditional in the Configuration view
+## Decision 6: Keep one startability context key and visible-but-disabled Configuration view actions
 
-- **Decision**: Derive one authoritative boolean such as `tfTools.startDebuggingEnabled` from workspace support, manifest validity, unique profile resolution, and executable existence, use it for `menus.commandPalette` visibility and for header, overflow, and row-action `enablement`, and keep the visible Configuration view surfaces contributed unconditionally for their view locations so they remain discoverable even when disabled.
-- **Rationale**: The Command Palette must hide the command when the context is not uniquely startable, while the visible Configuration view surfaces must stay present but disabled. Splitting contribution visibility from enablement through one shared state snapshot is the smallest way to keep those surfaces synchronized.
+- **Decision**: Continue deriving one authoritative boolean such as `tfTools.startDebuggingEnabled` from workspace support, manifest validity, first-match resolution, and executable existence. Use it for Command Palette visibility and for header, overflow, and row-action enablement while keeping the visible Configuration view surfaces contributed unconditionally.
+- **Rationale**: The revised selection rule changes the data source but not the UI pattern. One shared startability snapshot remains the smallest way to keep Command Palette visibility and Configuration view enablement in sync.
 - **Alternatives considered**:
-  - Always show the command in the Command Palette and block only at runtime: rejected because the slice explicitly requires hiding it there.
-  - Hide header, overflow, or row actions when debugging is unavailable: rejected because the slice explicitly requires discoverable disabled actions.
+  - Hide visible actions when the context is not startable: rejected because discoverable disabled actions remain a requirement.
+  - Compute separate booleans per surface: rejected because the surfaces would be more likely to disagree.
 
-## Decision 7: Launch via `vscode.debug.startDebugging` with explicit logging around all blocked or failed resolution stages
+## Decision 7: Update fixtures and tests as a full cutover rather than layering compatibility cases
 
-- **Decision**: Keep `tfTools.startDebugging` as a thin command handler that computes the current debug state, loads and resolves the template, then calls `vscode.debug.startDebugging` with the final in-memory configuration. All blocked states and runtime failures log to the `Trezor Firmware Tools` output channel with enough profile, template, variable, or executable detail to diagnose the cause.
-- **Rationale**: The feature spec forbids launch.json persistence and requires VS Code debug API launch plus persistent logs. Wrapping the full resolution chain in one command path ensures user-facing errors and output-channel entries stay aligned.
+- **Decision**: Replace old debug fixtures and tests with component-scoped debug entries, declaration-order selection, optional `when`, and derived executable path coverage, while adding explicit negative coverage for unsupported legacy schema elements where helpful.
+- **Rationale**: The old tests are centered on `priority` and profile-level `executable`, so incremental patching would leave a lot of low-signal churn. A full cutover makes the test suite reflect the actual contract.
 - **Alternatives considered**:
-  - Generate a temporary `launch.json` entry and delegate to the built-in debugger: rejected because the slice forbids persistence and treats the template as input, not generated workspace configuration.
-  - Log only unexpected exceptions and skip expected blocked-launch reasons: rejected because the slice explicitly requires persistent logs for profile, template, variable, and executable failures.
+  - Keep old fixtures and add new ones side-by-side: rejected because they would encode incompatible product contracts at the same time.
+  - Skip legacy rejection tests entirely: rejected because the hard-cutover rule is now part of the spec and should be enforced deliberately.

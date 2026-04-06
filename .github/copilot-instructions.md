@@ -1,6 +1,6 @@
 # tf-tools Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-05
+Auto-generated from all feature plans. Last updated: 2026-04-06
 
 ## Active Technologies
 - TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml` parser for range-aware manifest parsing, Node.js path/process APIs, Mocha test runner, `@vscode/test-electron` for integration tests (002-build-workflow)
@@ -17,6 +17,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-05
 - Existing manifest file and resource-scoped settings (`tfTools.artifactsPath`, `tfTools.manifestPath`, `tfTools.cargoWorkspacePath`), existing workspace-state active configuration, and extension-memory artifact/action state; no new persisted workspace state required (005-flash-upload-actions)
 - TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml`-backed manifest parser and `when` evaluator, existing artifact-resolution and log-channel helpers, Node.js `fs` and `path` APIs, `jsonc-parser` for debugger template files, Mocha test runner, `@vscode/test-electron` integration harness (006-debug-launch)
 - Existing manifest file plus new `debug` entries, existing workspace-state active model/target/component selection, resource-scoped VS Code settings for `tfTools.manifestPath`, `tfTools.artifactsPath`, and `tfTools.debug.templatesPath`, and extension-memory debug availability and artifact state; no new persisted workspace state required (006-debug-launch)
+- TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml` parser, existing `when` parser and evaluator, Node.js `fs` and `path` APIs, `jsonc-parser`, Mocha test runner, `@vscode/test-electron` (006-debug-launch)
+- Existing manifest file; resource-scoped VS Code settings for `tfTools.manifestPath`, `tfTools.artifactsPath`, and `tfTools.debug.templatesPath`; existing workspace-state active model/target/component selection; extension-memory executable-state and debug-availability snapshots; no new persisted workspace state (006-debug-launch)
 
 - TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, `yaml` for range-aware manifest parsing, Node.js filesystem APIs, Mocha test runner, `@vscode/test-electron` for integration tests (001-configuration-experience)
 
@@ -36,9 +38,9 @@ npm test && npm run lint
 TypeScript 5.x targeting VS Code 1.110+ desktop extension host: Follow standard conventions
 
 ## Recent Changes
+- 006-debug-launch: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml` parser, existing `when` parser and evaluator, Node.js `fs` and `path` APIs, `jsonc-parser`, Mocha test runner, `@vscode/test-electron`
 - 006-debug-launch: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing `yaml`-backed manifest parser and `when` evaluator, existing artifact-resolution and log-channel helpers, Node.js `fs` and `path` APIs, `jsonc-parser` for debugger template files, Mocha test runner, `@vscode/test-electron` integration harness
 - 006-debug-launch: Added [VS Code Extension API, existing extension libraries, and feature-specific packages]
-- 005-flash-upload-actions: Added TypeScript 5.x targeting VS Code 1.110+ desktop extension host + VS Code Extension API, existing manifest parser and when-expression evaluator, existing task-execution helpers, existing artifact-resolution helper module, Node.js `fs` and `path` APIs, Mocha test runner, `@vscode/test-electron` integration harness
 
 
 <!-- MANUAL ADDITIONS START -->
