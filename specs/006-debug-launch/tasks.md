@@ -77,13 +77,14 @@
 - [ ] T018 [P] [US2] Add unit tests for executable artifact status, expected-path tooltip text, and blocked-reason messaging in `src/test/unit/workflow/intellisense-artifact-resolution.test.ts`
 - [ ] T019 [P] [US2] Add unit tests for `Executable` row placement, context values, and visible-but-disabled Start Debugging actions in `src/test/unit/ui/configuration-tree.test.ts`
 - [ ] T020 [P] [US2] Add integration coverage for `Executable` row rendering, header and overflow enablement, Command Palette hiding, and settings-driven refresh in `src/test/integration/debug-launch-artifacts.integration.test.ts`
+- [ ] T021 [P] [US2] Add dedicated integration coverage proving missing and malformed templates do not disable visible Start Debugging actions before invocation in `src/test/integration/debug-launch-artifacts.integration.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T021 [US2] Derive executable artifact state, missing reasons, and startability snapshots from the selected component and target in `src/intellisense/artifact-resolution.ts`
-- [ ] T022 [US2] Render the always-present `Executable` row with tooltip detail, row action state, and correct ordering in `src/ui/configuration-tree.ts`
-- [ ] T023 [US2] Wire Start Debugging context keys and refresh behavior for model, target, component, manifest, artifacts path, and templates path changes in `src/extension.ts` and `src/workspace/settings.ts`
-- [ ] T024 [US2] Contribute visible header, overflow, and `Executable` row Start Debugging menus with disabled-state enablement rules in `package.json`
+- [ ] T022 [US2] Derive executable artifact state, missing reasons, and startability snapshots from the selected component and target in `src/intellisense/artifact-resolution.ts`
+- [ ] T023 [US2] Render the always-present `Executable` row with tooltip detail, row action state, correct ordering, and template-failure-independent enablement in `src/ui/configuration-tree.ts`
+- [ ] T024 [US2] Wire Start Debugging context keys and refresh behavior for model, target, component, manifest, artifacts path, and templates path changes in `src/extension.ts` and `src/workspace/settings.ts`
+- [ ] T025 [US2] Contribute visible header, overflow, and `Executable` row Start Debugging menus with disabled-state enablement rules in `package.json`
 
 **Checkpoint**: User Story 2 is independently functional from the Configuration view and Command Palette.
 
@@ -97,14 +98,14 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T025 [P] [US3] Add unit tests for traversal rejection, malformed JSONC templates, unknown tf-tools variables, and cyclic debug vars in `src/test/unit/workflow/debug-template-resolution.test.ts`
-- [ ] T026 [P] [US3] Add integration coverage for no-match, missing-template, malformed-template, variable, traversal, and missing-executable failures in `src/test/integration/debug-launch-failures.integration.test.ts`
+- [ ] T026 [P] [US3] Add unit tests for traversal rejection, malformed JSONC templates, unknown tf-tools variables, and cyclic debug vars in `src/test/unit/workflow/debug-template-resolution.test.ts`
+- [ ] T027 [P] [US3] Add integration coverage for no-match, missing-template, malformed-template, variable, traversal, missing-executable, unsupported-workspace, and manifest-invalid launch failures in `src/test/integration/debug-launch-failures.integration.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T027 [US3] Implement invocation-time template loading failures, variable-resolution failures, and explicit blocked-launch error creation in `src/commands/debug-launch.ts`
-- [ ] T028 [US3] Write persistent debug-launch failure logs for resolution, template, variable, and executable failures in `src/commands/debug-launch.ts` and `src/observability/log-channel.ts`
-- [ ] T029 [US3] Surface blocked-launch behavior consistently across visible Start Debugging actions in `src/extension.ts` and `src/ui/configuration-tree.ts`
+- [ ] T028 [US3] Implement invocation-time template loading failures, variable-resolution failures, unsupported-workspace handling, manifest-invalid handling, and explicit blocked-launch error creation in `src/commands/debug-launch.ts`
+- [ ] T029 [US3] Write persistent debug-launch failure logs for resolution, template, variable, executable, unsupported-workspace, and manifest-invalid failures in `src/commands/debug-launch.ts` and `src/observability/log-channel.ts`
+- [ ] T030 [US3] Surface blocked-launch behavior consistently across visible Start Debugging actions in `src/extension.ts` and `src/ui/configuration-tree.ts`
 
 **Checkpoint**: All user stories are independently functional and failure paths are visible and diagnosable.
 
@@ -114,9 +115,9 @@
 
 **Purpose**: Close regression gaps and validate the slice end to end.
 
-- [ ] T030 [P] Extend scope-regression coverage for Debug Launch command and menu boundaries in `src/test/integration/configuration-scope.integration.test.ts`
-- [ ] T031 [P] Add end-to-end quickstart regression coverage for the revised Debug Launch scenarios in `src/test/integration/debug-launch-quickstart.integration.test.ts`
-- [ ] T032 Validate the manual Debug Launch scenarios in `specs/006-debug-launch/quickstart.md`
+- [ ] T031 [P] Extend scope-regression coverage for Debug Launch command and menu boundaries, including no `launch.json` persistence, in `src/test/integration/configuration-scope.integration.test.ts`
+- [ ] T032 [P] Add end-to-end quickstart regression coverage for the revised Debug Launch scenarios in `src/test/integration/debug-launch-quickstart.integration.test.ts`
+- [ ] T033 Validate the manual Debug Launch scenarios in `specs/006-debug-launch/quickstart.md`
 
 ---
 
@@ -150,9 +151,9 @@
 - `T002`, `T003`, `T004`, and `T005` can run in parallel.
 - `T007`, `T008`, `T009`, and `T011` can run in parallel after `T006`, with `T010` depending on `T008` and `T009`.
 - `T012`, `T013`, and `T014` can run in parallel for User Story 1.
-- `T018`, `T019`, and `T020` can run in parallel for User Story 2.
-- `T025` and `T026` can run in parallel for User Story 3.
-- `T030` and `T031` can run in parallel during Polish before `T032`.
+- `T018`, `T019`, `T020`, and `T021` can run in parallel for User Story 2.
+- `T026` and `T027` can run in parallel for User Story 3.
+- `T031` and `T032` can run in parallel during Polish before `T033`.
 
 ---
 
@@ -174,6 +175,7 @@ Task: "T014 Add integration coverage for successful Start Debugging launch from 
 Task: "T018 Add unit tests for executable artifact status, expected-path tooltip text, and blocked-reason messaging in src/test/unit/workflow/intellisense-artifact-resolution.test.ts"
 Task: "T019 Add unit tests for Executable row placement, context values, and visible-but-disabled Start Debugging actions in src/test/unit/ui/configuration-tree.test.ts"
 Task: "T020 Add integration coverage for Executable row rendering, header and overflow enablement, Command Palette hiding, and settings-driven refresh in src/test/integration/debug-launch-artifacts.integration.test.ts"
+Task: "T021 Add dedicated integration coverage proving missing and malformed templates do not disable visible Start Debugging actions before invocation in src/test/integration/debug-launch-artifacts.integration.test.ts"
 ```
 
 ---
@@ -182,8 +184,8 @@ Task: "T020 Add integration coverage for Executable row rendering, header and ov
 
 ```bash
 # Launch the User Story 3 tests together:
-Task: "T025 Add unit tests for traversal rejection, malformed JSONC templates, unknown tf-tools variables, and cyclic debug vars in src/test/unit/workflow/debug-template-resolution.test.ts"
-Task: "T026 Add integration coverage for no-match, missing-template, malformed-template, variable, traversal, and missing-executable failures in src/test/integration/debug-launch-failures.integration.test.ts"
+Task: "T026 Add unit tests for traversal rejection, malformed JSONC templates, unknown tf-tools variables, and cyclic debug vars in src/test/unit/workflow/debug-template-resolution.test.ts"
+Task: "T027 Add integration coverage for no-match, missing-template, malformed-template, variable, traversal, missing-executable, unsupported-workspace, and manifest-invalid launch failures in src/test/integration/debug-launch-failures.integration.test.ts"
 ```
 
 ---
