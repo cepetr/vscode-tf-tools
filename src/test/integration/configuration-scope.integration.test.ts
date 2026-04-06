@@ -6,7 +6,18 @@
  * be present. Flash, Upload, openMapFile, and startDebugging are now part of the allowed set.
  */
 import * as assert from "assert";
+import * as fs from "fs";
+import * as path from "path";
 import * as vscode from "vscode";
+import {
+  makeDebugLoadedState,
+  makeComponentDebugEntry,
+  makeDebugTargetWithExtension,
+  debugLaunchValidWorkspaceRoot,
+  debugLaunchValidTemplatesRoot,
+} from "../unit/workflow-test-helpers";
+import { executeDebugLaunch } from "../../commands/debug-launch";
+import { ManifestStateLoaded } from "../../manifest/manifest-types";
 
 /** Commands that must never be registered in any current slice. */
 const BANNED_COMMAND_PATTERNS = [
@@ -190,6 +201,61 @@ suite("Debug Launch scope boundaries (T025)", () => {
     const prop = conf?.properties?.["tfTools.debug.templatesPath"];
     assert.ok(prop, "expected tfTools.debug.templatesPath setting to be contributed");
     assert.strictEqual(prop.scope, "resource", "tfTools.debug.templatesPath must be resource-scoped");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Debug Launch – no launch.json persistence (T031)
+// ---------------------------------------------------------------------------
+
+suite("Debug Launch – no launch.json persistence (T031)", () => {
+  function makeExeManifest(): ManifestStateLoaded {
+    const entry = makeComponentDebugEntry({ name: "gdb-remote", template: "gdb-remote.json" });
+    return makeDebugLoadedState([entry], {
+      models: [
+        { kind: "model", id: "T2T1", name: "Trezor Model T", artifactFolder: "model-t" } as ManifestStateLoaded["models"][0],
+      ],
+      targets: [makeDebugTargetWithExtension("hw", ".elf")],
+      components: [
+        { kind: "component", id: "core", name: "Core", artifactName: "firmware" } as ManifestStateLoaded["components"][0],
+      ],
+    });
+  }
+
+  test("launch.json is absent from fixture workspace before test", () => {
+    const workspaceRoot = debugLaunchValidWorkspaceRoot();
+    const launchJson = path.join(workspaceRoot, ".vscode", "launch.json");
+    assert.ok(
+      !fs.existsSync(launchJson),
+      `Expected no .vscode/launch.json in debug-launch-valid fixture, found: ${launchJson}`
+    );
+  });
+
+  test("executeDebugLaunch does not create launch.json in the workspace", async () => {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      return;
+    }
+
+    const workspaceRoot = workspaceFolder.uri.fsPath;
+    const launchJson = path.join(workspaceRoot, ".vscode", "launch.json");
+    const existed = fs.existsSync(launchJson);
+
+    const manifest = makeExeManifest();
+    const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: new Date().toISOString() };
+    const artifactsRoot = debugLaunchValidWorkspaceRoot();
+    const templatesRoot = debugLaunchValidTemplatesRoot();
+
+    await executeDebugLaunch(workspaceFolder, manifest, config, artifactsRoot, templatesRoot).catch(() => undefined);
+
+    const existsAfter = fs.existsSync(launchJson);
+    if (!existed) {
+      assert.strictEqual(
+        existsAfter,
+        false,
+        "executeDebugLaunch must not create a .vscode/launch.json file"
+      );
+    }
   });
 });
 

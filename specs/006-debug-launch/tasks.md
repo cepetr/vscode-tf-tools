@@ -59,8 +59,8 @@
 ### Implementation for User Story 1
 
 - [X] T015 [US1] Implement first-match component debug resolution, built-in variable derivation, and debug configuration assembly in `src/commands/debug-launch.ts`
-- [ ] T016 [US1] Wire the `tfTools.startDebugging` command, active-context resolution, and `vscode.debug.startDebugging` launch flow in `src/extension.ts`
-- [ ] T017 [US1] Restrict Command Palette visibility for `tfTools.startDebugging` to startable contexts in `package.json`
+- [X] T016 [US1] Wire the `tfTools.startDebugging` command, active-context resolution, and `vscode.debug.startDebugging` launch flow in `src/extension.ts`
+- [X] T017 [US1] Restrict Command Palette visibility for `tfTools.startDebugging` to startable contexts in `package.json`
 
 **Checkpoint**: User Story 1 is independently functional and delivers the MVP launch path.
 
@@ -82,9 +82,9 @@
 ### Implementation for User Story 2
 
 - [X] T022 [US2] Derive executable artifact state, missing reasons, and startability snapshots from the selected component and target in `src/intellisense/artifact-resolution.ts`
-- [ ] T023 [US2] Render the always-present `Executable` row with tooltip detail, row action state, correct ordering, and template-failure-independent enablement in `src/ui/configuration-tree.ts`
-- [ ] T024 [US2] Wire Start Debugging context keys and refresh behavior for model, target, component, manifest, artifacts path, and templates path changes in `src/extension.ts` and `src/workspace/settings.ts`
-- [ ] T025 [US2] Contribute visible header, overflow, and `Executable` row Start Debugging menus with disabled-state enablement rules in `package.json`
+- [X] T023 [US2] Render the always-present `Executable` row with tooltip detail, row action state, correct ordering, and template-failure-independent enablement in `src/ui/configuration-tree.ts`
+- [X] T024 [US2] Wire Start Debugging context keys and refresh behavior for model, target, component, manifest, artifacts path, and templates path changes in `src/extension.ts` and `src/workspace/settings.ts`
+- [X] T025 [US2] Contribute visible header, overflow, and `Executable` row Start Debugging menus with disabled-state enablement rules in `package.json`
 
 **Checkpoint**: User Story 2 is independently functional from the Configuration view and Command Palette.
 
@@ -98,14 +98,14 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T026 [P] [US3] Add unit tests for traversal rejection, malformed JSONC templates, unknown tf-tools variables, and cyclic debug vars in `src/test/unit/workflow/debug-template-resolution.test.ts`
+- [X] T026 [P] [US3] Add unit tests for traversal rejection, malformed JSONC templates, unknown tf-tools variables, and cyclic debug vars in `src/test/unit/workflow/debug-template-resolution.test.ts`
 - [X] T027 [P] [US3] Add integration coverage for no-match, missing-template, malformed-template, variable, traversal, missing-executable, unsupported-workspace, and manifest-invalid launch failures in `src/test/integration/debug-launch-failures.integration.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Implement invocation-time template loading failures, variable-resolution failures, unsupported-workspace handling, manifest-invalid handling, and explicit blocked-launch error creation in `src/commands/debug-launch.ts`
-- [ ] T029 [US3] Write persistent debug-launch failure logs for resolution, template, variable, executable, unsupported-workspace, and manifest-invalid failures in `src/commands/debug-launch.ts` and `src/observability/log-channel.ts`
-- [ ] T030 [US3] Surface blocked-launch behavior consistently across visible Start Debugging actions in `src/extension.ts` and `src/ui/configuration-tree.ts`
+- [X] T028 [US3] Implement invocation-time template loading failures, variable-resolution failures, unsupported-workspace handling, manifest-invalid handling, and explicit blocked-launch error creation in `src/commands/debug-launch.ts`
+- [X] T029 [US3] Write persistent debug-launch failure logs for resolution, template, variable, executable, unsupported-workspace, and manifest-invalid failures in `src/commands/debug-launch.ts` and `src/observability/log-channel.ts`
+- [X] T030 [US3] Surface blocked-launch behavior consistently across visible Start Debugging actions in `src/extension.ts` and `src/ui/configuration-tree.ts`
 
 **Checkpoint**: All user stories are independently functional and failure paths are visible and diagnosable.
 
@@ -115,7 +115,7 @@
 
 **Purpose**: Close regression gaps and validate the slice end to end.
 
-- [ ] T031 [P] Extend scope-regression coverage for Debug Launch command and menu boundaries, including no `launch.json` persistence, in `src/test/integration/configuration-scope.integration.test.ts`
+- [X] T031 [P] Extend scope-regression coverage for Debug Launch command and menu boundaries, including no `launch.json` persistence, in `src/test/integration/configuration-scope.integration.test.ts`
 - [X] T032 [P] Add end-to-end quickstart regression coverage for the revised Debug Launch scenarios in `src/test/integration/debug-launch-quickstart.integration.test.ts`
 - [ ] T033 Validate the manual Debug Launch scenarios in `specs/006-debug-launch/quickstart.md`
 
