@@ -2,7 +2,7 @@
   // GDB remote debug template for firmware debugging
   "type": "gdb",
   "request": "launch",
-  "name": "${tfTools.debugProfileName} – ${tfTools.model}/${tfTools.component}",
+  "name": "${tfTools.debugProfileName} – ${tfTools.model.id}/${tfTools.component.id}",
   "program": "${tfTools.executablePath}",
   "miDebuggerPath": "/usr/bin/arm-none-eabi-gdb",
   "miDebuggerServerAddress": "localhost:3333",
@@ -10,7 +10,7 @@
   "environment": [
     {
       "name": "TARGET",
-      "value": "${tfTools.target}"
+      "value": "${tfTools.target.id}"
     },
     {
       "name": "EXECUTABLE",

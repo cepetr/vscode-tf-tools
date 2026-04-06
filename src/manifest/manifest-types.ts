@@ -53,7 +53,7 @@ export interface ManifestComponentDebugEntry {
   readonly when?: WhenExpression;
   /**
    * Optional entry-defined tf-tools substitution variables.
-   * Keys are short names used as `${tfTools.<key>}` in templates.
+    * Keys are short names used as `${tfTools.debug.var:<key>}` in templates.
    * Values are raw string templates that may reference built-in tf-tools variables.
    */
   readonly vars?: Readonly<Record<string, string>>;

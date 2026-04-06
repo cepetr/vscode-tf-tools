@@ -25,10 +25,13 @@ import {
   loadDebugTemplate,
   buildDebugVariableMap,
   applyTfToolsSubstitution,
-  TFTOOLS_VAR_MODEL,
-  TFTOOLS_VAR_TARGET,
-  TFTOOLS_VAR_COMPONENT,
-  TFTOOLS_VAR_ARTIFACT_FOLDER,
+  TFTOOLS_VAR_ARTIFACT_PATH,
+  TFTOOLS_VAR_MODEL_ID,
+  TFTOOLS_VAR_MODEL_NAME,
+  TFTOOLS_VAR_TARGET_ID,
+  TFTOOLS_VAR_TARGET_NAME,
+  TFTOOLS_VAR_COMPONENT_ID,
+  TFTOOLS_VAR_COMPONENT_NAME,
   TFTOOLS_VAR_EXECUTABLE_PATH,
   TFTOOLS_VAR_EXECUTABLE,
   TFTOOLS_VAR_DEBUG_PROFILE_NAME,
@@ -210,23 +213,43 @@ suite("loadDebugTemplate", () => {
 
 suite("buildDebugVariableMap", () => {
   const modelId = "T2T1";
+  const modelName = "Trezor Model T (v1)";
   const targetId = "hw";
+  const targetName = "Hardware";
   const componentId = "core";
+  const componentName = "Core";
   const artifactFolder = "model-t";
+  const artifactPath = "/build/model-t";
   const executableFileName = "firmware.elf";
   const executablePath = "/build/model-t/firmware.elf";
   const debugProfileName = "gdb-remote";
 
   function makeMap(entryVars?: Record<string, string>) {
-    return buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executableFileName, executablePath, debugProfileName, entryVars);
+    return buildDebugVariableMap(
+      modelId,
+      modelName,
+      targetId,
+      targetName,
+      componentId,
+      componentName,
+      artifactFolder,
+      artifactPath,
+      executableFileName,
+      executablePath,
+      debugProfileName,
+      entryVars
+    );
   }
 
   test("built-in variables are always populated", () => {
     const map = makeMap();
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_MODEL], "T2T1");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_TARGET], "hw");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_COMPONENT], "core");
-    assert.strictEqual(map.builtIns[TFTOOLS_VAR_ARTIFACT_FOLDER], "model-t");
+    assert.strictEqual(map.builtIns[TFTOOLS_VAR_ARTIFACT_PATH], "/build/model-t");
+    assert.strictEqual(map.builtIns[TFTOOLS_VAR_MODEL_ID], "T2T1");
+    assert.strictEqual(map.builtIns[TFTOOLS_VAR_MODEL_NAME], "Trezor Model T (v1)");
+    assert.strictEqual(map.builtIns[TFTOOLS_VAR_TARGET_ID], "hw");
+    assert.strictEqual(map.builtIns[TFTOOLS_VAR_TARGET_NAME], "Hardware");
+    assert.strictEqual(map.builtIns[TFTOOLS_VAR_COMPONENT_ID], "core");
+    assert.strictEqual(map.builtIns[TFTOOLS_VAR_COMPONENT_NAME], "Core");
     assert.strictEqual(map.builtIns[TFTOOLS_VAR_EXECUTABLE], "firmware.elf");
     assert.strictEqual(map.builtIns[TFTOOLS_VAR_EXECUTABLE_PATH], executablePath);
     assert.strictEqual(map.builtIns[TFTOOLS_VAR_DEBUG_PROFILE_NAME], "gdb-remote");
@@ -234,32 +257,32 @@ suite("buildDebugVariableMap", () => {
 
   test("resolvedVars contains all built-ins when no entry vars", () => {
     const map = makeMap();
-    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_MODEL], "T2T1");
+    assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_MODEL_ID], "T2T1");
     assert.strictEqual(map.resolutionErrors.length, 0);
   });
 
   test("entry vars referencing built-ins are resolved", () => {
-    const vars = { debugLabel: "debug-${tfTools.model}-${tfTools.target}" };
+    const vars = { debugLabel: "debug-${tfTools.model.id}-${tfTools.target.id}" };
     const map = makeMap(vars);
-    assert.strictEqual(map.resolvedVars["tfTools.debugLabel"], "debug-T2T1-hw");
+    assert.strictEqual(map.resolvedVars["tfTools.debug.var:debugLabel"], "debug-T2T1-hw");
     assert.strictEqual(map.resolutionErrors.length, 0);
   });
 
   test("entry vars referencing other entry vars are resolved", () => {
     const vars = {
       port: "3333",
-      serverArg: "--port ${tfTools.port}",
+      serverArg: "--port ${tfTools.debug.var:port}",
     };
     const map = makeMap(vars);
-    assert.strictEqual(map.resolvedVars["tfTools.port"], "3333");
-    assert.strictEqual(map.resolvedVars["tfTools.serverArg"], "--port 3333");
+    assert.strictEqual(map.resolvedVars["tfTools.debug.var:port"], "3333");
+    assert.strictEqual(map.resolvedVars["tfTools.debug.var:serverArg"], "--port 3333");
     assert.strictEqual(map.resolutionErrors.length, 0);
   });
 
   test("cyclic entry vars produce a resolution error", () => {
     const vars = {
-      a: "${tfTools.b}",
-      b: "${tfTools.a}",
+      a: "${tfTools.debug.var:b}",
+      b: "${tfTools.debug.var:a}",
     };
     const map = makeMap(vars);
     assert.ok(map.resolutionErrors.length > 0, "expected cycle error");
@@ -280,13 +303,13 @@ suite("buildDebugVariableMap", () => {
   });
 
   test("executable variable contains filename (not full path)", () => {
-    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, "my-firmware.elf", "/a/b/c/my-firmware.elf", debugProfileName, undefined);
+    const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactFolder, artifactPath, "my-firmware.elf", "/a/b/c/my-firmware.elf", debugProfileName, undefined);
     assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_EXECUTABLE], "my-firmware.elf");
     assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_EXECUTABLE_PATH], "/a/b/c/my-firmware.elf");
   });
 
   test("debugProfileName is exposed as tfTools.debugProfileName", () => {
-    const map = buildDebugVariableMap(modelId, targetId, componentId, artifactFolder, executableFileName, executablePath, "my-profile", undefined);
+    const map = buildDebugVariableMap(modelId, modelName, targetId, targetName, componentId, componentName, artifactFolder, artifactPath, executableFileName, executablePath, "my-profile", undefined);
     assert.strictEqual(map.resolvedVars[TFTOOLS_VAR_DEBUG_PROFILE_NAME], "my-profile");
   });
 });
@@ -297,20 +320,20 @@ suite("buildDebugVariableMap", () => {
 
 suite("applyTfToolsSubstitution", () => {
   const resolvedVars: Readonly<Record<string, string>> = {
-    "tfTools.model": "T2T1",
+    "tfTools.model.id": "T2T1",
     "tfTools.executablePath": "/build/firmware.elf",
     "tfTools.executable": "firmware.elf",
   };
 
   test("replaces a tf-tools token in a plain string", () => {
-    const { value, unknownVars } = applyTfToolsSubstitution("${tfTools.model}", resolvedVars);
+    const { value, unknownVars } = applyTfToolsSubstitution("${tfTools.model.id}", resolvedVars);
     assert.strictEqual(value, "T2T1");
     assert.strictEqual(unknownVars.length, 0);
   });
 
   test("replaces multiple tf-tools tokens in a string", () => {
     const { value } = applyTfToolsSubstitution(
-      "Debug ${tfTools.model}: ${tfTools.executablePath}",
+      "Debug ${tfTools.model.id}: ${tfTools.executablePath}",
       resolvedVars
     );
     assert.strictEqual(value, "Debug T2T1: /build/firmware.elf");
@@ -318,7 +341,7 @@ suite("applyTfToolsSubstitution", () => {
 
   test("non-tf-tools variable syntax is left unchanged", () => {
     const { value, unknownVars } = applyTfToolsSubstitution(
-      "${workspaceFolder}/scripts/${tfTools.model}.sh",
+      "${workspaceFolder}/scripts/${tfTools.model.id}.sh",
       resolvedVars
     );
     assert.strictEqual(value, "${workspaceFolder}/scripts/T2T1.sh");
@@ -337,10 +360,10 @@ suite("applyTfToolsSubstitution", () => {
 
   test("nested object string fields are all substituted", () => {
     const template = {
-      name: "Debug ${tfTools.model}",
+      name: "Debug ${tfTools.model.id}",
       program: "${tfTools.executablePath}",
       nested: {
-        label: "label-${tfTools.model}",
+        label: "label-${tfTools.model.id}",
       },
     };
     const { value, unknownVars } = applyTfToolsSubstitution(template, resolvedVars);
@@ -353,7 +376,7 @@ suite("applyTfToolsSubstitution", () => {
 
   test("array string elements are all substituted", () => {
     const template = {
-      args: ["--model", "${tfTools.model}", "--exe", "${tfTools.executablePath}"],
+      args: ["--model", "${tfTools.model.id}", "--exe", "${tfTools.executablePath}"],
     };
     const { value } = applyTfToolsSubstitution(template, resolvedVars);
     const result = value as typeof template;
@@ -377,17 +400,17 @@ suite("applyTfToolsSubstitution", () => {
 
   test("single-pass: resolved values are not re-expanded", () => {
     const tricky: Readonly<Record<string, string>> = {
-      "tfTools.model": "${tfTools.executablePath}",
+      "tfTools.model.id": "${tfTools.executablePath}",
       "tfTools.executablePath": "/build/firmware.elf",
     };
-    const { value } = applyTfToolsSubstitution("${tfTools.model}", tricky);
+    const { value } = applyTfToolsSubstitution("${tfTools.model.id}", tricky);
     assert.strictEqual(value, "${tfTools.executablePath}");
   });
 
   test("deeply nested array-of-objects substitution", () => {
     const template = {
       environment: [
-        { name: "TARGET", value: "${tfTools.model}" },
+        { name: "TARGET", value: "${tfTools.model.id}" },
         { name: "EXE", value: "${tfTools.executable}" },
       ],
     };

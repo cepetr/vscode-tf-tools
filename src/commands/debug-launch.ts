@@ -158,13 +158,24 @@ export function loadDebugTemplate(
 // ---------------------------------------------------------------------------
 
 /** Built-in tf-tools substitution variable qualified names. */
+export const TFTOOLS_VAR_ARTIFACT_PATH = "tfTools.artifactPath";
+export const TFTOOLS_VAR_MODEL_ID = "tfTools.model.id";
+export const TFTOOLS_VAR_MODEL_NAME = "tfTools.model.name";
+export const TFTOOLS_VAR_TARGET_ID = "tfTools.target.id";
+export const TFTOOLS_VAR_TARGET_NAME = "tfTools.target.name";
+export const TFTOOLS_VAR_COMPONENT_ID = "tfTools.component.id";
+export const TFTOOLS_VAR_COMPONENT_NAME = "tfTools.component.name";
+export const TFTOOLS_VAR_EXECUTABLE_PATH = "tfTools.executablePath";
+export const TFTOOLS_VAR_EXECUTABLE = "tfTools.executable";
+export const TFTOOLS_VAR_DEBUG_PROFILE_NAME = "tfTools.debugProfileName";
+
+// Legacy aliases kept to avoid breaking existing templates while the documented
+// token set becomes the primary contract.
 export const TFTOOLS_VAR_MODEL = "tfTools.model";
 export const TFTOOLS_VAR_TARGET = "tfTools.target";
 export const TFTOOLS_VAR_COMPONENT = "tfTools.component";
 export const TFTOOLS_VAR_ARTIFACT_FOLDER = "tfTools.artifactFolder";
-export const TFTOOLS_VAR_EXECUTABLE_PATH = "tfTools.executablePath";
-export const TFTOOLS_VAR_EXECUTABLE = "tfTools.executable";
-export const TFTOOLS_VAR_DEBUG_PROFILE_NAME = "tfTools.debugProfileName";
+const TFTOOLS_DEBUG_VAR_PREFIX = "tfTools.debug.var:";
 
 /** Matches `${tfTools.varName}` tokens inside template strings. */
 const TFTOOLS_TOKEN_RE = /\$\{(tfTools\.[^}]+)\}/g;
@@ -188,15 +199,26 @@ export interface DebugVariableMap {
  */
 export function buildDebugVariableMap(
   modelId: string,
+  modelName: string,
   targetId: string,
+  targetName: string,
   componentId: string,
+  componentName: string,
   artifactFolder: string,
+  artifactPath: string,
   executableFileName: string,
   executablePath: string,
   debugProfileName: string,
   entryVars: Readonly<Record<string, string>> | undefined
 ): DebugVariableMap {
   const builtIns: Readonly<Record<string, string>> = {
+    [TFTOOLS_VAR_ARTIFACT_PATH]: artifactPath,
+    [TFTOOLS_VAR_MODEL_ID]: modelId,
+    [TFTOOLS_VAR_MODEL_NAME]: modelName,
+    [TFTOOLS_VAR_TARGET_ID]: targetId,
+    [TFTOOLS_VAR_TARGET_NAME]: targetName,
+    [TFTOOLS_VAR_COMPONENT_ID]: componentId,
+    [TFTOOLS_VAR_COMPONENT_NAME]: componentName,
     [TFTOOLS_VAR_MODEL]: modelId,
     [TFTOOLS_VAR_TARGET]: targetId,
     [TFTOOLS_VAR_COMPONENT]: componentId,
@@ -231,7 +253,7 @@ export function buildDebugVariableMap(
   }
 
   function resolveProfileVar(shortName: string): string | undefined {
-    const qualifiedName = `tfTools.${shortName}`;
+    const qualifiedName = `${TFTOOLS_DEBUG_VAR_PREFIX}${shortName}`;
 
     // Already resolved (built-in or previously computed profile var)
     if (Object.prototype.hasOwnProperty.call(resolvedVars, qualifiedName)) {
@@ -263,8 +285,8 @@ export function buildDebugVariableMap(
       }
 
       // Unresolved tf-tools.* token — check if it is a profile var
-      if (tokenName.startsWith("tfTools.")) {
-        const depShort = tokenName.slice("tfTools.".length);
+      if (tokenName.startsWith(TFTOOLS_DEBUG_VAR_PREFIX)) {
+        const depShort = tokenName.slice(TFTOOLS_DEBUG_VAR_PREFIX.length);
         if (varState.has(depShort)) {
           const dep = resolveProfileVar(depShort);
           if (dep !== undefined) {
@@ -448,6 +470,7 @@ export async function executeDebugLaunch(
     target.artifactSuffix ?? "",
     target.executableExtension ?? ""
   );
+  const artifactPath = path.join(artifactsRoot, artifactFolder);
   const executablePath = path.join(artifactsRoot, artifactFolder, executableFileName);
 
   if (!fs.existsSync(executablePath)) {
@@ -514,9 +537,13 @@ export async function executeDebugLaunch(
   // 6. Build tf-tools variable map
   const varMap = buildDebugVariableMap(
     config.modelId,
+    model.name,
     config.targetId,
+    target.name,
     config.componentId,
+    component.name,
     artifactFolder,
+    artifactPath,
     executableFileName,
     executablePath,
     entry.name,

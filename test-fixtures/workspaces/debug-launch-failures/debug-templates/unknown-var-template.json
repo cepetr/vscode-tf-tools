@@ -8,7 +8,7 @@
   "environment": [
     {
       "name": "TARGET",
-      "value": "${tfTools.target}"
+      "value": "${tfTools.target.id}"
     }
   ]
 }

@@ -65,4 +65,4 @@ components:
     executable: prodtest.elf
     vars:
       debugPort: "3333"
-      programArgs: "--model ${tfTools.model} --port ${tfTools.debugPort}"
+      programArgs: "--model ${tfTools.model.id} --port ${tfTools.debug.var:debugPort}"
