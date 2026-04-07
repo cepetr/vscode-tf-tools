@@ -91,7 +91,7 @@ export function checkProviderReadiness(): IntelliSenseProviderReadiness {
     };
   }
 
-  const apiState = getCpptoolsApiState(ext.exports);
+  const apiState = getCpptoolsApiStateSafely(ext);
   if (apiState === "unsupported") {
     return {
       providerInstalled: false,
@@ -398,6 +398,23 @@ function getCpptoolsApiState(exportsObject: unknown): "supported" | "unsupported
   }
 
   return "unsupported";
+}
+
+function getCpptoolsApiStateSafely(
+  extension: vscode.Extension<unknown>
+): "supported" | "unsupported" | "legacy" | "inactive" {
+  if (!extension.isActive) {
+    return "inactive";
+  }
+
+  let exportsObject: unknown;
+  try {
+    exportsObject = extension.exports;
+  } catch {
+    return "inactive";
+  }
+
+  return getCpptoolsApiState(exportsObject);
 }
 
 /**

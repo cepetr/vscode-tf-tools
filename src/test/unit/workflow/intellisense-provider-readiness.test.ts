@@ -41,6 +41,7 @@ function stubExtensionMissing(): void {
 function stubExtensionInstalled(): void {
   vscodeMock.extensions.getExtension = (_id: string) => ({
     id: "ms-vscode.cpptools",
+    isActive: true,
     exports: {
       getApi: (_version: number) => ({
         registerCustomConfigurationProvider() {},
@@ -56,12 +57,28 @@ function stubExtensionInstalled(): void {
 function stubExtensionInstalledWithUnsupportedApi(): void {
   vscodeMock.extensions.getExtension = (_id: string) => ({
     id: "ms-vscode.cpptools",
+    isActive: true,
     exports: {
       getApi: () => {
         throw new RangeError("Invalid version");
       },
     },
   });
+}
+
+function stubExtensionInstalledButInactive(): void {
+  const extension = {
+    id: "ms-vscode.cpptools",
+    isActive: false,
+  };
+
+  Object.defineProperty(extension, "exports", {
+    get() {
+      throw new Error("Extension 'ms-vscode.cpptools' is not known or not activated");
+    },
+  });
+
+  vscodeMock.extensions.getExtension = (_id: string) => extension;
 }
 
 function stubConfigurationProvider(value: string | undefined): void {
@@ -253,6 +270,15 @@ suite("checkProviderReadiness – ready (none)", () => {
     stubConfigurationProvider("cepetr.tf-tools");
     const result = checkProviderReadiness();
     assert.strictEqual(result.lastWarningMessage, undefined);
+  });
+
+  test("warningState stays 'none' when cpptools is installed but not yet activated", () => {
+    stubExtensionInstalledButInactive();
+    stubConfigurationProvider("cepetr.tf-tools");
+    const result = checkProviderReadiness();
+    assert.strictEqual(result.warningState, "none");
+    assert.strictEqual(result.providerInstalled, true);
+    assert.strictEqual(result.providerConfigured, true);
   });
 });
 
