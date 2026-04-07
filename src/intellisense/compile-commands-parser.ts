@@ -228,7 +228,8 @@ export function inferLanguageFamily(
 
 /**
  * Builds a `BrowseConfigurationSnapshot` from an ordered list of parsed entries.
- * `browsePaths` is the de-duplicated union of include paths in first-seen order.
+ * `browsePaths` is the de-duplicated union of source directories and include
+ * paths in first-seen order.
  * Compiler metadata comes from the first entry that provides a compilerPath.
  */
 export function buildBrowseSnapshot(
@@ -245,6 +246,13 @@ export function buildBrowseSnapshot(
       compilerPath = entry.compilerPath;
       compilerArgs = entry.arguments;
     }
+
+    const sourceDir = path.dirname(entry.filePath);
+    if (!seen.has(sourceDir)) {
+      seen.add(sourceDir);
+      browsePaths.push(sourceDir);
+    }
+
     for (const ip of entry.includePaths) {
       if (!seen.has(ip)) {
         seen.add(ip);

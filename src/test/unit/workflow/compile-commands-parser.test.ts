@@ -17,7 +17,7 @@
  *  - inferLanguageFamily: C via -std=c11
  *  - inferLanguageFamily: C via file extension (.c)
  *  - inferLanguageFamily: default C
- *  - buildBrowseSnapshot: de-duplicated union of include paths
+ *  - buildBrowseSnapshot: de-duplicated union of source directories and include paths
  *  - buildBrowseSnapshot: compiler path from first entry
  *  - tokenizeCommandString: splits on whitespace
  *  - tokenizeCommandString: respects single quotes
@@ -378,15 +378,17 @@ suite("buildBrowseSnapshot", () => {
     assert.strictEqual(snap.compilerPath, undefined);
   });
 
-  test("browsPaths is the union of include paths from all entries", () => {
+  test("browsePaths includes source directories and include paths from all entries", () => {
     const entries = [
       makeEntry("/workspace/a.c", ["/workspace/include", "/workspace/vendor"], "gcc"),
-      makeEntry("/workspace/b.c", ["/workspace/include", "/workspace/common"], "gcc"),
+      makeEntry("/workspace/src/b.c", ["/workspace/include", "/workspace/common"], "gcc"),
     ];
     const snap = buildBrowseSnapshot(entries);
     assert.deepStrictEqual(snap.browsePaths, [
+      "/workspace",
       "/workspace/include",
       "/workspace/vendor",
+      "/workspace/src",
       "/workspace/common",
     ]);
   });
@@ -406,9 +408,25 @@ suite("buildBrowseSnapshot", () => {
       makeEntry("/workspace/b.c", ["/workspace/include", "/workspace/extra"], "gcc"),
     ];
     const snap = buildBrowseSnapshot(entries);
-    assert.strictEqual(snap.browsePaths.length, 2);
+    assert.strictEqual(snap.browsePaths.length, 3);
+    assert.ok(snap.browsePaths.includes("/workspace"));
     assert.ok(snap.browsePaths.includes("/workspace/include"));
     assert.ok(snap.browsePaths.includes("/workspace/extra"));
+  });
+
+  test("source directories are de-duplicated before include paths", () => {
+    const entries = [
+      makeEntry("/workspace/core/main.c", ["/workspace/include"], "gcc"),
+      makeEntry("/workspace/core/embed/foo.c", ["/workspace/include"], "gcc"),
+      makeEntry("/workspace/core/embed/bar.c", ["/workspace/vendor"], "gcc"),
+    ];
+    const snap = buildBrowseSnapshot(entries);
+    assert.deepStrictEqual(snap.browsePaths, [
+      "/workspace/core",
+      "/workspace/include",
+      "/workspace/core/embed",
+      "/workspace/vendor",
+    ]);
   });
 
   test("compilerArgs comes from the first entry", () => {

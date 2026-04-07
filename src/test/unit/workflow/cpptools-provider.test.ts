@@ -176,11 +176,25 @@ suite("CpptoolsProviderAdapter – canProvideConfiguration", () => {
     assert.strictEqual(result, false);
   });
 
-  test("returns true after applyPayload", async () => {
+  test("returns true for a URI present in the payload", async () => {
     const adapter = new CpptoolsProviderAdapter(() => undefined);
     adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
     const result = await adapter.canProvideConfiguration(makeUri("/workspace/main.c"));
     assert.strictEqual(result, true);
+  });
+
+  test("returns false for a URI not present in the payload", async () => {
+    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
+    const result = await adapter.canProvideConfiguration(makeUri("/workspace/unknown.c"));
+    assert.strictEqual(result, false);
+  });
+
+  test("returns false for a header when only the including source file is indexed", async () => {
+    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    adapter.applyPayload(makePayload([makeEntry("/workspace/core/embed/main.c")]));
+    const result = await adapter.canProvideConfiguration(makeUri("/workspace/core/embed/mpu.h"));
+    assert.strictEqual(result, false);
   });
 
   test("returns false after clearPayload", async () => {
@@ -207,6 +221,13 @@ suite("CpptoolsProviderAdapter – provideConfigurations", () => {
     const adapter = new CpptoolsProviderAdapter(() => undefined);
     adapter.applyPayload(makePayload([makeEntry("/workspace/main.c")]));
     const items = await adapter.provideConfigurations([makeUri("/workspace/unknown.c")]);
+    assert.deepStrictEqual(items, []);
+  });
+
+  test("returns empty array for a header that is not indexed in the payload", async () => {
+    const adapter = new CpptoolsProviderAdapter(() => undefined);
+    adapter.applyPayload(makePayload([makeEntry("/workspace/core/embed/main.c")]));
+    const items = await adapter.provideConfigurations([makeUri("/workspace/core/embed/mpu.h")]);
     assert.deepStrictEqual(items, []);
   });
 

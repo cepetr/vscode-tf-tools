@@ -274,8 +274,15 @@ export class CpptoolsProviderAdapter implements CpptoolsCustomConfigurationProvi
   // CpptoolsCustomConfigurationProvider implementation
   // ---------------------------------------------------------------------------
 
-  async canProvideConfiguration(_uri: vscode.Uri): Promise<boolean> {
-    return this._payload !== undefined;
+  async canProvideConfiguration(uri: vscode.Uri): Promise<boolean> {
+    const payload = this._payload;
+    if (!payload) {
+      return false;
+    }
+
+    // Only claim files that have an indexed compile entry. Headers must fall
+    // back to the browse configuration, otherwise cpptools gets no config at all.
+    return payload.entriesByFile.has(uri.fsPath);
   }
 
   async provideConfigurations(
