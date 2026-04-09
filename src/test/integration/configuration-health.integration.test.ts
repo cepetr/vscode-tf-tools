@@ -78,7 +78,7 @@ suite("ManifestService - health states", () => {
     service.dispose();
 
     assert.strictEqual(state.status, "missing");
-    assert.strictEqual(state.manifestUri.fsPath, manifestPath);
+    assert.strictEqual(state.manifestUri.fsPath, uri.fsPath);
   });
 
   test("status is 'invalid' when manifest has structural errors", async () => {
