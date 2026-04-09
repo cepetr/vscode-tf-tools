@@ -1,5 +1,7 @@
 # Trezor Firmware Tools
 
+> Warning: This extension is still experimental and intended for evaluation only. It currently targets the newer `trezor-firmware` build workflow that is still evolving, and it is not expected to work with older repository layouts or legacy build tooling.
+
 Trezor Firmware Tools helps you work with `trezor-firmware` more comfortably inside VS Code.
 
 It adds a dedicated Configuration view where you can choose the active build context, adjust build options, run common firmware tasks, and work with the build artifacts used by IntelliSense and debugging.
