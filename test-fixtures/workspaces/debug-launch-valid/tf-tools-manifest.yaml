@@ -17,6 +17,7 @@ targets:
     executableExtension: ".elf"
 
 components:
+  # Single-profile component: one entry always matches
   - id: core
     name: Core
     artifactName: compile_commands_core
@@ -26,3 +27,19 @@ components:
         when: model(T2T1)
         vars:
           port: "3333"
+  # Multi-profile component: multiple entries match T2T1+hw for US2 testing
+  - id: prodtest
+    name: Prodtest
+    artifactName: compile_commands_prodtest
+    debug:
+      # entry[0]: matches T2T1 model (default for T2T1+hw, T2T1+emu)
+      - name: GDB Remote (T2T1)
+        template: gdb-remote.json
+        when: model(T2T1)
+      # entry[1]: matches hw target (matches T2T1+hw, T3W1+hw)
+      - name: GDB Remote (HW)
+        template: gdb-remote.json
+        when: target(hw)
+      # entry[2]: no when – always matches
+      - name: GDB Remote (any)
+        template: gdb-remote.json

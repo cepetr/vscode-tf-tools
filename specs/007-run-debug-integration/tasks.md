@@ -29,7 +29,7 @@
 **⚠️ CRITICAL**: No user story work should begin until this phase is complete
 
 - [x] T003 [P] Extend matching-profile manifest fixtures in `test-fixtures/manifests/debug-launch-valid/tf-tools-manifest.yaml`
-- [ ] T004 [P] Extend Run and Debug workspace fixtures in `test-fixtures/workspaces/debug-launch-valid/tf-tools-manifest.yaml`
+- [x] T004 [P] Extend Run and Debug workspace fixtures in `test-fixtures/workspaces/debug-launch-valid/tf-tools-manifest.yaml`
 - [ ] T005 Create shared debug-profile fixture helpers in `src/test/unit/workflow-test-helpers.ts`
 
 **Checkpoint**: Foundation ready - debug provider and launch behavior can now be implemented and tested
