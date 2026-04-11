@@ -1,0 +1,284 @@
+/**
+ * TfTools Run and Debug Configuration Provider.
+ *
+ * Generates dynamic tf-tools-owned proxy debug configurations for the active
+ * build context and resolves them into real debug configurations at launch time.
+ *
+ * Proxy configuration shape (see contracts/run-debug-configurations.md):
+ *   { type: "tftools", request: "launch", name: string,
+ *     tfToolsMode: "default" | "profile",
+ *     tfToolsProfileId: string, tfToolsContextKey: string }
+ *
+ * Resolution replaces the proxy with the template-derived real configuration.
+ */
+
+import * as vscode from "vscode";
+import { ManifestStateLoaded } from "../manifest/manifest-types";
+import { ActiveConfig } from "../configuration/active-config";
+import {
+  resolveMatchingDebugProfiles,
+  materializeDebugConfiguration,
+  MatchingDebugProfileSet,
+} from "../commands/debug-launch";
+import { makeContextKey, resolveActiveExecutableArtifact } from "../intellisense/artifact-resolution";
+import { EvalContext } from "../manifest/when-expressions";
+import { logProviderDebugLaunchFailure, revealLogs } from "../observability/log-channel";
+
+// ---------------------------------------------------------------------------
+// Proxy debug type constant
+// ---------------------------------------------------------------------------
+
+export const TFTOOLS_DEBUG_TYPE = "tftools";
+
+// ---------------------------------------------------------------------------
+// Label helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a display label for the default tf-tools Run and Debug entry.
+ * Format: "Trezor: {model-name} | {target-display} | {component-name}"
+ */
+export function labelForDefaultEntry(
+  modelName: string,
+  targetDisplay: string,
+  componentName: string
+): string {
+  return `Trezor: ${modelName} | ${targetDisplay} | ${componentName}`;
+}
+
+/**
+ * Builds a display label for a profile-specific Run and Debug entry.
+ * Format: "Trezor: {profile-name} | {model-name} | {target-display} | {component-name}"
+ */
+export function labelForProfileEntry(
+  profileName: string,
+  modelName: string,
+  targetDisplay: string,
+  componentName: string
+): string {
+  return `Trezor: ${profileName} | ${modelName} | ${targetDisplay} | ${componentName}`;
+}
+
+// ---------------------------------------------------------------------------
+// Entry set generation
+// ---------------------------------------------------------------------------
+
+/**
+ * Generates the tf-tools Run and Debug configuration entries for the active
+ * build context.
+ *
+ * Returns a default entry when at least one profile matches and the executable
+ * artifact exists. Additionally returns one profile-specific entry per matching
+ * profile when more than one profile matches.
+ */
+export function generateDebugConfigurations(
+  manifest: ManifestStateLoaded,
+  config: ActiveConfig,
+  artifactsRoot: string
+): vscode.DebugConfiguration[] {
+  if (manifest.hasDebugBlockingIssues) {
+    return [];
+  }
+
+  const component = manifest.components.find((c) => c.id === config.componentId);
+  const target = manifest.targets.find((t) => t.id === config.targetId);
+  const model = manifest.models.find((m) => m.id === config.modelId);
+
+  if (!component || !target || !model) {
+    return [];
+  }
+
+  const evalCtx: EvalContext = {
+    modelId: config.modelId,
+    targetId: config.targetId,
+    componentId: config.componentId,
+  };
+
+  const matchingSet: MatchingDebugProfileSet = resolveMatchingDebugProfiles(
+    component.debug ?? [],
+    evalCtx
+  );
+
+  if (!matchingSet.defaultProfile) {
+    return [];
+  }
+
+  // Check executable artifact existence before generating entries
+  const executableArtifact = resolveActiveExecutableArtifact(manifest, config, artifactsRoot);
+  if (executableArtifact.status !== "valid") {
+    return [];
+  }
+
+  const contextKey = makeContextKey(config);
+  const targetDisplay = target.shortName ?? target.name;
+
+  const configs: vscode.DebugConfiguration[] = [];
+
+  // Default entry (always when any matching profiles and valid executable)
+  const defaultConfig: vscode.DebugConfiguration = {
+    type: TFTOOLS_DEBUG_TYPE,
+    request: "launch",
+    name: labelForDefaultEntry(model.name, targetDisplay, component.name),
+    tfToolsMode: "default",
+    tfToolsProfileId: matchingSet.defaultProfile.id,
+    tfToolsContextKey: contextKey,
+  };
+  configs.push(defaultConfig);
+
+  // Profile-specific entries (only when more than one profile matches)
+  if (matchingSet.profiles.length > 1) {
+    for (const profile of matchingSet.profiles) {
+      const profileConfig: vscode.DebugConfiguration = {
+        type: TFTOOLS_DEBUG_TYPE,
+        request: "launch",
+        name: labelForProfileEntry(profile.name, model.name, targetDisplay, component.name),
+        tfToolsMode: "profile",
+        tfToolsProfileId: profile.id,
+        tfToolsContextKey: contextKey,
+      };
+      configs.push(profileConfig);
+    }
+  }
+
+  return configs;
+}
+
+// ---------------------------------------------------------------------------
+// Provider implementation
+// ---------------------------------------------------------------------------
+
+/**
+ * VS Code Debug Configuration Provider for tf-tools proxy configurations.
+ *
+ * Registered with TriggerKind.Dynamic so Run and Debug shows generated
+ * entries for the active build context.
+ */
+export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
+  private readonly _getManifest: () => ManifestStateLoaded | undefined;
+  private readonly _getActiveConfig: () => ActiveConfig | undefined;
+  private readonly _getArtifactsRoot: () => string;
+  private readonly _getTemplatesRoot: () => string;
+  private readonly _workspaceFolder: vscode.WorkspaceFolder;
+
+  constructor(
+    getManifest: () => ManifestStateLoaded | undefined,
+    getActiveConfig: () => ActiveConfig | undefined,
+    getArtifactsRoot: () => string,
+    getTemplatesRoot: () => string,
+    workspaceFolder: vscode.WorkspaceFolder
+  ) {
+    this._getManifest = getManifest;
+    this._getActiveConfig = getActiveConfig;
+    this._getArtifactsRoot = getArtifactsRoot;
+    this._getTemplatesRoot = getTemplatesRoot;
+    this._workspaceFolder = workspaceFolder;
+  }
+
+  /**
+   * Provides tf-tools-generated debug configurations for Run and Debug.
+   * Called when VS Code populates the Run and Debug picker.
+   */
+  provideDebugConfigurations(
+    _folder: vscode.WorkspaceFolder | undefined,
+    _token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.DebugConfiguration[]> {
+    const manifest = this._getManifest();
+    const config = this._getActiveConfig();
+
+    if (!manifest || !config) {
+      return [];
+    }
+
+    return generateDebugConfigurations(manifest, config, this._getArtifactsRoot());
+  }
+
+  /**
+   * Resolves a tf-tools proxy configuration by materializing the selected
+   * debug profile into a real VS Code debug configuration.
+   *
+   * Called before VS Code variable substitution so tf-tools variables are
+   * resolved first; non-tf-tools variables (e.g. ${workspaceFolder}) are
+   * left intact for VS Code to process.
+   */
+  resolveDebugConfiguration(
+    _folder: vscode.WorkspaceFolder | undefined,
+    debugConfiguration: vscode.DebugConfiguration,
+    _token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.DebugConfiguration> {
+    if (debugConfiguration.type !== TFTOOLS_DEBUG_TYPE) {
+      return debugConfiguration;
+    }
+
+    const manifest = this._getManifest();
+    const config = this._getActiveConfig();
+
+    if (!manifest || !config) {
+      const msg = "Cannot start debugging: manifest not loaded or no active configuration.";
+      logProviderDebugLaunchFailure("manifest-unavailable", { detail: msg });
+      revealLogs();
+      void vscode.window.showErrorMessage(msg);
+      return undefined;
+    }
+
+    // Stale-context check
+    const expectedContextKey = debugConfiguration["tfToolsContextKey"] as string | undefined;
+    const currentContextKey = makeContextKey(config);
+    if (expectedContextKey !== currentContextKey) {
+      const msg =
+        "Cannot start debugging: the active build context has changed since this Run and Debug entry was generated. " +
+        "Refresh Run and Debug to get updated entries.";
+      logProviderDebugLaunchFailure("stale-context", {
+        modelId: config.modelId,
+        targetId: config.targetId,
+        componentId: config.componentId,
+        detail: `expected ${expectedContextKey}, got ${currentContextKey}`,
+      });
+      revealLogs();
+      void vscode.window.showErrorMessage(msg);
+      return undefined;
+    }
+
+    // Resolve the profile id to a profile object
+    const profileId = debugConfiguration["tfToolsProfileId"] as string | undefined;
+    const component = manifest.components.find((c) => c.id === config.componentId);
+    const profile = component?.debug?.find((p) => p.id === profileId);
+
+    if (!profile) {
+      const msg = `Cannot start debugging: selected debug profile '${profileId ?? ""}' is no longer available.`;
+      logProviderDebugLaunchFailure("profile-not-found", {
+        modelId: config.modelId,
+        targetId: config.targetId,
+        componentId: config.componentId,
+        detail: `profileId '${profileId ?? ""}' not found`,
+      });
+      revealLogs();
+      void vscode.window.showErrorMessage(msg);
+      return undefined;
+    }
+
+    // Materialize the real debug configuration
+    const result = materializeDebugConfiguration(
+      this._workspaceFolder,
+      manifest,
+      config,
+      this._getArtifactsRoot(),
+      this._getTemplatesRoot(),
+      profile
+    );
+
+    if (!result.ok) {
+      logProviderDebugLaunchFailure(result.reason, {
+        modelId: config.modelId,
+        targetId: config.targetId,
+        componentId: config.componentId,
+        detail: result.detail,
+      });
+      revealLogs();
+      void vscode.window.showErrorMessage(result.message);
+      return undefined;
+    }
+
+    // Return real config; VS Code applies its variable substitution next
+    return result.configuration as vscode.DebugConfiguration;
+  }
+}

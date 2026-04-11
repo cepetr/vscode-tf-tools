@@ -19,6 +19,7 @@ import * as assert from "assert";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
+import * as vscode from "vscode";
 import {
   resolveDebugProfile,
   resolveMatchingDebugProfiles,
@@ -26,6 +27,7 @@ import {
   loadDebugTemplate,
   buildDebugVariableMap,
   applyTfToolsSubstitution,
+  materializeDebugConfiguration,
   TFTOOLS_VAR_ARTIFACT_PATH,
   TFTOOLS_VAR_MODEL_ID,
   TFTOOLS_VAR_MODEL_NAME,
@@ -681,5 +683,177 @@ suite("generateDebugConfigurations – entry set rules", () => {
       .map((e) => e["tfToolsProfileId"] as string);
     assert.ok(!profileEntryIds.some((id) => id === nonMatching.id),
       "non-matching profiles should not appear in profile-specific entries");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// materializeDebugConfiguration failure paths (feature 007)
+// ---------------------------------------------------------------------------
+
+suite("materializeDebugConfiguration – failure paths", () => {
+  let tmpDir: string;
+
+  setup(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-mat-unit-"));
+    fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
+  });
+
+  teardown(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  const workspaceFolder = {
+    uri: { fsPath: "/tmp/test", scheme: "file" },
+    name: "test",
+    index: 0,
+  } as unknown as vscode.WorkspaceFolder;
+
+  const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
+
+  function makeManifestForMat(targets = [{}]) {
+    return makeIntelliSenseLoadedState({
+      targets: [{
+        kind: "target",
+        id: "hw",
+        name: "Hardware",
+        shortName: "HW",
+        executableExtension: ".elf",
+      } as ReturnType<typeof makeIntelliSenseLoadedState>["targets"][0]],
+      components: [{
+        kind: "component",
+        id: "core",
+        name: "Core",
+        artifactName: "firmware",
+        debug: [],
+      } as ReturnType<typeof makeIntelliSenseLoadedState>["components"][0]],
+    });
+  }
+
+  test("missing executable → ok: false, reason: 'missing-executable'", () => {
+    const manifest = makeManifestForMat();
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "gdb-remote.json" });
+    // Don't create the exe file
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      manifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, false);
+    if (!result.ok) {
+      assert.strictEqual(result.reason, "missing-executable");
+    }
+  });
+
+  test("missing template file → ok: false, reason: 'missing-template'", () => {
+    const manifest = makeManifestForMat();
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "nonexistent-template.json" });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      manifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, false);
+    if (!result.ok) {
+      assert.strictEqual(result.reason, "missing-template");
+    }
+  });
+
+  test("traversal-blocked template path → ok: false, reason: 'traversal-blocked'", () => {
+    const manifest = makeManifestForMat();
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "../../../etc/passwd" });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      manifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, false);
+    if (!result.ok) {
+      assert.strictEqual(result.reason, "traversal-blocked");
+    }
+  });
+
+  test("invalid JSON template → ok: false, reason: 'invalid-template'", () => {
+    const badTemplatesDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-bad-tmpl-"));
+    try {
+      fs.writeFileSync(path.join(badTemplatesDir, "bad.json"), "{ this is not valid json {{ }}");
+      const manifest = makeManifestForMat();
+      const profile = makeComponentDebugProfile({ name: "GDB", template: "bad.json" });
+      fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+
+      const result = materializeDebugConfiguration(
+        workspaceFolder,
+        manifest,
+        config,
+        tmpDir,
+        badTemplatesDir,
+        profile
+      );
+
+      assert.strictEqual(result.ok, false);
+      if (!result.ok) {
+        assert.strictEqual(result.reason, "invalid-template");
+      }
+    } finally {
+      fs.rmSync(badTemplatesDir, { recursive: true, force: true });
+    }
+  });
+
+  test("unknown active config (missing component) → ok: false, reason: 'unknown-active-config'", () => {
+    const brokenManifest = makeIntelliSenseLoadedState({
+      components: [], // remove all components
+    });
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "gdb-remote.json" });
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      brokenManifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, false);
+    if (!result.ok) {
+      assert.strictEqual(result.reason, "unknown-active-config");
+    }
+  });
+
+  test("valid case → ok: true with resolved configuration", () => {
+    const manifest = makeManifestForMat();
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "gdb-remote.json" });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      manifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, true);
+    if (result.ok) {
+      assert.ok(typeof result.configuration === "object");
+      assert.ok(result.configuration.type !== TFTOOLS_DEBUG_TYPE);
+    }
   });
 });
