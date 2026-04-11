@@ -94,10 +94,10 @@
 
 ### Implementation for User Story 3
 
-- [ ] T019 [US3] Reject stale Run and Debug entries during launch resolution in `src/debug/run-debug-provider.ts`
-- [ ] T020 [US3] Align tree-view and Command Palette debug gating with generated configuration availability in `src/extension.ts`
-- [ ] T021 [US3] Preserve invocation-time template and variable failure handling for provider launches in `src/commands/debug-launch.ts`
-- [ ] T022 [US3] Extend provider-specific blocked-launch logging in `src/observability/log-channel.ts`
+- [x] T019 [US3] Reject stale Run and Debug entries during launch resolution in `src/debug/run-debug-provider.ts`
+- [x] T020 [US3] Align tree-view and Command Palette debug gating with generated configuration availability in `src/extension.ts`
+- [x] T021 [US3] Preserve invocation-time template and variable failure handling for provider launches in `src/commands/debug-launch.ts`
+- [x] T022 [US3] Extend provider-specific blocked-launch logging in `src/observability/log-channel.ts`
 
 **Checkpoint**: All story surfaces should now agree on availability, stale entries should be rejected safely, and provider launches should preserve existing failure visibility rules
 
