@@ -37,7 +37,13 @@ import {
   TFTOOLS_VAR_EXECUTABLE,
   TFTOOLS_VAR_DEBUG_PROFILE_NAME,
 } from "../../../commands/debug-launch";
-import { makeComponentDebugProfile, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
+import { makeComponentDebugProfile, makeIntelliSenseLoadedState, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
+import {
+  generateDebugConfigurations,
+  labelForDefaultEntry,
+  labelForProfileEntry,
+  TFTOOLS_DEBUG_TYPE,
+} from "../../../debug/run-debug-provider";
 
 /**
  * Returns a debug profile with required fields defaulted for tests that
@@ -502,5 +508,178 @@ suite("resolveMatchingDebugProfiles", () => {
     const matchAll = resolveMatchingDebugProfiles([p1, p2], ctx);
     const single = resolveDebugProfile([p1, p2], ctx);
     assert.strictEqual(matchAll.defaultProfile, single.selectedProfile);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generateDebugConfigurations and label helpers (feature 007)
+// ---------------------------------------------------------------------------
+
+suite("labelForDefaultEntry and labelForProfileEntry", () => {
+  test("labelForDefaultEntry format: Trezor: {model} | {target} | {component}", () => {
+    const label = labelForDefaultEntry("Trezor Model T (v1)", "HW", "Core");
+    assert.strictEqual(label, "Trezor: Trezor Model T (v1) | HW | Core");
+  });
+
+  test("labelForProfileEntry format: Trezor: {profile} | {model} | {target} | {component}", () => {
+    const label = labelForProfileEntry("GDB Remote", "Trezor Model T (v1)", "HW", "Core");
+    assert.strictEqual(label, "Trezor: GDB Remote | Trezor Model T (v1) | HW | Core");
+  });
+
+  test("labelForDefaultEntry uses target shortName proxy", () => {
+    const label = labelForDefaultEntry("Model T", "Hardware", "Core");
+    assert.ok(label.includes("Hardware"));
+  });
+
+  test("different profiles produce distinct labels", () => {
+    const l1 = labelForProfileEntry("GDB Remote", "M", "T", "C");
+    const l2 = labelForProfileEntry("OpenOCD", "M", "T", "C");
+    assert.notStrictEqual(l1, l2);
+    assert.ok(l1.includes("GDB Remote"));
+    assert.ok(l2.includes("OpenOCD"));
+  });
+});
+
+suite("generateDebugConfigurations – entry set rules", () => {
+  let tmpDir: string;
+
+  setup(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-gdc-unit-"));
+    fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
+  });
+
+  teardown(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function makeManifest(profiles: ReturnType<typeof makeComponentDebugProfile>[]) {
+    return makeIntelliSenseLoadedState({
+      targets: [{
+        kind: "target" as const,
+        id: "hw",
+        name: "Hardware",
+        shortName: "HW",
+        executableExtension: ".elf",
+      } as ReturnType<typeof makeIntelliSenseLoadedState>["targets"][0]],
+      components: [{
+        kind: "component" as const,
+        id: "core",
+        name: "Core",
+        artifactName: "firmware",
+        debug: profiles,
+      } as ReturnType<typeof makeIntelliSenseLoadedState>["components"][0]],
+    });
+  }
+
+  const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
+
+  test("single matching profile → 1 default entry only (no profile-specific)", () => {
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "gdb-remote.json" });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([profile]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    assert.strictEqual(entries.length, 1, "should have exactly 1 entry for single match");
+    assert.strictEqual(entries[0]["tfToolsMode"], "default");
+    assert.strictEqual(entries[0].type, TFTOOLS_DEBUG_TYPE);
+  });
+
+  test("three matching profiles → 1 default + 3 profile-specific entries (4 total)", () => {
+    const p1 = makeComponentDebugProfile({ name: "GDB Remote", template: "gdb.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "OpenOCD", template: "openocd.json", declarationIndex: 1 });
+    const p3 = makeComponentDebugProfile({ name: "Trezord", template: "trezord.json", declarationIndex: 2 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2, p3]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    assert.strictEqual(entries.length, 4, "should have 1 default + 3 profile entries");
+    const defaultEntries = entries.filter((e) => e["tfToolsMode"] === "default");
+    const profileEntries = entries.filter((e) => e["tfToolsMode"] === "profile");
+    assert.strictEqual(defaultEntries.length, 1);
+    assert.strictEqual(profileEntries.length, 3);
+  });
+
+  test("default entry is always first", () => {
+    const p1 = makeComponentDebugProfile({ name: "First", template: "a.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "Second", template: "b.json", declarationIndex: 1 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    assert.strictEqual(entries[0]["tfToolsMode"], "default");
+    assert.strictEqual(entries[0]["tfToolsProfileId"], p1.id);
+  });
+
+  test("profile-specific entries follow declaration order", () => {
+    const p1 = makeComponentDebugProfile({ name: "A", template: "a.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "B", template: "b.json", declarationIndex: 1 });
+    const p3 = makeComponentDebugProfile({ name: "C", template: "c.json", declarationIndex: 2 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2, p3]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    const profileEntries = entries.filter((e) => e["tfToolsMode"] === "profile");
+    assert.strictEqual(profileEntries[0]["tfToolsProfileId"], p1.id);
+    assert.strictEqual(profileEntries[1]["tfToolsProfileId"], p2.id);
+    assert.strictEqual(profileEntries[2]["tfToolsProfileId"], p3.id);
+  });
+
+  test("profile-specific entry has correct shape (type, request, mode, profileId, contextKey)", () => {
+    const p1 = makeComponentDebugProfile({ name: "GDB", template: "gdb.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "OCD", template: "ocd.json", declarationIndex: 1 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    const profileEntry = entries.find((e) => e["tfToolsMode"] === "profile");
+    assert.ok(profileEntry, "profile-specific entry should exist");
+    assert.strictEqual(profileEntry.type, TFTOOLS_DEBUG_TYPE);
+    assert.strictEqual(profileEntry.request, "launch");
+    assert.ok(typeof profileEntry["tfToolsProfileId"] === "string");
+    assert.ok(typeof profileEntry["tfToolsContextKey"] === "string");
+  });
+
+  test("profile-specific entry label includes profile name and context", () => {
+    const p1 = makeComponentDebugProfile({ name: "GDB Remote", template: "gdb.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "OpenOCD", template: "ocd.json", declarationIndex: 1 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    const profileEntry = entries.find(
+      (e) => e["tfToolsMode"] === "profile" && (e["tfToolsProfileId"] as string) === p1.id
+    );
+    assert.ok(profileEntry);
+    assert.ok(profileEntry.name.includes("GDB Remote"), `label '${profileEntry.name}' should contain profile name`);
+    assert.ok(profileEntry.name.includes("Trezor:"), `label '${profileEntry.name}' should start with 'Trezor:'`);
+  });
+
+  test("non-matching profiles do not appear as profile-specific entries", () => {
+    const matching = makeComponentDebugProfile({ name: "Match", template: "m.json", declarationIndex: 0 });
+    const nonMatching = makeComponentDebugProfile({
+      name: "NoMatch",
+      template: "n.json",
+      declarationIndex: 1,
+      when: { type: "model", id: "T3W1" }, // won't match T2T1
+    });
+    const alsoMatching = makeComponentDebugProfile({ name: "AlsoMatch", template: "a.json", declarationIndex: 2 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([matching, nonMatching, alsoMatching]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    // 2 matching: 1 default + 2 profile-specific = 3 total
+    assert.strictEqual(entries.length, 3);
+    const profileEntryIds = entries
+      .filter((e) => e["tfToolsMode"] === "profile")
+      .map((e) => e["tfToolsProfileId"] as string);
+    assert.ok(!profileEntryIds.some((id) => id === nonMatching.id),
+      "non-matching profiles should not appear in profile-specific entries");
   });
 });

@@ -68,7 +68,7 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T012 [P] [US2] Add unit tests for profile-specific generated entries and labels in `src/test/unit/workflow/debug-launch.test.ts`
+- [x] T012 [P] [US2] Add unit tests for profile-specific generated entries and labels in `src/test/unit/workflow/debug-launch.test.ts`
 - [ ] T013 [P] [US2] Add integration tests for multi-profile Run and Debug selection in `src/test/integration/run-debug-multiprofile.integration.test.ts`
 
 ### Implementation for User Story 2
