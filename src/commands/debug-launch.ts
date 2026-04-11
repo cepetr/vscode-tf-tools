@@ -49,6 +49,39 @@ export function resolveDebugProfile(
   return { resolutionState: "selected", selectedProfile };
 }
 
+/**
+ * Ordered set of component-owned debug profiles whose `when` expressions
+ * evaluate to true for the active build context.
+ */
+export interface MatchingDebugProfileSet {
+  /** All matching profiles in manifest declaration order. */
+  readonly profiles: ReadonlyArray<ManifestComponentDebugProfile>;
+  /** First matching profile in declaration order; undefined when no profile matches. */
+  readonly defaultProfile: ManifestComponentDebugProfile | undefined;
+}
+
+/**
+ * Collects all matching component debug profiles for the active build context
+ * in manifest declaration order and identifies the default profile.
+ *
+ * - Profiles without a `when` expression match all contexts (match-all).
+ * - All matching profiles are returned in declaration order.
+ * - The first matching profile is the default.
+ * - An empty set means debugging is unavailable for the active build context.
+ */
+export function resolveMatchingDebugProfiles(
+  profiles: ReadonlyArray<ManifestComponentDebugProfile>,
+  evalCtx: EvalContext
+): MatchingDebugProfileSet {
+  const matching = profiles.filter((profile) =>
+    profile.when === undefined ? true : evaluateWhenExpression(profile.when, evalCtx)
+  );
+  return {
+    profiles: matching,
+    defaultProfile: matching[0],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Executable derivation
 // ---------------------------------------------------------------------------

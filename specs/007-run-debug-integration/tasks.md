@@ -46,7 +46,7 @@
 
 > **NOTE: Write these tests first and confirm they fail before implementation**
 
-- [ ] T006 [P] [US1] Add unit tests for matching-set and default-profile resolution in `src/test/unit/workflow/debug-launch.test.ts`
+- [x] T006 [P] [US1] Add unit tests for matching-set and default-profile resolution in `src/test/unit/workflow/debug-launch.test.ts`
 - [ ] T007 [P] [US1] Add integration tests for the default Run and Debug entry and F5 launch path in `src/test/integration/run-debug-default.integration.test.ts`
 
 ### Implementation for User Story 1

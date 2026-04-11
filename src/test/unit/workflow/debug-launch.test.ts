@@ -21,6 +21,7 @@ import * as fs from "fs";
 import * as os from "os";
 import {
   resolveDebugProfile,
+  resolveMatchingDebugProfiles,
   deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
@@ -416,5 +417,90 @@ suite("applyTfToolsSubstitution", () => {
     const result = value as typeof template;
     assert.strictEqual(result.environment[0].value, "T2T1");
     assert.strictEqual(result.environment[1].value, "firmware.elf");
+  });
+});
+// ---------------------------------------------------------------------------
+// resolveMatchingDebugProfiles (US1 / US2)
+// ---------------------------------------------------------------------------
+
+suite("resolveMatchingDebugProfiles", () => {
+  const ctx = { modelId: "T2T1", targetId: "hw", componentId: "core" };
+
+  test("empty profile list returns empty set with no default", () => {
+    const result = resolveMatchingDebugProfiles([], ctx);
+    assert.strictEqual(result.profiles.length, 0);
+    assert.strictEqual(result.defaultProfile, undefined);
+  });
+
+  test("single matching profile (no when) returns it as default and only member", () => {
+    const profile = makeProfile({ name: "p1", template: "a.json" });
+    const result = resolveMatchingDebugProfiles([profile], ctx);
+    assert.strictEqual(result.profiles.length, 1);
+    assert.strictEqual(result.defaultProfile, profile);
+  });
+
+  test("single non-matching profile returns empty set with no default", () => {
+    const profile = makeProfile({ name: "p1", template: "a.json", when: { type: "model", id: "T3W1" } });
+    const result = resolveMatchingDebugProfiles([profile], ctx);
+    assert.strictEqual(result.profiles.length, 0);
+    assert.strictEqual(result.defaultProfile, undefined);
+  });
+
+  test("all profiles without when all match; first is default", () => {
+    const p1 = makeProfile({ name: "p1", template: "a.json", declarationIndex: 0 });
+    const p2 = makeProfile({ name: "p2", template: "b.json", declarationIndex: 1 });
+    const result = resolveMatchingDebugProfiles([p1, p2], ctx);
+    assert.strictEqual(result.profiles.length, 2);
+    assert.strictEqual(result.defaultProfile, p1);
+    assert.strictEqual(result.profiles[0], p1);
+    assert.strictEqual(result.profiles[1], p2);
+  });
+
+  test("mixed matching and non-matching: collects only matching, preserves declaration order", () => {
+    const nonMatch = makeProfile({ name: "no", template: "a.json", when: { type: "model", id: "T3W1" }, declarationIndex: 0 });
+    const match1 = makeProfile({ name: "yes1", template: "b.json", when: { type: "model", id: "T2T1" }, declarationIndex: 1 });
+    const match2 = makeProfile({ name: "yes2", template: "c.json", declarationIndex: 2 });
+    const result = resolveMatchingDebugProfiles([nonMatch, match1, match2], ctx);
+    assert.strictEqual(result.profiles.length, 2);
+    assert.strictEqual(result.profiles[0], match1);
+    assert.strictEqual(result.profiles[1], match2);
+    assert.strictEqual(result.defaultProfile, match1);
+  });
+
+  test("multiple matching profiles: default is the declaration-order first", () => {
+    const first = makeProfile({ name: "first", template: "a.json", when: { type: "model", id: "T2T1" }, declarationIndex: 0 });
+    const second = makeProfile({ name: "second", template: "b.json", when: { type: "target", id: "hw" }, declarationIndex: 1 });
+    const third = makeProfile({ name: "third", template: "c.json", declarationIndex: 2 });
+    const result = resolveMatchingDebugProfiles([first, second, third], ctx);
+    assert.strictEqual(result.profiles.length, 3);
+    assert.strictEqual(result.defaultProfile, first);
+    assert.strictEqual(result.profiles[0].name, "first");
+    assert.strictEqual(result.profiles[1].name, "second");
+    assert.strictEqual(result.profiles[2].name, "third");
+  });
+
+  test("match-all profile at end is included in the set but not the default when earlier match exists", () => {
+    const specific = makeProfile({ name: "specific", template: "a.json", when: { type: "model", id: "T2T1" }, declarationIndex: 0 });
+    const fallback = makeProfile({ name: "fallback", template: "b.json", declarationIndex: 1 });
+    const result = resolveMatchingDebugProfiles([specific, fallback], ctx);
+    assert.strictEqual(result.profiles.length, 2);
+    assert.strictEqual(result.defaultProfile, specific);
+  });
+
+  test("context mismatch on first profile; match-all second is default", () => {
+    const noMatch = makeProfile({ name: "no", template: "a.json", when: { type: "model", id: "T3W1" }, declarationIndex: 0 });
+    const matchAll = makeProfile({ name: "fallback", template: "b.json", declarationIndex: 1 });
+    const ctxForT3W1 = { ...ctx, modelId: "T3W1" };
+    const result = resolveMatchingDebugProfiles([noMatch, matchAll], ctxForT3W1);
+    assert.strictEqual(result.profiles.length, 2);
+    assert.strictEqual(result.defaultProfile, noMatch);
+  });
+
+  test("resolveMatchingDebugProfiles default always equals resolveDebugProfile selected profile", () => {
+    const p1 = makeProfile({ name: "p1", template: "a.json", when: { type: "model", id: "T2T1" }, declarationIndex: 0 });
+    const p2 = makeProfile({ name: "p2", template: "b.json", declarationIndex: 1 });
+    const matchAll = resolveMatchingDebugProfiles([p1, p2], ctx);
+    const single = resolveDebugProfile([p1, p2], ctx);
+    assert.strictEqual(matchAll.defaultProfile, single.selectedProfile);
   });
 });
