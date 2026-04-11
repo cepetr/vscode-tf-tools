@@ -93,14 +93,16 @@ This glossary defines the preferred product and documentation terms used by the 
 | --- | --- | --- |
 | **Start Debugging** | The user-facing command and inline action that starts a debug session for the active build context. | Use this exact capitalization for the UI action. |
 | **debug profile** | One manifest-defined debug entry owned by a component and evaluated against the active build context. | Preferred term over "debug config" because the final launch configuration is derived, not stored directly in the manifest. |
-| **debug profile resolution** | The process of evaluating the selected component's debug profiles in declaration order and choosing the first matching one. | Use when describing debug availability and launch preparation. |
+| **debug profile resolution** | The process of evaluating the selected component's debug profiles in declaration order, collecting all matching profiles into an ordered set, and choosing the first matching profile as the default. | Use when describing debug availability, Run and Debug entry generation, and launch preparation. |
+| **matching debug profile set** | The ordered collection of component-owned debug profiles whose `when` expressions evaluate to true for the active build context. | Use when describing how Run and Debug entries are generated or how the default profile is derived. |
+| **default debug profile** | The first matching debug profile in declaration order for the selected component, used by direct `Start Debugging` actions and by the default Run and Debug entry. | Use when contrasting the default choice from profile-specific Run and Debug entries. |
 | **debug template** | The JSONC file referenced by a debug profile and loaded at launch time. | Preferred term over "launch template" in this product. |
 | **debug templates path** | The workspace setting that points to the directory containing debug templates. | Exposed as `tfTools.debug.templatesPath`. |
 | **debug variable** | A tf-tools substitution variable available during template resolution. | Covers built-in variables and profile-defined `tfTools.debug.var:<name>` entries. |
 | **built-in debug variable** | A substitution variable derived from the active model, target, component, artifact path, executable, or debug profile name. | Use when distinguishing built-ins from profile-defined variables. |
 | **profile-defined debug variable** | A substitution variable declared in a manifest debug profile under `vars`. | Use this term instead of just "custom variable" for precision. |
 | **substitution token** | A `${...}` placeholder found in a debug template before tf-tools substitution runs. | Use when describing template inputs rather than resolved values. |
-| **declaration order** | The order in which debug profiles appear in the manifest. | Important because the first matching debug profile wins. |
+| **declaration order** | The order in which debug profiles appear in the manifest. The first matching profile in declaration order is the default debug profile. No separate priority field or other precedence mechanism overrides this order. | Use when describing default profile selection and why declaration position determines the default choice. |
 | **debug resolution failure** | A launch-blocking failure that occurs while selecting a matching debug profile, loading its template, or resolving tf-tools debug variables. | Use for failures before VS Code starts the debug session. |
 
 ## Availability Terms

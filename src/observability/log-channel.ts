@@ -120,10 +120,20 @@ export function logDebugLaunchFailure(
 // ---------------------------------------------------------------------------
 
 /**
- * Writes a persistent log entry when the expected compile-commands artifact
- * is absent for the active configuration. Does NOT show a popup notification —
- * the tree row communicates missing state to the user.
+ * Logs a persistent output-channel entry for a blocked or failed debug launch
+ * originating from the tf-tools Run and Debug provider rather than a direct command.
+ * Includes a "[PROVIDER]" tag to distinguish provider launches from direct command launches.
  */
+export function logProviderDebugLaunchFailure(
+  reason: string,
+  context: { modelId?: string; targetId?: string; componentId?: string; detail?: string } = {}
+): void {
+  const ctx = [context.modelId, context.targetId, context.componentId].filter(Boolean).join("/");
+  const detail = context.detail ? ` — ${context.detail}` : "";
+  log(`[DEBUG-LAUNCH-FAILURE] [PROVIDER] ${reason}${ctx ? ` [${ctx}]` : ""}${detail}`);
+}
+
+
 export function logMissingArtifact(expectedPath: string, contextKey: string): void {
   log(
     `[IntelliSense] Compile-commands artifact missing for context ${contextKey}: expected at ${expectedPath}`

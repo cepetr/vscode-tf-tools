@@ -19,12 +19,15 @@ import * as assert from "assert";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
+import * as vscode from "vscode";
 import {
   resolveDebugProfile,
+  resolveMatchingDebugProfiles,
   deriveExecutableFileName,
   loadDebugTemplate,
   buildDebugVariableMap,
   applyTfToolsSubstitution,
+  materializeDebugConfiguration,
   TFTOOLS_VAR_ARTIFACT_PATH,
   TFTOOLS_VAR_MODEL_ID,
   TFTOOLS_VAR_MODEL_NAME,
@@ -36,7 +39,13 @@ import {
   TFTOOLS_VAR_EXECUTABLE,
   TFTOOLS_VAR_DEBUG_PROFILE_NAME,
 } from "../../../commands/debug-launch";
-import { makeComponentDebugProfile, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
+import { makeComponentDebugProfile, makeIntelliSenseLoadedState, debugLaunchValidTemplatesRoot, debugLaunchFailuresWorkspaceRoot } from "../workflow-test-helpers";
+import {
+  generateDebugConfigurations,
+  labelForDefaultEntry,
+  labelForProfileEntry,
+  TFTOOLS_DEBUG_TYPE,
+} from "../../../debug/run-debug-provider";
 
 /**
  * Returns a debug profile with required fields defaulted for tests that
@@ -416,5 +425,430 @@ suite("applyTfToolsSubstitution", () => {
     const result = value as typeof template;
     assert.strictEqual(result.environment[0].value, "T2T1");
     assert.strictEqual(result.environment[1].value, "firmware.elf");
+  });
+});
+// ---------------------------------------------------------------------------
+// resolveMatchingDebugProfiles (US1 / US2)
+// ---------------------------------------------------------------------------
+
+suite("resolveMatchingDebugProfiles", () => {
+  const ctx = { modelId: "T2T1", targetId: "hw", componentId: "core" };
+
+  test("empty profile list returns empty set with no default", () => {
+    const result = resolveMatchingDebugProfiles([], ctx);
+    assert.strictEqual(result.profiles.length, 0);
+    assert.strictEqual(result.defaultProfile, undefined);
+  });
+
+  test("single matching profile (no when) returns it as default and only member", () => {
+    const profile = makeProfile({ name: "p1", template: "a.json" });
+    const result = resolveMatchingDebugProfiles([profile], ctx);
+    assert.strictEqual(result.profiles.length, 1);
+    assert.strictEqual(result.defaultProfile, profile);
+  });
+
+  test("single non-matching profile returns empty set with no default", () => {
+    const profile = makeProfile({ name: "p1", template: "a.json", when: { type: "model", id: "T3W1" } });
+    const result = resolveMatchingDebugProfiles([profile], ctx);
+    assert.strictEqual(result.profiles.length, 0);
+    assert.strictEqual(result.defaultProfile, undefined);
+  });
+
+  test("all profiles without when all match; first is default", () => {
+    const p1 = makeProfile({ name: "p1", template: "a.json", declarationIndex: 0 });
+    const p2 = makeProfile({ name: "p2", template: "b.json", declarationIndex: 1 });
+    const result = resolveMatchingDebugProfiles([p1, p2], ctx);
+    assert.strictEqual(result.profiles.length, 2);
+    assert.strictEqual(result.defaultProfile, p1);
+    assert.strictEqual(result.profiles[0], p1);
+    assert.strictEqual(result.profiles[1], p2);
+  });
+
+  test("mixed matching and non-matching: collects only matching, preserves declaration order", () => {
+    const nonMatch = makeProfile({ name: "no", template: "a.json", when: { type: "model", id: "T3W1" }, declarationIndex: 0 });
+    const match1 = makeProfile({ name: "yes1", template: "b.json", when: { type: "model", id: "T2T1" }, declarationIndex: 1 });
+    const match2 = makeProfile({ name: "yes2", template: "c.json", declarationIndex: 2 });
+    const result = resolveMatchingDebugProfiles([nonMatch, match1, match2], ctx);
+    assert.strictEqual(result.profiles.length, 2);
+    assert.strictEqual(result.profiles[0], match1);
+    assert.strictEqual(result.profiles[1], match2);
+    assert.strictEqual(result.defaultProfile, match1);
+  });
+
+  test("multiple matching profiles: default is the declaration-order first", () => {
+    const first = makeProfile({ name: "first", template: "a.json", when: { type: "model", id: "T2T1" }, declarationIndex: 0 });
+    const second = makeProfile({ name: "second", template: "b.json", when: { type: "target", id: "hw" }, declarationIndex: 1 });
+    const third = makeProfile({ name: "third", template: "c.json", declarationIndex: 2 });
+    const result = resolveMatchingDebugProfiles([first, second, third], ctx);
+    assert.strictEqual(result.profiles.length, 3);
+    assert.strictEqual(result.defaultProfile, first);
+    assert.strictEqual(result.profiles[0].name, "first");
+    assert.strictEqual(result.profiles[1].name, "second");
+    assert.strictEqual(result.profiles[2].name, "third");
+  });
+
+  test("match-all profile at end is included in the set but not the default when earlier match exists", () => {
+    const specific = makeProfile({ name: "specific", template: "a.json", when: { type: "model", id: "T2T1" }, declarationIndex: 0 });
+    const fallback = makeProfile({ name: "fallback", template: "b.json", declarationIndex: 1 });
+    const result = resolveMatchingDebugProfiles([specific, fallback], ctx);
+    assert.strictEqual(result.profiles.length, 2);
+    assert.strictEqual(result.defaultProfile, specific);
+  });
+
+  test("context mismatch on first profile; match-all second is default", () => {
+    const noMatch = makeProfile({ name: "no", template: "a.json", when: { type: "model", id: "T3W1" }, declarationIndex: 0 });
+    const matchAll = makeProfile({ name: "fallback", template: "b.json", declarationIndex: 1 });
+    const ctxForT3W1 = { ...ctx, modelId: "T3W1" };
+    const result = resolveMatchingDebugProfiles([noMatch, matchAll], ctxForT3W1);
+    assert.strictEqual(result.profiles.length, 2);
+    assert.strictEqual(result.defaultProfile, noMatch);
+  });
+
+  test("resolveMatchingDebugProfiles default always equals resolveDebugProfile selected profile", () => {
+    const p1 = makeProfile({ name: "p1", template: "a.json", when: { type: "model", id: "T2T1" }, declarationIndex: 0 });
+    const p2 = makeProfile({ name: "p2", template: "b.json", declarationIndex: 1 });
+    const matchAll = resolveMatchingDebugProfiles([p1, p2], ctx);
+    const single = resolveDebugProfile([p1, p2], ctx);
+    assert.strictEqual(matchAll.defaultProfile, single.selectedProfile);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generateDebugConfigurations and label helpers (feature 007)
+// ---------------------------------------------------------------------------
+
+suite("labelForDefaultEntry and labelForProfileEntry", () => {
+  test("labelForDefaultEntry format: Trezor", () => {
+    const label = labelForDefaultEntry();
+    assert.strictEqual(label, "Trezor");
+  });
+
+  test("labelForProfileEntry format: Trezor: {profile}", () => {
+    const label = labelForProfileEntry("GDB Remote");
+    assert.strictEqual(label, "Trezor: GDB Remote");
+  });
+
+  test("different profiles produce distinct labels", () => {
+    const l1 = labelForProfileEntry("GDB Remote");
+    const l2 = labelForProfileEntry("OpenOCD");
+    assert.notStrictEqual(l1, l2);
+    assert.ok(l1.includes("GDB Remote"));
+    assert.ok(l2.includes("OpenOCD"));
+  });
+});
+
+suite("generateDebugConfigurations – entry set rules", () => {
+  let tmpDir: string;
+
+  setup(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-gdc-unit-"));
+    fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
+  });
+
+  teardown(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function makeManifest(profiles: ReturnType<typeof makeComponentDebugProfile>[]) {
+    return makeIntelliSenseLoadedState({
+      targets: [{
+        kind: "target" as const,
+        id: "hw",
+        name: "Hardware",
+        shortName: "HW",
+        executableExtension: ".elf",
+      } as ReturnType<typeof makeIntelliSenseLoadedState>["targets"][0]],
+      components: [{
+        kind: "component" as const,
+        id: "core",
+        name: "Core",
+        artifactName: "firmware",
+        debug: profiles,
+      } as ReturnType<typeof makeIntelliSenseLoadedState>["components"][0]],
+    });
+  }
+
+  const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
+
+  test("single matching profile → 1 default entry only (no profile-specific)", () => {
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "gdb-remote.json" });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([profile]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    assert.strictEqual(entries.length, 1, "should have exactly 1 entry for single match");
+    assert.strictEqual(entries[0]["tfToolsMode"], "default");
+    assert.strictEqual(entries[0].type, TFTOOLS_DEBUG_TYPE);
+  });
+
+  test("three matching profiles → 1 default + 3 profile-specific entries (4 total)", () => {
+    const p1 = makeComponentDebugProfile({ name: "GDB Remote", template: "gdb.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "OpenOCD", template: "openocd.json", declarationIndex: 1 });
+    const p3 = makeComponentDebugProfile({ name: "Trezord", template: "trezord.json", declarationIndex: 2 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2, p3]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    assert.strictEqual(entries.length, 4, "should have 1 default + 3 profile entries");
+    const defaultEntries = entries.filter((e) => e["tfToolsMode"] === "default");
+    const profileEntries = entries.filter((e) => e["tfToolsMode"] === "profile");
+    assert.strictEqual(defaultEntries.length, 1);
+    assert.strictEqual(profileEntries.length, 3);
+  });
+
+  test("default entry is always first", () => {
+    const p1 = makeComponentDebugProfile({ name: "First", template: "a.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "Second", template: "b.json", declarationIndex: 1 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    assert.strictEqual(entries[0]["tfToolsMode"], "default");
+    assert.strictEqual(entries[0]["tfToolsProfileId"], p1.id);
+  });
+
+  test("profile-specific entries follow declaration order", () => {
+    const p1 = makeComponentDebugProfile({ name: "A", template: "a.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "B", template: "b.json", declarationIndex: 1 });
+    const p3 = makeComponentDebugProfile({ name: "C", template: "c.json", declarationIndex: 2 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2, p3]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    const profileEntries = entries.filter((e) => e["tfToolsMode"] === "profile");
+    assert.strictEqual(profileEntries[0]["tfToolsProfileId"], p1.id);
+    assert.strictEqual(profileEntries[1]["tfToolsProfileId"], p2.id);
+    assert.strictEqual(profileEntries[2]["tfToolsProfileId"], p3.id);
+  });
+
+  test("profile-specific entry has correct shape (type, request, mode, profileId, contextKey)", () => {
+    const p1 = makeComponentDebugProfile({ name: "GDB", template: "gdb.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "OCD", template: "ocd.json", declarationIndex: 1 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    const profileEntry = entries.find((e) => e["tfToolsMode"] === "profile");
+    assert.ok(profileEntry, "profile-specific entry should exist");
+    assert.strictEqual(profileEntry.type, TFTOOLS_DEBUG_TYPE);
+    assert.strictEqual(profileEntry.request, "launch");
+    assert.ok(typeof profileEntry["tfToolsProfileId"] === "string");
+    assert.ok(typeof profileEntry["tfToolsContextKey"] === "string");
+  });
+
+  test("profile-specific entry label includes profile name", () => {
+    const p1 = makeComponentDebugProfile({ name: "GDB Remote", template: "gdb.json", declarationIndex: 0 });
+    const p2 = makeComponentDebugProfile({ name: "OpenOCD", template: "ocd.json", declarationIndex: 1 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([p1, p2]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    const profileEntry = entries.find(
+      (e) => e["tfToolsMode"] === "profile" && (e["tfToolsProfileId"] as string) === p1.id
+    );
+    assert.ok(profileEntry);
+    assert.ok(profileEntry.name.includes("GDB Remote"), `label '${profileEntry.name}' should contain profile name`);
+    assert.ok(profileEntry.name.includes("Trezor:"), `label '${profileEntry.name}' should start with 'Trezor:'`);
+  });
+
+  test("non-matching profiles do not appear as profile-specific entries", () => {
+    const matching = makeComponentDebugProfile({ name: "Match", template: "m.json", declarationIndex: 0 });
+    const nonMatching = makeComponentDebugProfile({
+      name: "NoMatch",
+      template: "n.json",
+      declarationIndex: 1,
+      when: { type: "model", id: "T3W1" }, // won't match T2T1
+    });
+    const alsoMatching = makeComponentDebugProfile({ name: "AlsoMatch", template: "a.json", declarationIndex: 2 });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeManifest([matching, nonMatching, alsoMatching]);
+
+    const entries = generateDebugConfigurations(manifest, config, tmpDir);
+
+    // 2 matching: 1 default + 2 profile-specific = 3 total
+    assert.strictEqual(entries.length, 3);
+    const profileEntryIds = entries
+      .filter((e) => e["tfToolsMode"] === "profile")
+      .map((e) => e["tfToolsProfileId"] as string);
+    assert.ok(!profileEntryIds.some((id) => id === nonMatching.id),
+      "non-matching profiles should not appear in profile-specific entries");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// materializeDebugConfiguration failure paths (feature 007)
+// ---------------------------------------------------------------------------
+
+suite("materializeDebugConfiguration – failure paths", () => {
+  let tmpDir: string;
+
+  setup(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-mat-unit-"));
+    fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
+  });
+
+  teardown(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  const workspaceFolder = {
+    uri: { fsPath: "/tmp/test", scheme: "file" },
+    name: "test",
+    index: 0,
+  } as unknown as vscode.WorkspaceFolder;
+
+  const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
+
+  function makeManifestForMat() {
+    return makeIntelliSenseLoadedState({
+      targets: [{
+        kind: "target",
+        id: "hw",
+        name: "Hardware",
+        shortName: "HW",
+        executableExtension: ".elf",
+      } as ReturnType<typeof makeIntelliSenseLoadedState>["targets"][0]],
+      components: [{
+        kind: "component",
+        id: "core",
+        name: "Core",
+        artifactName: "firmware",
+        debug: [],
+      } as ReturnType<typeof makeIntelliSenseLoadedState>["components"][0]],
+    });
+  }
+
+  test("missing executable → ok: false, reason: 'missing-executable'", () => {
+    const manifest = makeManifestForMat();
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "gdb-remote.json" });
+    // Don't create the exe file
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      manifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, false);
+    if (!result.ok) {
+      assert.strictEqual(result.reason, "missing-executable");
+    }
+  });
+
+  test("missing template file → ok: false, reason: 'missing-template'", () => {
+    const manifest = makeManifestForMat();
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "nonexistent-template.json" });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      manifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, false);
+    if (!result.ok) {
+      assert.strictEqual(result.reason, "missing-template");
+    }
+  });
+
+  test("traversal-blocked template path → ok: false, reason: 'traversal-blocked'", () => {
+    const manifest = makeManifestForMat();
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "../../../etc/passwd" });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      manifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, false);
+    if (!result.ok) {
+      assert.strictEqual(result.reason, "traversal-blocked");
+    }
+  });
+
+  test("invalid JSON template → ok: false, reason: 'invalid-template'", () => {
+    const badTemplatesDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-bad-tmpl-"));
+    try {
+      fs.writeFileSync(path.join(badTemplatesDir, "bad.json"), "{ this is not valid json {{ }}");
+      const manifest = makeManifestForMat();
+      const profile = makeComponentDebugProfile({ name: "GDB", template: "bad.json" });
+      fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+
+      const result = materializeDebugConfiguration(
+        workspaceFolder,
+        manifest,
+        config,
+        tmpDir,
+        badTemplatesDir,
+        profile
+      );
+
+      assert.strictEqual(result.ok, false);
+      if (!result.ok) {
+        assert.strictEqual(result.reason, "invalid-template");
+      }
+    } finally {
+      fs.rmSync(badTemplatesDir, { recursive: true, force: true });
+    }
+  });
+
+  test("unknown active config (missing component) → ok: false, reason: 'unknown-active-config'", () => {
+    const brokenManifest = makeIntelliSenseLoadedState({
+      components: [], // remove all components
+    });
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "gdb-remote.json" });
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      brokenManifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, false);
+    if (!result.ok) {
+      assert.strictEqual(result.reason, "unknown-active-config");
+    }
+  });
+
+  test("valid case → ok: true with resolved configuration", () => {
+    const manifest = makeManifestForMat();
+    const profile = makeComponentDebugProfile({ name: "GDB", template: "gdb-remote.json" });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+
+    const result = materializeDebugConfiguration(
+      workspaceFolder,
+      manifest,
+      config,
+      tmpDir,
+      debugLaunchValidTemplatesRoot(),
+      profile
+    );
+
+    assert.strictEqual(result.ok, true);
+    if (result.ok) {
+      assert.ok(typeof result.configuration === "object");
+      assert.ok(result.configuration.type !== TFTOOLS_DEBUG_TYPE);
+    }
   });
 });

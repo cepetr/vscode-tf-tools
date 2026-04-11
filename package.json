@@ -16,7 +16,8 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onDebugResolve:tftools"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -276,7 +277,59 @@
           "scope": "resource"
         }
       }
-    }
+    },
+    "debuggers": [
+      {
+        "type": "tftools",
+        "label": "Trezor Firmware Tools",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "type",
+              "request",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "tftools"
+                ],
+                "description": "Debugger type for Trezor Firmware Tools generated launch configurations."
+              },
+              "request": {
+                "type": "string",
+                "enum": [
+                  "launch"
+                ],
+                "description": "Launch request for a tf-tools generated configuration."
+              },
+              "name": {
+                "type": "string",
+                "description": "User-visible label for the tf-tools launch configuration."
+              },
+              "tfToolsMode": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "default",
+                  "profile"
+                ],
+                "description": "tf-tools launch mode: stable active configuration, generated default entry, or generated profile-specific entry."
+              },
+              "tfToolsProfileId": {
+                "type": "string",
+                "description": "Stable manifest debug-profile identifier used to resolve a generated profile-specific or default entry at launch time."
+              },
+              "tfToolsContextKey": {
+                "type": "string",
+                "description": "Active build-context identity captured when a generated Run and Debug entry was produced."
+              }
+            }
+          }
+        }
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run bundle",

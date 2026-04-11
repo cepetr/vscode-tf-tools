@@ -681,6 +681,7 @@ function makeValidExecutableArtifact(overrides: Partial<ActiveExecutableArtifact
     exists: true,
     status: "valid",
     tooltip: "/build/model-t/firmware.elf",
+    matchingProfileCount: 1,
     ...overrides,
   };
 }
@@ -694,6 +695,7 @@ function makeMissingExecutableArtifact(overrides: Partial<ActiveExecutableArtifa
     status: "missing",
     missingReason: "Executable artifact not found at the expected path: /build/model-t/firmware.elf",
     tooltip: "Missing: /build/model-t/firmware.elf",
+    matchingProfileCount: 1,
     ...overrides,
   };
 }

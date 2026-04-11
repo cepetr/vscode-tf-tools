@@ -1,11 +1,18 @@
 # Debug Launch: valid manifest with component-scoped debug entries.
 #
-# Resolution rules (new schema – declaration-order first-match per component):
-#   core + T2T1 + hw   → entry[0] (when: model(T2T1)) wins – matches first
-#   core + T2T1 + emu  → entry[0] (when: model(T2T1)) wins – matches first; entry[1] also matches but is second
-#   core + T3W1 + hw   → entry[1] (when: target(hw)) wins – entry[0] only matches T2T1; entry[1] matches
-#   core + T3W1 + emu  → entry[2] (no when) wins – entry[0]/entry[1] don't match; entry[2] is match-all
+# First-match (default profile) resolution – first matching entry wins:
+#   core + T2T1 + hw   → entry[0] (when: model(T2T1)) is default
+#   core + T2T1 + emu  → entry[0] (when: model(T2T1)) is default; entry[2] also matches
+#   core + T3W1 + hw   → entry[1] (when: target(hw)) is default; entry[2] also matches
+#   core + T3W1 + emu  → entry[2] (no when) is the only match
 #   prodtest + *       → single entry (no when) always matches
+#
+# Matching-set (all matching profiles) used for Run and Debug entries:
+#   core + T2T1 + hw   → [entry[0], entry[1], entry[2]] (3 matching)
+#   core + T2T1 + emu  → [entry[0], entry[2]]           (2 matching)
+#   core + T3W1 + hw   → [entry[1], entry[2]]           (2 matching)
+#   core + T3W1 + emu  → [entry[2]]                     (1 matching)
+#   prodtest + *       → [entry[0]]                     (1 matching)
 #
 # Derived executable:
 #   hw  target: artifactSuffix = ""   executableExtension = ".elf"  → <name>.elf

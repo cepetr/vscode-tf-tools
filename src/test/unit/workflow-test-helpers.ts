@@ -405,3 +405,100 @@ export function debugLaunchValidTemplatesRoot(): string {
   return path.join(debugLaunchValidWorkspaceRoot(), "debug-templates");
 }
 
+// ---------------------------------------------------------------------------
+// Run and Debug matching-set fixture helpers (feature 007)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns a loaded manifest state with a single-profile component (core) and
+ * a multi-profile component (prodtest).
+ *
+ * Matching-set for prodtest + T2T1 + hw: [entry[0], entry[1], entry[2]] (3 profiles)
+ * Matching-set for prodtest + T2T1 + emu: [entry[0], entry[2]] (2 profiles)
+ * Matching-set for prodtest + T3W1 + hw: [entry[1], entry[2]] (2 profiles)
+ * Matching-set for prodtest + T3W1 + emu: [entry[2]] (1 profile)
+ */
+export function makeRunDebugMultiProfileState(
+  overrides: Partial<ManifestStateLoaded> = {}
+): ManifestStateLoaded {
+  const base = makeIntelliSenseLoadedState();
+
+  const coreProfile: ManifestComponentDebugProfile = makeComponentDebugProfile({
+    id: "core:debug[0]",
+    componentId: "core",
+    name: "GDB Remote",
+    template: "gdb-remote.json",
+    declarationIndex: 0,
+    when: { type: "model", id: "T2T1" },
+  });
+
+  const prodtestProfile0: ManifestComponentDebugProfile = makeComponentDebugProfile({
+    id: "prodtest:debug[0]",
+    componentId: "prodtest",
+    name: "GDB Remote (T2T1)",
+    template: "gdb-remote.json",
+    declarationIndex: 0,
+    when: { type: "model", id: "T2T1" },
+  });
+
+  const prodtestProfile1: ManifestComponentDebugProfile = makeComponentDebugProfile({
+    id: "prodtest:debug[1]",
+    componentId: "prodtest",
+    name: "GDB Remote (HW)",
+    template: "gdb-remote.json",
+    declarationIndex: 1,
+    when: { type: "target", id: "hw" },
+  });
+
+  const prodtestProfile2: ManifestComponentDebugProfile = makeComponentDebugProfile({
+    id: "prodtest:debug[2]",
+    componentId: "prodtest",
+    name: "GDB Remote (any)",
+    template: "gdb-remote.json",
+    declarationIndex: 2,
+  });
+
+  const components = base.components.map((c) => {
+    if (c.id === "core") {
+      return { ...c, artifactName: "compile_commands_core", debug: [coreProfile] };
+    }
+    if (c.id === "prodtest") {
+      return { ...c, artifactName: "compile_commands_prodtest", debug: [prodtestProfile0, prodtestProfile1, prodtestProfile2] };
+    }
+    return c;
+  });
+
+  return {
+    ...base,
+    components,
+    hasDebugBlockingIssues: false,
+    ...overrides,
+  };
+}
+
+/**
+ * Proxy config shape produced by TfToolsDebugConfigurationProvider.
+ * Mirrors the contract defined in contracts/run-debug-configurations.md.
+ */
+export interface TfToolsProxyConfig {
+  type: "tftools";
+  request: "launch";
+  name: string;
+  tfToolsMode: "default" | "profile";
+  tfToolsProfileId: string;
+  tfToolsContextKey: string;
+}
+
+/**
+ * Returns true when a debug configuration matches the tftools proxy shape.
+ */
+export function isTfToolsProxyConfig(config: Record<string, unknown>): boolean {
+  return (
+    config["type"] === "tftools" &&
+    config["request"] === "launch" &&
+    typeof config["name"] === "string" &&
+    (config["tfToolsMode"] === "default" || config["tfToolsMode"] === "profile") &&
+    typeof config["tfToolsProfileId"] === "string" &&
+    typeof config["tfToolsContextKey"] === "string"
+  );
+}

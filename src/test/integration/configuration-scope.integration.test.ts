@@ -18,6 +18,8 @@ import {
 } from "../unit/workflow-test-helpers";
 import { executeDebugLaunch } from "../../commands/debug-launch";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
+import { TfToolsDebugConfigurationProvider, TFTOOLS_DEBUG_TYPE } from "../../debug/run-debug-provider";
+import { makeContextKey } from "../../intellisense/artifact-resolution";
 
 /** Commands that must never be registered in any current slice. */
 const BANNED_COMMAND_PATTERNS = [
@@ -254,6 +256,55 @@ suite("Debug Launch – no launch.json persistence", () => {
         existsAfter,
         false,
         "executeDebugLaunch must not create a .vscode/launch.json file"
+      );
+    }
+  });
+
+  test("provider resolveDebugConfiguration does not create launch.json", () => {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      return;
+    }
+
+    const workspaceRoot = workspaceFolder.uri.fsPath;
+    const launchJson = path.join(workspaceRoot, ".vscode", "launch.json");
+    const existed = fs.existsSync(launchJson);
+
+    const manifest = makeExeManifest();
+    const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
+    const artifactsRoot = debugLaunchValidWorkspaceRoot();
+    const templatesRoot = debugLaunchValidTemplatesRoot();
+    const profile = (manifest.components[0].debug ?? [])[0];
+
+    const provider = new TfToolsDebugConfigurationProvider(
+      () => manifest,
+      () => config,
+      () => artifactsRoot,
+      () => templatesRoot,
+      workspaceFolder
+    );
+
+    const proxyConfig: vscode.DebugConfiguration = {
+      type: TFTOOLS_DEBUG_TYPE,
+      request: "launch",
+      name: "Trezor: test",
+      tfToolsMode: "default",
+      tfToolsProfileId: profile?.id ?? "",
+      tfToolsContextKey: makeContextKey(config),
+    };
+
+    try {
+      provider.resolveDebugConfiguration(workspaceFolder, proxyConfig, new vscode.CancellationTokenSource().token);
+    } catch {
+      // ignore launch failures
+    }
+
+    const existsAfter = fs.existsSync(launchJson);
+    if (!existed) {
+      assert.strictEqual(
+        existsAfter,
+        false,
+        "provider resolveDebugConfiguration must not create a .vscode/launch.json file"
       );
     }
   });

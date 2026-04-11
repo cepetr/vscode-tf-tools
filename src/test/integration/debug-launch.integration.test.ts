@@ -33,6 +33,9 @@ import {
   debugLaunchValidTemplatesRoot,
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
+import {
+  TFTOOLS_DEBUG_TYPE,
+} from "../../debug/run-debug-provider";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -481,5 +484,78 @@ suite("Debug Launch – scope boundaries", () => {
       assert.ok(startDebugIdx < refreshIdx, "startDebugging must appear before refreshIntelliSense in overflow");
     }
     assert.ok(startDebugIdx !== -1, "startDebugging must be in overflow menu");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: Run and Debug provider – package.json contribution regressions (T025)
+// ---------------------------------------------------------------------------
+
+suite("Run and Debug provider – package contribution regressions", () => {
+  function getExtPackageJson(): Record<string, unknown> {
+    const ext = vscode.extensions.getExtension("cepetr.tf-tools");
+    if (!ext) {
+      return {};
+    }
+    return ext.packageJSON as Record<string, unknown>;
+  }
+
+  test("contributes a 'tftools' debugger type in package.json", () => {
+    const pkg = getExtPackageJson();
+    const debuggers = (
+      pkg.contributes as { debuggers?: Array<{ type: string }> } | undefined
+    )?.debuggers ?? [];
+    const entry = debuggers.find((d) => d.type === "tftools");
+    assert.ok(entry, "expected 'tftools' debugger type in package.json contributes.debuggers");
+  });
+
+  test("tftools debugger has a non-empty label", () => {
+    const pkg = getExtPackageJson();
+    const debuggers = (
+      pkg.contributes as { debuggers?: Array<{ type: string; label?: string }> } | undefined
+    )?.debuggers ?? [];
+    const entry = debuggers.find((d) => d.type === "tftools");
+    assert.ok(entry?.label, "tftools debugger must have a label in package.json");
+  });
+
+  test("tftools debugger contributes launch configurationAttributes for proxy fields", () => {
+    const pkg = getExtPackageJson();
+    const debuggers = (
+      pkg.contributes as {
+        debuggers?: Array<{
+          type: string;
+          configurationAttributes?: {
+            launch?: {
+              properties?: Record<string, unknown>;
+            };
+          };
+        }>;
+      } | undefined
+    )?.debuggers ?? [];
+    const entry = debuggers.find((d) => d.type === "tftools");
+    const properties = entry?.configurationAttributes?.launch?.properties ?? {};
+
+    assert.ok(properties["tfToolsMode"], "expected tfToolsMode launch schema property");
+    assert.ok(properties["tfToolsProfileId"], "expected tfToolsProfileId launch schema property");
+    assert.ok(properties["tfToolsContextKey"], "expected tfToolsContextKey launch schema property");
+  });
+
+  test("onDebugResolve:tftools activation event is present", () => {
+    const pkg = getExtPackageJson();
+    const activationEvents = (pkg.activationEvents as string[] | undefined) ?? [];
+    assert.ok(
+      activationEvents.includes("onDebugResolve:tftools"),
+      `expected 'onDebugResolve:tftools' in activationEvents, got: [${activationEvents.join(", ")}]`
+    );
+  });
+
+  test("tftools debug type is not the same as an existing debugger type", () => {
+    // The tftools type is a proxy type and must not collide with real debugger types
+    // like 'cppdbg', 'cortex-debug', 'gdb', etc.
+    const RESERVED_TYPES = ["cppdbg", "cortex-debug", "gdb", "lldb", "node", "python", "go"];
+    assert.ok(
+      !RESERVED_TYPES.includes(TFTOOLS_DEBUG_TYPE),
+      `TFTOOLS_DEBUG_TYPE '${TFTOOLS_DEBUG_TYPE}' must not collide with a standard debugger type`
+    );
   });
 });

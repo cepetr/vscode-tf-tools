@@ -63,6 +63,10 @@ import {
 import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
 import { EvalContext } from "./manifest/when-expressions";
+import {
+  TfToolsDebugConfigurationProvider,
+  TFTOOLS_DEBUG_TYPE,
+} from "./debug/run-debug-provider";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
@@ -77,6 +81,7 @@ let _excludedFilesRefreshCoordinator: ExcludedFilesRefreshCoordinator | undefine
 let _excludedFileDecorations: ExcludedFileDecorationsProvider | undefined;
 let _excludedFileOverlays: ExcludedFileOverlaysManager | undefined;
 let _manifestStateSubscription: vscode.Disposable | undefined;
+let _debugConfigProviderRegistration: vscode.Disposable | undefined;
 /** Tracks the last wrong-provider state offered to the user to avoid duplicate Fix notifications. */
 let _lastShownProviderFixState: string = "none";
 /** Binary and Map artifact state for Flash/Upload/openMapFile context keys. */
@@ -704,6 +709,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  // --- Run and Debug provider (Run and Debug Integration slice) ---
+  const debugConfigProvider = new TfToolsDebugConfigurationProvider(
+    () => _manifestState?.status === "loaded" ? (_manifestState as ManifestStateLoaded) : undefined,
+    () => _activeConfig,
+    () => resolveArtifactsPath(workspaceFolder),
+    () => resolveDebugTemplatesPath(workspaceFolder),
+    workspaceFolder
+  );
+  _debugConfigProviderRegistration?.dispose();
+  _debugConfigProviderRegistration = vscode.debug.registerDebugConfigurationProvider(
+    TFTOOLS_DEBUG_TYPE,
+    debugConfigProvider,
+    vscode.DebugConfigurationProviderTriggerKind.Dynamic
+  );
+  context.subscriptions.push(_debugConfigProviderRegistration);
+
   // --- openMapFile command, scoped to the artifact row. ---
   context.subscriptions.push(
     vscode.commands.registerCommand("tfTools.openMapFile", async () => {
@@ -879,6 +900,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 export function deactivate(): void {
   _manifestStateSubscription?.dispose();
   _manifestStateSubscription = undefined;
+  _debugConfigProviderRegistration?.dispose();
+  _debugConfigProviderRegistration = undefined;
   _manifestService?.dispose();
   _manifestService = undefined;
   _treeProvider?.dispose();

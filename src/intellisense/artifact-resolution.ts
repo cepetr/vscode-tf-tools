@@ -13,7 +13,7 @@ import {
 import { ActiveConfig } from "../configuration/active-config";
 import {
   DebugProfileResolutionState,
-  resolveDebugProfile,
+  resolveMatchingDebugProfiles,
   deriveExecutableFileName,
 } from "../commands/debug-launch";
 
@@ -339,6 +339,8 @@ export interface ActiveExecutableArtifact {
   readonly status: ExecutableArtifactStatus;
   readonly missingReason?: string;
   readonly tooltip: string;
+  /** Number of profiles in the matching debug profile set for the active build context. */
+  readonly matchingProfileCount: number;
 }
 
 function formatExecutableArtifactTooltip(expectedPath: string, missingReason?: string): string {
@@ -388,6 +390,7 @@ export function resolveActiveExecutableArtifact(
         "",
         "The manifest has debug blocking issues; cannot resolve an executable."
       ),
+      matchingProfileCount: 0,
     };
   }
 
@@ -405,14 +408,15 @@ export function resolveActiveExecutableArtifact(
       status: "missing",
       missingReason: reason,
       tooltip: formatExecutableArtifactTooltip("", reason),
+      matchingProfileCount: 0,
     };
   }
 
   const evalCtx = { modelId: config.modelId, targetId: config.targetId, componentId: config.componentId };
   const profiles = component.debug ?? [];
-  const resolution = resolveDebugProfile(profiles, evalCtx);
+  const matchingSet = resolveMatchingDebugProfiles(profiles, evalCtx);
 
-  if (resolution.resolutionState === "no-match") {
+  if (!matchingSet.defaultProfile) {
     return {
       contextKey,
       profileResolutionState: "no-match",
@@ -424,6 +428,7 @@ export function resolveActiveExecutableArtifact(
         "",
         "No debug profile matches the active build context."
       ),
+      matchingProfileCount: 0,
     };
   }
 
@@ -452,6 +457,7 @@ export function resolveActiveExecutableArtifact(
       status: "missing",
       missingReason: reason,
       tooltip: formatExecutableArtifactTooltip("", reason),
+      matchingProfileCount: matchingSet.profiles.length,
     };
   }
 
@@ -466,6 +472,7 @@ export function resolveActiveExecutableArtifact(
       exists: true,
       status: "valid",
       tooltip: formatExecutableArtifactTooltip(expectedPath),
+      matchingProfileCount: matchingSet.profiles.length,
     };
   }
 
@@ -480,5 +487,6 @@ export function resolveActiveExecutableArtifact(
       expectedPath,
       `Executable artifact not found at the expected path: ${expectedPath}`
     ),
+    matchingProfileCount: matchingSet.profiles.length,
   };
 }
