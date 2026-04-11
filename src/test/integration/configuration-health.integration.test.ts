@@ -13,10 +13,11 @@ import { resolveActiveArtifact, buildResolutionInputs, deriveArtifactPath } from
 import { checkProviderReadiness } from "../../intellisense/cpptools-provider";
 import { IntelliSenseService } from "../../intellisense/intellisense-service";
 import { ActiveConfig } from "../../configuration/active-config";
-import { SectionItem, ConfigurationTreeProvider } from "../../ui/configuration-tree";
+import { SectionItem, SectionId, ConfigurationTreeProvider } from "../../ui/configuration-tree";
 
 // ---------------------------------------------------------------------------
-// Regression target: all three root sections must default to Expanded (UI-02)
+// Regression target: Build Selection and Build Artifacts default to Expanded,
+// while Build Options stays collapsed until the user opens it (UI-02)
 // Refs: specs/product-spec.md root-section expansion requirement
 // ---------------------------------------------------------------------------
 const EXPECTED_ROOT_SECTION_COUNT = 3;
@@ -360,14 +361,14 @@ suite("checkProviderReadiness – integration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfigurationTreeProvider root section expansion (UI-02)
-// Integration tests asserting all three root sections default to Expanded and
-// that their children (placeholder or status content) are reachable immediately.
-// These tests protect against regressions in build-options and build-artifacts expansion.
+// ConfigurationTreeProvider root section states (UI-02)
+// Integration tests asserting the root sections use the intended startup
+// collapsible states and that their children remain reachable immediately.
+// These tests protect against regressions in startup section behavior.
 // the SectionItem constructor.
 // ---------------------------------------------------------------------------
 
-suite("ConfigurationTreeProvider – root section expansion (UI-02)", () => {
+suite("ConfigurationTreeProvider – root section states (UI-02)", () => {
   test("getChildren(undefined) returns exactly three root sections", () => {
     const provider = new ConfigurationTreeProvider();
     const roots = provider.getChildren(undefined);
@@ -378,14 +379,20 @@ suite("ConfigurationTreeProvider – root section expansion (UI-02)", () => {
     );
   });
 
-  test("all three root sections default to Expanded", () => {
+  test("root sections use the expected startup collapsible states", () => {
     const provider = new ConfigurationTreeProvider();
     const roots = provider.getChildren(undefined);
+    const expectedStates = new Map<SectionId, vscode.TreeItemCollapsibleState>([
+      ["build-context", vscode.TreeItemCollapsibleState.Expanded],
+      ["build-options", vscode.TreeItemCollapsibleState.Collapsed],
+      ["build-artifacts", vscode.TreeItemCollapsibleState.Expanded],
+    ]);
     for (const item of roots) {
+      const sectionId = (item as SectionItem).sectionId;
       assert.strictEqual(
         item.collapsibleState,
-        vscode.TreeItemCollapsibleState.Expanded,
-        `Expected section '${(item as SectionItem).sectionId}' to be Expanded by default`
+        expectedStates.get(sectionId),
+        `Expected section '${sectionId}' to use its intended startup collapsible state`
       );
     }
   });
@@ -403,7 +410,7 @@ suite("ConfigurationTreeProvider – root section expansion (UI-02)", () => {
     );
   });
 
-  test("Build Options section is Expanded before any manifest is loaded", () => {
+  test("Build Options section is Collapsed before any manifest is loaded", () => {
     const provider = new ConfigurationTreeProvider();
     const roots = provider.getChildren(undefined);
     const buildOptions = roots.find(
@@ -412,7 +419,7 @@ suite("ConfigurationTreeProvider – root section expansion (UI-02)", () => {
     assert.ok(buildOptions, "Expected Build Options section to exist");
     assert.strictEqual(
       buildOptions!.collapsibleState,
-      vscode.TreeItemCollapsibleState.Expanded
+      vscode.TreeItemCollapsibleState.Collapsed
     );
   });
 

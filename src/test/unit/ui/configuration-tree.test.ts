@@ -19,13 +19,18 @@ import { ActiveCompileCommandsArtifact } from "../../../intellisense/intellisens
 import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } from "../../../intellisense/artifact-resolution";
 
 // ---------------------------------------------------------------------------
-// Regression target: all three root sections must default to Expanded (UI-02)
+// Regression target: Build Selection and Build Artifacts default to Expanded,
+// while Build Options stays collapsed until the user opens it.
 // Refs: specs/product-spec.md root-section expansion requirement
 // ---------------------------------------------------------------------------
-const EXPECTED_EXPANDED_SECTIONS: Array<{ id: SectionId; label: string }> = [
-  { id: "build-context",   label: "Build Selection"  },
-  { id: "build-options",   label: "Build Options"  },
-  { id: "build-artifacts", label: "Build Artifacts" },
+const EXPECTED_ROOT_SECTION_STATES: Array<{
+  id: SectionId;
+  label: string;
+  state: vscode.TreeItemCollapsibleState;
+}> = [
+  { id: "build-context",   label: "Build Selection", state: vscode.TreeItemCollapsibleState.Expanded },
+  { id: "build-options",   label: "Build Options", state: vscode.TreeItemCollapsibleState.Collapsed },
+  { id: "build-artifacts", label: "Build Artifacts", state: vscode.TreeItemCollapsibleState.Expanded },
 ];
 
 suite("SectionItem icons", () => {
@@ -330,19 +335,19 @@ suite("CompileCommandsArtifactItem – missing artifact", () => {
 });
 
 // ---------------------------------------------------------------------------
-// SectionItem default expansion (UI-02)
-// All three root sections must default to vscode.TreeItemCollapsibleState.Expanded.
-// These tests protect against regressions in the collapsing override.
+// SectionItem default section states (UI-02)
+// Build Selection and Build Artifacts default to Expanded.
+// Build Options defaults to Collapsed so activation does not auto-expand it.
 // ---------------------------------------------------------------------------
 
-suite("SectionItem default expansion (UI-02)", () => {
-  EXPECTED_EXPANDED_SECTIONS.forEach(({ id, label }) => {
-    test(`${id} root section defaults to Expanded`, () => {
+suite("SectionItem default section states (UI-02)", () => {
+  EXPECTED_ROOT_SECTION_STATES.forEach(({ id, label, state }) => {
+    test(`${id} root section uses the expected default collapsible state`, () => {
       const item = new SectionItem(id, label);
       assert.strictEqual(
         item.collapsibleState,
-        vscode.TreeItemCollapsibleState.Expanded,
-        `Expected SectionItem(${id}) to have collapsibleState Expanded`
+        state,
+        `Expected SectionItem(${id}) to use collapsibleState ${vscode.TreeItemCollapsibleState[state]}`
       );
     });
   });
@@ -352,9 +357,9 @@ suite("SectionItem default expansion (UI-02)", () => {
     assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
   });
 
-  test("Build Options section defaults to Expanded", () => {
+  test("Build Options section defaults to Collapsed", () => {
     const item = new SectionItem("build-options", "Build Options");
-    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Expanded);
+    assert.strictEqual(item.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
   });
 
   test("Build Artifacts section defaults to Expanded", () => {

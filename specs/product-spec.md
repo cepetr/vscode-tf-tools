@@ -102,7 +102,7 @@ When the manifest file is invalid, the section stays visible and shows a warning
 
 The extension provides a dedicated way to review and adjust build options for the active build context through the `Build Options` part of the tree view.
 
-The `Build Options` section remains present in the tree view and is expanded by default.
+The `Build Options` section remains present in the tree view and is initially collapsed instead of being auto-expanded on activation.
 
 The available build options are defined in the manifest file for the workspace.
 

@@ -12,9 +12,15 @@ import { ActiveBinaryArtifact, ActiveMapArtifact, ActiveExecutableArtifact } fro
 
 export type SectionId = "build-context" | "build-options" | "build-artifacts";
 
+function getSectionCollapsibleState(sectionId: SectionId): vscode.TreeItemCollapsibleState {
+  return sectionId === "build-options"
+    ? vscode.TreeItemCollapsibleState.Collapsed
+    : vscode.TreeItemCollapsibleState.Expanded;
+}
+
 export class SectionItem extends vscode.TreeItem {
   constructor(public readonly sectionId: SectionId, label: string) {
-    super(label, vscode.TreeItemCollapsibleState.Expanded);
+    super(label, getSectionCollapsibleState(sectionId));
     this.id = `section:${sectionId}`;
     this.contextValue = sectionId;
     this.tooltip = "";
