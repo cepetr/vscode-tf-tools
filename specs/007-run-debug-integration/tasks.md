@@ -51,8 +51,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Implement matching-set, default-profile, and launch-materialization helpers in `src/commands/debug-launch.ts`
-- [ ] T009 [US1] Implement the tf-tools Run and Debug provider baseline in `src/debug/run-debug-provider.ts`
+- [x] T008 [US1] Implement matching-set, default-profile, and launch-materialization helpers in `src/commands/debug-launch.ts`
+- [x] T009 [US1] Implement the tf-tools Run and Debug provider baseline in `src/debug/run-debug-provider.ts`
 - [ ] T010 [US1] Register the Run and Debug provider lifecycle in `src/extension.ts`
 - [ ] T011 [US1] Contribute proxy debug activation and compatibility metadata in `package.json`
 

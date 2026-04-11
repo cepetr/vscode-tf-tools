@@ -407,6 +407,144 @@ export function applyTfToolsSubstitution(
 }
 
 // ---------------------------------------------------------------------------
+// Launch materialization
+// ---------------------------------------------------------------------------
+
+/**
+ * Result returned by materializeDebugConfiguration.
+ */
+export type DebugMaterializationResult =
+  | { readonly ok: true; readonly configuration: Record<string, unknown> }
+  | { readonly ok: false; readonly reason: string; readonly message: string; readonly detail?: string };
+
+/**
+ * Materializes a debug launch configuration for a specific resolved profile.
+ *
+ * Performs steps shared by both direct `Start Debugging` and provider-launched
+ * debug sessions:
+ *  1. Derives and verifies the executable artifact path.
+ *  2. Loads and parses the JSONC debug template from `templatesRoot`.
+ *  3. Builds the tf-tools variable map (built-ins + profile vars).
+ *  4. Applies single-pass tf-tools substitution to the template.
+ *
+ * Does NOT call `vscode.debug.startDebugging` — that is left to the caller.
+ * Does NOT resolve the profile — the caller must provide the selected profile.
+ */
+export function materializeDebugConfiguration(
+  _workspaceFolder: vscode.WorkspaceFolder,
+  manifest: ManifestStateLoaded,
+  config: ActiveConfig,
+  artifactsRoot: string,
+  templatesRoot: string,
+  profile: ManifestComponentDebugProfile
+): DebugMaterializationResult {
+  const component = manifest.components.find((c) => c.id === config.componentId);
+  const target = manifest.targets.find((t) => t.id === config.targetId);
+  const model = manifest.models.find((m) => m.id === config.modelId);
+
+  if (!component || !target || !model) {
+    return {
+      ok: false,
+      reason: "unknown-active-config",
+      message: "Cannot start debugging: active configuration references an unknown component, target, or model.",
+    };
+  }
+
+  // Derive executable file name and path
+  const artifactFolder = model.artifactFolder ?? "";
+  const executableFileName = deriveExecutableFileName(
+    component.artifactName ?? "",
+    target.artifactSuffix ?? "",
+    target.executableExtension ?? ""
+  );
+  const artifactPath = path.join(artifactsRoot, artifactFolder);
+  const executablePath = path.join(artifactsRoot, artifactFolder, executableFileName);
+
+  if (!fs.existsSync(executablePath)) {
+    return {
+      ok: false,
+      reason: "missing-executable",
+      message: `Cannot start debugging: executable not found at ${executablePath}`,
+      detail: executablePath,
+    };
+  }
+
+  // Load debug template (per-invocation — no caching)
+  const templateResult = loadDebugTemplate(profile.template, templatesRoot);
+
+  if (templateResult.parseState === "traversal-blocked") {
+    return {
+      ok: false,
+      reason: "traversal-blocked",
+      message: `Cannot start debugging: ${templateResult.error}`,
+      detail: templateResult.error,
+    };
+  }
+
+  if (templateResult.parseState === "missing") {
+    return {
+      ok: false,
+      reason: "missing-template",
+      message: `Cannot start debugging: template file not found — ${templateResult.error}`,
+      detail: templateResult.error,
+    };
+  }
+
+  if (templateResult.parseState === "invalid") {
+    return {
+      ok: false,
+      reason: "invalid-template",
+      message: `Cannot start debugging: template is invalid — ${templateResult.error}`,
+      detail: templateResult.error,
+    };
+  }
+
+  const configuration = templateResult.configuration!;
+
+  // Build tf-tools variable map
+  const varMap = buildDebugVariableMap(
+    config.modelId,
+    model.name,
+    config.targetId,
+    target.name,
+    config.componentId,
+    component.name,
+    artifactPath,
+    executableFileName,
+    executablePath,
+    profile.name,
+    profile.vars
+  );
+
+  if (varMap.resolutionErrors.length > 0) {
+    return {
+      ok: false,
+      reason: "variable-resolution-error",
+      message: `Cannot start debugging: variable resolution failed — ${varMap.resolutionErrors.join("; ")}`,
+      detail: varMap.resolutionErrors.join("; "),
+    };
+  }
+
+  // Apply single-pass tf-tools substitution
+  const { value: resolvedConfig, unknownVars } = applyTfToolsSubstitution(
+    configuration,
+    varMap.resolvedVars
+  );
+
+  if (unknownVars.length > 0) {
+    const detail = unknownVars.map((v) => `\${${v}}`).join(", ");
+    return {
+      ok: false,
+      reason: "unknown-template-variables",
+      message: `Cannot start debugging: unknown tf-tools variable(s) in template: ${detail}`,
+      detail,
+    };
+  }
+
+  return { ok: true, configuration: resolvedConfig as Record<string, unknown> };
+}
+
+// ---------------------------------------------------------------------------
 // Command handler
 // ---------------------------------------------------------------------------
 
@@ -484,130 +622,32 @@ export async function executeDebugLaunch(
 
   const profile = resolution.selectedProfile!;
 
-  // 4. Derive executable file name and path
-  const artifactFolder = model.artifactFolder ?? "";
-  const executableFileName = deriveExecutableFileName(
-    component.artifactName ?? "",
-    target.artifactSuffix ?? "",
-    target.executableExtension ?? ""
-  );
-  const artifactPath = path.join(artifactsRoot, artifactFolder);
-  const executablePath = path.join(artifactsRoot, artifactFolder, executableFileName);
-
-  if (!fs.existsSync(executablePath)) {
-    logDebugLaunchFailure("missing-executable", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-      detail: executablePath,
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(
-      `Cannot start debugging: executable not found at ${executablePath}`
-    );
-    return;
-  }
-
-  // 5. Load debug template (per-invocation — no caching)
-  const templateResult = loadDebugTemplate(profile.template, templatesRoot);
-
-  if (templateResult.parseState === "traversal-blocked") {
-    logDebugLaunchFailure("traversal-blocked", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-      detail: templateResult.error,
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(
-      `Cannot start debugging: ${templateResult.error}`
-    );
-    return;
-  }
-
-  if (templateResult.parseState === "missing") {
-    logDebugLaunchFailure("missing-template", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-      detail: templateResult.error,
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(
-      `Cannot start debugging: template file not found — ${templateResult.error}`
-    );
-    return;
-  }
-
-  if (templateResult.parseState === "invalid") {
-    logDebugLaunchFailure("invalid-template", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-      detail: templateResult.error,
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(
-      `Cannot start debugging: template is invalid — ${templateResult.error}`
-    );
-    return;
-  }
-
-  const configuration = templateResult.configuration!;
-
-  // 6. Build tf-tools variable map
-  const varMap = buildDebugVariableMap(
-    config.modelId,
-    model.name,
-    config.targetId,
-    target.name,
-    config.componentId,
-    component.name,
-    artifactPath,
-    executableFileName,
-    executablePath,
-    profile.name,
-    profile.vars
+  // 4–6. Materialize the debug configuration (path derivation, template load, substitution)
+  const materialization = materializeDebugConfiguration(
+    workspaceFolder,
+    manifest,
+    config,
+    artifactsRoot,
+    templatesRoot,
+    profile
   );
 
-  if (varMap.resolutionErrors.length > 0) {
-    logDebugLaunchFailure("variable-resolution-error", {
+  if (!materialization.ok) {
+    logDebugLaunchFailure(materialization.reason, {
       modelId: config.modelId,
       targetId: config.targetId,
       componentId: config.componentId,
-      detail: varMap.resolutionErrors.join("; "),
+      detail: materialization.detail,
     });
     revealLogs();
-    void vscode.window.showErrorMessage(
-      `Cannot start debugging: variable resolution failed — ${varMap.resolutionErrors.join("; ")}`
-    );
-    return;
-  }
-
-  // 6. Apply single-pass tf-tools substitution
-  const { value: resolvedConfig, unknownVars } = applyTfToolsSubstitution(
-    configuration,
-    varMap.resolvedVars
-  );
-
-  if (unknownVars.length > 0) {
-    logDebugLaunchFailure("unknown-template-variables", {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-      detail: unknownVars.map((v) => `\${${v}}`).join(", "),
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(
-      `Cannot start debugging: unknown tf-tools variable(s) in template: ${unknownVars.map((v) => `\${${v}}`).join(", ")}`
-    );
+    void vscode.window.showErrorMessage(materialization.message);
     return;
   }
 
   // 7. Launch via VS Code debug API
   const launched = await vscode.debug.startDebugging(
     workspaceFolder,
-    resolvedConfig as vscode.DebugConfiguration
+    materialization.configuration as vscode.DebugConfiguration
   );
 
   if (!launched) {
