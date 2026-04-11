@@ -784,6 +784,8 @@ Unlike `Build`, successful completion of `Flash to Device` or `Upload to Device`
 
 This action is intended to let the user launch the correct debug configuration directly from extension-managed state, without editing workspace debug configuration by hand.
 
+The same extension-managed state also drives tf-tools-owned entries in VS Code `Run and Debug`, so users can start debugging with standard debug controls such as `F5` without creating or editing `.vscode/launch.json`.
+
 #### Surfaces
 
 `Start Debugging` is exposed on the command surfaces that are directly tied to the active build context:
@@ -792,8 +794,11 @@ This action is intended to let the user launch the correct debug configuration d
 - The `Configuration view` overflow menu.
 - The `Executable` row in `Build Artifacts` as a row action.
 - The Command Palette as `Trezor: Start Debugging`.
+- VS Code `Run and Debug` as generated tf-tools-owned debug entries for the active build context.
 
 The Command Palette entry is more restrictive than the visible `Configuration view` actions. It is shown only when debugging is currently startable for the active build context.
+
+The `Configuration view` header, overflow menu, `Executable` row action, and Command Palette continue to launch the default matching debug profile immediately. When more than one profile matches, `Run and Debug` additionally exposes profile-specific entries for profile selection.
 
 #### Preconditions
 
@@ -809,6 +814,8 @@ The executable path is derived from the active build context and the manifest-de
 Visible `Start Debugging` actions in the `Configuration view` stay present but disabled when a matching debug profile cannot be resolved or when the executable artifact is missing.
 
 The `Executable` row reflects the same readiness state through its `valid` or `missing` status and tooltip.
+
+`Run and Debug` entry availability is derived from the same manifest, active-context, matching-profile, and executable-artifact checks. Template-file problems, invalid template content, and unresolved tf-tools debug variables remain invocation-time failures rather than hidden availability conditions.
 
 #### Debug Profile Selection
 
@@ -892,54 +899,15 @@ Blocked or failed launch attempts include cases such as:
 - Invalid template content.
 - Unknown or unresolved tf-tools debug variables.
 - VS Code refusing to start the resolved debug configuration.
+- A tf-tools-generated `Run and Debug` entry being started after the active build context has changed.
 
 When launch is blocked by debug-specific resolution, template, variable, or artifact problems, the extension shows an error message and records the failure in the log output. For most blocked debug-launch states, the extension also reveals the log output to direct the user to the detailed failure reason.
+
+When a generated `Run and Debug` entry was created for an older active build context and the user starts it after the context has changed, the extension rejects the stale entry instead of silently redirecting it to the new context.
 
 #### Successful Result
 
 When `Start Debugging` succeeds, the extension starts the resolved debug session for the active build context and then reveals the `Run and Debug` view.
-
-### Run And Debug Integration
-
-#### Purpose
-
-The extension generates tf-tools-owned debug configurations in VS Code Run and Debug so users can start debugging with standard VS Code controls such as F5, without editing workspace debug configuration files.
-
-This surface is additive. The existing `Start Debugging` command surfaces remain the primary quick-action entry point for the active build context. Run and Debug provides alternative discovery and profile selection for users who prefer standard VS Code debug workflows.
-
-#### Generated Entries
-
-The extension dynamically generates Run and Debug configurations for the active build context. All generated entries are tf-tools-owned proxy configurations that are resolved into real debug configurations at launch time.
-
-When the active build context has at least one matching debug profile and a valid executable artifact, the extension exposes a **default entry** whose label identifies it as the tf-tools choice for the active build context. This entry targets the first matching debug profile in declaration order.
-
-When the active build context has more than one matching debug profile, the extension additionally exposes a **profile-specific entry** for each matching profile. Each profile-specific entry identifies the profile by name and includes enough active build-context detail to remain distinguishable after context changes.
-
-Generated entries are not persisted into `.vscode/launch.json`. They are rebuilt whenever the active build context changes.
-
-#### Entry Set Rules
-
-- The extension exposes a default entry when the matching debug profile set is non-empty and the executable artifact exists.
-- The extension additionally exposes a profile-specific entry per matching profile when more than one profile matches.
-- When no debug profile matches or the executable artifact is missing, the extension does not offer a launchable tf-tools Run and Debug entry for that context.
-
-#### Stale Entry Rejection
-
-Each generated entry embeds the active build-context identity at generation time. When the user starts a generated entry after the active build context has changed, the launch is rejected with a user-visible error and a log entry. The stale entry is not silently relaunched against the new context.
-
-#### Availability Alignment
-
-Run and Debug entry availability is derived from the same inputs as the existing `Start Debugging` action: manifest validity, active build context, matching profiles, and executable artifact presence. This keeps the `Configuration view` and Run and Debug surfaces aligned on what is considered startable.
-
-Template-file problems, invalid template content, and unresolved tf-tools debug variables remain invocation-time failures rather than hidden availability conditions. A profile that is discoverable in Run and Debug through matching and artifact checks will remain visible even if its template is temporarily invalid.
-
-#### F5 Behavior
-
-Selecting a tf-tools-generated Run and Debug entry and pressing F5 starts the debug session using that entry's associated debug profile. No `.vscode/launch.json` file is created or required.
-
-#### Direct Actions Remain Unchanged
-
-The `Configuration view` header, overflow menu, `Executable` row action, and Command Palette continue to launch the default profile immediately without first showing a profile picker. These surfaces do not change behavior when multiple matching profiles are present.
 
 Unlike build-workflow commands, `Start Debugging` does not create or refresh build artifacts as part of its successful result. Its successful result is the start of the requested debug session itself.
 
