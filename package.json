@@ -16,7 +16,8 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onDebugResolve:tftools"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -276,7 +277,13 @@
           "scope": "resource"
         }
       }
-    }
+    },
+    "debuggers": [
+      {
+        "type": "tftools",
+        "label": "Trezor Firmware Tools"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run bundle",
