@@ -90,7 +90,7 @@
 ### Tests for User Story 3 ⚠️
 
 - [x] T017 [P] [US3] Add unit tests for stale-context rejection and invocation-time failure handling in `src/test/unit/workflow/debug-launch.test.ts`
-- [ ] T018 [P] [US3] Add integration tests for blocked availability and provider-launched failure paths in `src/test/integration/run-debug-failures.integration.test.ts`
+- [x] T018 [P] [US3] Add integration tests for blocked availability and provider-launched failure paths in `src/test/integration/run-debug-failures.integration.test.ts`
 
 ### Implementation for User Story 3
 
