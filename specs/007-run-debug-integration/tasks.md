@@ -107,7 +107,7 @@
 
 **Purpose**: Final regression coverage, user-facing documentation, and end-to-end validation
 
-- [ ] T023 [P] Update Run and Debug and F5 workflow guidance in `README.md`
+- [x] T023 [P] Update Run and Debug and F5 workflow guidance in `README.md`
 - [ ] T024 [P] Expand no-`launch.json` persistence regression coverage in `src/test/integration/configuration-scope.integration.test.ts`
 - [ ] T025 [P] Expand package contribution and command-surface regression coverage in `src/test/integration/debug-launch.integration.test.ts`
 - [ ] T026 Run `specs/007-run-debug-integration/quickstart.md` validation scenarios

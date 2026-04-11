@@ -30,6 +30,28 @@ Open the `Trezor` activity-bar view and use the `Configuration` tree:
 
 The extension can also show the current build context in the status bar and makes key actions available from the Command Palette.
 
+## Run and Debug Integration
+
+When the active build context has a valid executable artifact and at least one matching debug profile, tf-tools generates VS Code Run and Debug entries automatically. No `.vscode/launch.json` is needed.
+
+**Generated entries:**
+
+- One **default entry** named after the active build context (for example `Trezor: Trezor Model T (v1) | HW | Core`). Selecting it and pressing **F5** launches the first matching debug profile in declaration order.
+- When the active component has **more than one** matching debug profile, one additional **profile-specific entry** is generated per profile. Each entry name includes the profile name so that they are distinguishable after a context change.
+
+**Launching:**
+
+- Press **F5** or click **Start Debugging** in the Run and Debug view while a tf-tools entry is selected to start the session.
+- The extension resolves the executable path, loads the debug template, applies variable substitution, and passes the resulting configuration to VS Code — all at launch time. If any step fails, the session is cancelled with a user-visible error and an entry in the output channel.
+
+**Direct `Start Debugging` command:**
+
+- The `Start Debugging` action available from the Configuration view header, overflow menu, and executable rows always launches the **default profile** directly, independent of the Run and Debug view selection.
+
+**Context changes and stale entries:**
+
+- If the active build context changes after entries were generated, launching a stale entry is rejected with an error. Refresh the Run and Debug view to pick up updated entries.
+
 ## Workspace Requirements
 
 The extension is designed for the `trezor-firmware` repository opened as a single-root VS Code workspace.
