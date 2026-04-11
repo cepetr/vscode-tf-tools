@@ -17,7 +17,7 @@
 
 **Purpose**: Align consolidated product docs and seed reusable fixtures for the feature scope
 
-- [ ] T001 Update `specs/product-spec.md` for Run and Debug surfaces, matching-profile sets, and default-profile behavior
+- [x] T001 Update `specs/product-spec.md` for Run and Debug surfaces, matching-profile sets, and default-profile behavior
 - [ ] T002 [P] Update `specs/glossary.md` for `debug profile resolution` and `declaration order` terminology changes
 
 ---
