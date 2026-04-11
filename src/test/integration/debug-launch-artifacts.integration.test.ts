@@ -206,6 +206,7 @@ suite("Debug Launch – Executable row position in Build Artifacts tree", () => 
       exists: true,
       status: "valid",
       tooltip: "/build/model-t/firmware.elf",
+      matchingProfileCount: 1,
       ...overrides,
     };
   }

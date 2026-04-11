@@ -598,16 +598,16 @@ export async function executeDebugLaunch(
     return;
   }
 
-  // 3. Resolve component debug profile (first-match declaration order)
+  // 3. Resolve component debug profile (first-match declaration order = default profile)
   const evalCtx: EvalContext = {
     modelId: config.modelId,
     targetId: config.targetId,
     componentId: config.componentId,
   };
   const profiles = component.debug ?? [];
-  const resolution = resolveDebugProfile(profiles, evalCtx);
+  const matchingSet = resolveMatchingDebugProfiles(profiles, evalCtx);
 
-  if (resolution.resolutionState === "no-match") {
+  if (!matchingSet.defaultProfile) {
     logDebugLaunchFailure("no-match", {
       modelId: config.modelId,
       targetId: config.targetId,
@@ -620,7 +620,7 @@ export async function executeDebugLaunch(
     return;
   }
 
-  const profile = resolution.selectedProfile!;
+  const profile = matchingSet.defaultProfile;
 
   // 4–6. Materialize the debug configuration (path derivation, template load, substitution)
   const materialization = materializeDebugConfiguration(

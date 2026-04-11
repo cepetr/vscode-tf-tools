@@ -73,9 +73,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] Generate default and profile-specific Run and Debug entries in `src/debug/run-debug-provider.ts`
-- [ ] T015 [US2] Surface matching-set metadata in executable readiness resolution in `src/intellisense/artifact-resolution.ts`
-- [ ] T016 [US2] Keep direct `Start Debugging` bound to the default matching profile in `src/commands/debug-launch.ts`
+- [x] T014 [US2] Generate default and profile-specific Run and Debug entries in `src/debug/run-debug-provider.ts`
+- [x] T015 [US2] Surface matching-set metadata in executable readiness resolution in `src/intellisense/artifact-resolution.ts`
+- [x] T016 [US2] Keep direct `Start Debugging` bound to the default matching profile in `src/commands/debug-launch.ts`
 
 **Checkpoint**: User Stories 1 and 2 should both work, with Run and Debug exposing alternate matching profiles while direct actions still use the default profile
 
