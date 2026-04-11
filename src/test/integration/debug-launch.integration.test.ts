@@ -33,7 +33,9 @@ import {
   debugLaunchValidTemplatesRoot,
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
-import { TFTOOLS_DEBUG_TYPE } from "../../debug/run-debug-provider";
+import {
+  TFTOOLS_DEBUG_TYPE,
+} from "../../debug/run-debug-provider";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -514,6 +516,28 @@ suite("Run and Debug provider – package contribution regressions", () => {
     )?.debuggers ?? [];
     const entry = debuggers.find((d) => d.type === "tftools");
     assert.ok(entry?.label, "tftools debugger must have a label in package.json");
+  });
+
+  test("tftools debugger contributes launch configurationAttributes for proxy fields", () => {
+    const pkg = getExtPackageJson();
+    const debuggers = (
+      pkg.contributes as {
+        debuggers?: Array<{
+          type: string;
+          configurationAttributes?: {
+            launch?: {
+              properties?: Record<string, unknown>;
+            };
+          };
+        }>;
+      } | undefined
+    )?.debuggers ?? [];
+    const entry = debuggers.find((d) => d.type === "tftools");
+    const properties = entry?.configurationAttributes?.launch?.properties ?? {};
+
+    assert.ok(properties["tfToolsMode"], "expected tfToolsMode launch schema property");
+    assert.ok(properties["tfToolsProfileId"], "expected tfToolsProfileId launch schema property");
+    assert.ok(properties["tfToolsContextKey"], "expected tfToolsContextKey launch schema property");
   });
 
   test("onDebugResolve:tftools activation event is present", () => {

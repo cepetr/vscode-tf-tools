@@ -60,6 +60,16 @@ export interface MatchingDebugProfileSet {
   readonly defaultProfile: ManifestComponentDebugProfile | undefined;
 }
 
+interface DebugProfileQuickPickItem extends vscode.QuickPickItem {
+  readonly profile: ManifestComponentDebugProfile;
+}
+
+interface TfToolsProxyDebugConfiguration extends vscode.DebugConfiguration {
+  readonly tfToolsMode: "default" | "profile";
+  readonly tfToolsProfileId: string;
+  readonly tfToolsContextKey: string;
+}
+
 /**
  * Collects all matching component debug profiles for the active build context
  * in manifest declaration order and identifies the default profile.
@@ -544,6 +554,38 @@ export function materializeDebugConfiguration(
   return { ok: true, configuration: resolvedConfig as Record<string, unknown> };
 }
 
+async function pickDebugProfile(
+  matchingSet: MatchingDebugProfileSet
+): Promise<ManifestComponentDebugProfile | undefined> {
+  const items: DebugProfileQuickPickItem[] = matchingSet.profiles.map((profile) => ({
+    label: profile.name,
+    profile,
+  }));
+
+  const selected = await vscode.window.showQuickPick(items, {
+    title: "Select Debug Profile",
+    placeHolder: "Choose a debug profile for the active build context",
+    ignoreFocusOut: true,
+  });
+
+  return selected?.profile;
+}
+
+function buildTfToolsProxyDebugConfiguration(
+  config: ActiveConfig,
+  profile: ManifestComponentDebugProfile,
+  mode: "default" | "profile"
+): TfToolsProxyDebugConfiguration {
+  return {
+    type: "tftools",
+    request: "launch",
+    name: mode === "default" ? "Trezor" : `Trezor: ${profile.name}`,
+    tfToolsMode: mode,
+    tfToolsProfileId: profile.id,
+    tfToolsContextKey: `${config.modelId}::${config.targetId}::${config.componentId}`,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Command handler
 // ---------------------------------------------------------------------------
@@ -555,9 +597,9 @@ export function materializeDebugConfiguration(
  *  1. Validates manifest debug state and resolves the selected debug profile.
  *  2. Derives and verifies the executable artifact path.
  *  3. Loads and parses the JSONC debug template from `templatesRoot`.
- *  4. Builds the tf-tools variable map (built-ins + profile vars).
- *  5. Applies single-pass tf-tools substitution to the template.
- *  6. Starts the resolved configuration via `vscode.debug.startDebugging`.
+ *  4. Starts the selected tf-tools proxy configuration via `vscode.debug.startDebugging`.
+ *     The registered tf-tools debug provider materializes the real debugger
+ *     configuration so VS Code can keep the selected Run and Debug entry in sync.
  *
  * All blocked states (no-match, missing executable, template
  * errors, variable errors) surface an error message and return early.
@@ -620,34 +662,29 @@ export async function executeDebugLaunch(
     return;
   }
 
-  const profile = matchingSet.defaultProfile;
+  let profile: ManifestComponentDebugProfile | undefined = matchingSet.defaultProfile;
 
-  // 4–6. Materialize the debug configuration (path derivation, template load, substitution)
-  const materialization = materializeDebugConfiguration(
-    workspaceFolder,
-    manifest,
-    config,
-    artifactsRoot,
-    templatesRoot,
-    profile
-  );
-
-  if (!materialization.ok) {
-    logDebugLaunchFailure(materialization.reason, {
-      modelId: config.modelId,
-      targetId: config.targetId,
-      componentId: config.componentId,
-      detail: materialization.detail,
-    });
-    revealLogs();
-    void vscode.window.showErrorMessage(materialization.message);
-    return;
+  if (matchingSet.profiles.length > 1) {
+    profile = await pickDebugProfile(matchingSet);
+    if (!profile) {
+      return;
+    }
   }
 
-  // 7. Launch via VS Code debug API
+  const selectedProfile = profile as ManifestComponentDebugProfile;
+
+  const launchMode: "default" | "profile" =
+    matchingSet.defaultProfile.id === selectedProfile.id ? "default" : "profile";
+  const proxyConfiguration = buildTfToolsProxyDebugConfiguration(
+    config,
+    selectedProfile,
+    launchMode
+  );
+
+  // 4. Launch via VS Code debug API using the tf-tools proxy configuration.
   const launched = await vscode.debug.startDebugging(
     workspaceFolder,
-    materialization.configuration as vscode.DebugConfiguration
+    proxyConfiguration
   );
 
   if (!launched) {

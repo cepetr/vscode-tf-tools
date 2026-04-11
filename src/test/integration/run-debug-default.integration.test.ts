@@ -9,7 +9,7 @@
  *  - provideDebugConfigurations returns an empty list when no profile matches.
  *  - provideDebugConfigurations returns an empty list when executable artifact is missing.
  *  - The default entry has type "tftools", request "launch", and tfToolsMode "default".
- *  - The default entry label identifies the active build context.
+ *  - The default entry label uses the generic tf-tools name.
  *  - resolveDebugConfiguration resolves a valid proxy config to the real debug configuration.
  *  - Launching through the provider succeeds without creating .vscode/launch.json.
  *  - The provider is registered as a command after extension activation.
@@ -120,7 +120,7 @@ suite("generateDebugConfigurations – default entry", () => {
     );
   });
 
-  test("default entry label identifies the active build context", () => {
+  test("default entry label uses the generic tf-tools name", () => {
     const profile = makeComponentDebugProfile({
       name: "GDB Remote",
       template: "gdb-remote.json",
@@ -133,10 +133,9 @@ suite("generateDebugConfigurations – default entry", () => {
 
     const entries = generateDebugConfigurations(manifest, config, tmpDir);
 
-    // Model T2T1 → "Trezor Model T (v1)", target hw → shortName "HW", component "Core"
-    const expected = labelForDefaultEntry("Trezor Model T (v1)", "HW", "Core");
+    const expected = labelForDefaultEntry();
     assert.strictEqual(entries[0].name, expected);
-    assert.ok(entries[0].name.includes("Trezor:"));
+    assert.strictEqual(entries[0].name, "Trezor");
   });
 
   test("returns empty list when no debug profile matches", () => {
@@ -328,6 +327,77 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
     assert.notStrictEqual(resolvedConfig.type, TFTOOLS_DEBUG_TYPE);
   });
 
+  test("resolved default entry keeps the proxy label for repeat F5 launches", () => {
+    const profile = makeComponentDebugProfile({
+      name: "GDB Remote",
+      template: "gdb-remote.json",
+      componentId: "core",
+    });
+    const exeFile = path.join(tmpDir, "model-t", "firmware.elf");
+    fs.writeFileSync(exeFile, "");
+    const manifest = makeExeManifest([profile]);
+    const config = makeConfig("T2T1");
+    const folder = makeWorkspaceFolder(tmpDir);
+    const templatesRoot = debugLaunchValidTemplatesRoot();
+
+    const provider = new TfToolsDebugConfigurationProvider(
+      () => manifest,
+      () => config,
+      () => tmpDir,
+      () => templatesRoot,
+      folder
+    );
+
+    const proxyConfig: vscode.DebugConfiguration = {
+      type: TFTOOLS_DEBUG_TYPE,
+      request: "launch",
+      name: "Trezor",
+      tfToolsMode: "default",
+      tfToolsProfileId: profile.id,
+      tfToolsContextKey: makeContextKey(config),
+    };
+
+    const resolved = provider.resolveDebugConfiguration(folder, proxyConfig, makeCancelToken());
+
+    assert.ok(resolved !== undefined, "Resolved config should not be undefined");
+    assert.strictEqual((resolved as vscode.DebugConfiguration).name, proxyConfig.name);
+  });
+
+  test("resolved default entry canonicalizes older long proxy labels", () => {
+    const profile = makeComponentDebugProfile({
+      name: "GDB Remote",
+      template: "gdb-remote.json",
+      componentId: "core",
+    });
+    const exeFile = path.join(tmpDir, "model-t", "firmware.elf");
+    fs.writeFileSync(exeFile, "");
+    const manifest = makeExeManifest([profile]);
+    const config = makeConfig("T2T1");
+    const folder = makeWorkspaceFolder(tmpDir);
+
+    const provider = new TfToolsDebugConfigurationProvider(
+      () => manifest,
+      () => config,
+      () => tmpDir,
+      () => debugLaunchValidTemplatesRoot(),
+      folder
+    );
+
+    const oldProxyConfig: vscode.DebugConfiguration = {
+      type: TFTOOLS_DEBUG_TYPE,
+      request: "launch",
+      name: "Trezor: Trezor Model T (v1) | HW | Core",
+      tfToolsMode: "default",
+      tfToolsProfileId: profile.id,
+      tfToolsContextKey: makeContextKey(config),
+    };
+
+    const resolved = provider.resolveDebugConfiguration(folder, oldProxyConfig, makeCancelToken());
+
+    assert.ok(resolved !== undefined, "Resolved config should not be undefined");
+    assert.strictEqual((resolved as vscode.DebugConfiguration).name, "Trezor");
+  });
+
   test("resolving a non-tftools config returns it unchanged", () => {
     const folder = makeWorkspaceFolder(tmpDir);
     const provider = new TfToolsDebugConfigurationProvider(
@@ -382,11 +452,11 @@ suite("TfToolsDebugConfigurationProvider – resolveDebugConfiguration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: No launch.json persistence
+// Suite: package contribution for tftools dynamic entries
 // ---------------------------------------------------------------------------
 
-suite("Run and Debug – no launch.json persistence", () => {
-  test("package.json does not require launch.json for tftools config", () => {
+suite("Run and Debug – package contribution", () => {
+  test("package.json contributes the tftools debugger type used for dynamic entries", () => {
     const ext = vscode.extensions.getExtension("cepetr.tf-tools");
     if (!ext) {
       // Skip in unit test environment without extension host

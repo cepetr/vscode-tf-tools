@@ -10,8 +10,8 @@
  *  - profile entries carry the same contextKey as the default entry.
  *  - Launching a profile-specific entry through resolveDebugConfiguration materializes
  *    the correct template (i.e., the selected profile's template, not the default's).
- *  - Direct Start Debugging (executeDebugLaunch) binds to the default profile only,
- *    even when multiple profiles match.
+ *  - Direct Start Debugging (executeDebugLaunch) launches immediately when one
+ *    profile matches and opens a profile picker when multiple profiles match.
  */
 
 import * as assert from "assert";
@@ -26,6 +26,7 @@ import {
   labelForProfileEntry,
   labelForDefaultEntry,
 } from "../../debug/run-debug-provider";
+import { executeDebugLaunch } from "../../commands/debug-launch";
 import {
   makeComponentDebugProfile,
   makeIntelliSenseLoadedState,
@@ -190,7 +191,7 @@ suite("generateDebugConfigurations – multi-profile entry set", () => {
       `entry label '${profileEntryForFirst.name}' should include profile name '${firstProfile.name}'`);
   });
 
-  test("default entry label omits profile name prefix", () => {
+  test("default entry label is shorter than the profile-specific label", () => {
     fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
     const manifest = makeMultiProfileManifest(2);
     const config = makeConfig("T2T1");
@@ -318,6 +319,68 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
     assert.notStrictEqual(resolvedConfig.type, TFTOOLS_DEBUG_TYPE);
   });
 
+  test("resolved profile-specific entry keeps the selected proxy label for repeat F5 launches", () => {
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeMultiProfileManifest(2, ["gdb-remote.json", "gdb-remote.json"]);
+    const config = makeConfig("T2T1");
+    const component = manifest.components.find((c) => c.id === "core")!;
+    const secondProfile = component.debug![1];
+    const folder = makeWorkspaceFolder(tmpDir);
+
+    const provider = new TfToolsDebugConfigurationProvider(
+      () => manifest,
+      () => config,
+      () => tmpDir,
+      () => debugLaunchValidTemplatesRoot(),
+      folder
+    );
+
+    const profileProxy: vscode.DebugConfiguration = {
+      type: TFTOOLS_DEBUG_TYPE,
+      request: "launch",
+      name: labelForProfileEntry(secondProfile.name),
+      tfToolsMode: "profile",
+      tfToolsProfileId: secondProfile.id,
+      tfToolsContextKey: makeContextKey(config),
+    };
+
+    const resolved = provider.resolveDebugConfiguration(folder, profileProxy, makeCancelToken());
+
+    assert.ok(resolved !== undefined, "profile-specific entry should resolve to real config");
+    assert.strictEqual((resolved as vscode.DebugConfiguration).name, profileProxy.name);
+  });
+
+  test("resolved profile-specific entry canonicalizes older long proxy labels", () => {
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+    const manifest = makeMultiProfileManifest(2, ["gdb-remote.json", "gdb-remote.json"]);
+    const config = makeConfig("T2T1");
+    const component = manifest.components.find((c) => c.id === "core")!;
+    const secondProfile = component.debug![1];
+    const folder = makeWorkspaceFolder(tmpDir);
+
+    const provider = new TfToolsDebugConfigurationProvider(
+      () => manifest,
+      () => config,
+      () => tmpDir,
+      () => debugLaunchValidTemplatesRoot(),
+      folder
+    );
+
+    const oldProfileProxy: vscode.DebugConfiguration = {
+      type: TFTOOLS_DEBUG_TYPE,
+      request: "launch",
+      name: `Trezor: ${secondProfile.name} | T2T1 | HW | Core`,
+      tfToolsMode: "profile",
+      tfToolsProfileId: secondProfile.id,
+      tfToolsContextKey: makeContextKey(config),
+    };
+
+    const resolved = provider.resolveDebugConfiguration(folder, oldProfileProxy, makeCancelToken());
+
+    assert.ok(resolved !== undefined, "profile-specific entry should resolve to real config");
+    assert.strictEqual((resolved as vscode.DebugConfiguration).name, labelForProfileEntry(secondProfile.name));
+  });
+
   test("resolving a profile-specific entry with unknown profileId returns undefined", () => {
     fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
     const manifest = makeMultiProfileManifest(2, ["gdb-remote.json", "gdb-remote.json"]);
@@ -352,26 +415,160 @@ suite("TfToolsDebugConfigurationProvider – profile-specific resolveDebugConfig
 
 suite("label helpers – multi-profile labels", () => {
   test("labelForProfileEntry distinguishes profile-specific entries by name", () => {
-    const l1 = labelForProfileEntry("GDB Remote", "Model T", "HW", "Core");
-    const l2 = labelForProfileEntry("OpenOCD", "Model T", "HW", "Core");
+    const l1 = labelForProfileEntry("GDB Remote");
+    const l2 = labelForProfileEntry("OpenOCD");
     assert.notStrictEqual(l1, l2);
   });
 
-  test("labelForDefaultEntry and labelForProfileEntry share context portion", () => {
-    const def = labelForDefaultEntry("Model T", "HW", "Core");
-    const prof = labelForProfileEntry("MyProfile", "Model T", "HW", "Core");
-    // Both contain the context triple
-    assert.ok(def.includes("Model T"));
-    assert.ok(prof.includes("Model T"));
-    assert.ok(def.includes("HW"));
-    assert.ok(prof.includes("HW"));
-    // Profile entry additionally includes profile name
+  test("default and profile-specific labels use the tf-tools prefix", () => {
+    const def = labelForDefaultEntry();
+    const prof = labelForProfileEntry("MyProfile");
+    assert.strictEqual(def, "Trezor");
+    assert.ok(prof.startsWith("Trezor:"));
     assert.ok(prof.includes("MyProfile"));
   });
 
-  test("profile label for prodtest context uses prodtest component name", () => {
-    const label = labelForProfileEntry("GDB Remote (T2T1)", "Trezor Model T (v1)", "HW", "Prodtest");
-    assert.ok(label.includes("Prodtest"));
+  test("profile label includes only the profile name after the tf-tools prefix", () => {
+    const label = labelForProfileEntry("GDB Remote (T2T1)");
     assert.ok(label.includes("GDB Remote (T2T1)"));
+    assert.strictEqual(label, "Trezor: GDB Remote (T2T1)");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite: Direct Start Debugging – profile picker behavior
+// ---------------------------------------------------------------------------
+
+suite("executeDebugLaunch – multi-profile selection", () => {
+  let tmpDir: string;
+
+  setup(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tf-tools-mp-launch-"));
+    fs.mkdirSync(path.join(tmpDir, "model-t"), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
+  });
+
+  teardown(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("does not show a picker when exactly one profile matches", async () => {
+    const manifest = makeMultiProfileManifest(1, ["gdb-remote.json"]);
+    const config = makeConfig("T2T1");
+    const folder = makeWorkspaceFolder(tmpDir);
+    const originalShowQuickPick = vscode.window.showQuickPick;
+    const originalStartDebugging = vscode.debug.startDebugging;
+    let pickerShown = false;
+    let launchCount = 0;
+    let launchedConfig: vscode.DebugConfiguration | undefined;
+
+    try {
+      (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = async () => {
+        pickerShown = true;
+        return undefined;
+      };
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = async (_folder, debugConfig) => {
+        launchCount += 1;
+        launchedConfig = debugConfig as vscode.DebugConfiguration;
+        return true;
+      };
+
+      await executeDebugLaunch(folder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+
+      assert.strictEqual(pickerShown, false);
+      assert.strictEqual(launchCount, 1);
+      assert.strictEqual(launchedConfig?.type, TFTOOLS_DEBUG_TYPE);
+      assert.strictEqual(launchedConfig?.name, "Trezor");
+      assert.strictEqual(launchedConfig?.["tfToolsMode"], "default");
+    } finally {
+      (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = originalShowQuickPick;
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = originalStartDebugging;
+    }
+  });
+
+  test("shows a picker and launches the selected profile when multiple profiles match", async () => {
+    const manifest = makeMultiProfileManifest(2, ["gdb-remote.json", "gdb-remote.json"]);
+    const config = makeConfig("T2T1");
+    const folder = makeWorkspaceFolder(tmpDir);
+    const originalShowQuickPick = vscode.window.showQuickPick;
+    const originalStartDebugging = vscode.debug.startDebugging;
+    let pickedLabel = "";
+    let launchedConfig: vscode.DebugConfiguration | undefined;
+
+    try {
+      (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = ((
+        async (items: readonly vscode.QuickPickItem[]) => {
+          pickedLabel = String(items[1]?.label ?? "");
+          return items[1];
+        }
+      ) as unknown) as typeof vscode.window.showQuickPick;
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = async (_folder, debugConfig) => {
+        launchedConfig = debugConfig as vscode.DebugConfiguration;
+        return true;
+      };
+
+      await executeDebugLaunch(folder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+
+      assert.strictEqual(pickedLabel, "Profile B");
+      assert.ok(launchedConfig, "expected selected profile to be launched");
+      assert.strictEqual(launchedConfig?.type, TFTOOLS_DEBUG_TYPE);
+      assert.strictEqual(launchedConfig?.name, "Trezor: Profile B");
+      assert.strictEqual(launchedConfig?.["tfToolsMode"], "profile");
+    } finally {
+      (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = originalShowQuickPick;
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = originalStartDebugging;
+    }
+  });
+
+  test("multi-profile picker items omit extra description and detail text", async () => {
+    const manifest = makeMultiProfileManifest(2, ["gdb-remote.json", "gdb-remote.json"]);
+    const config = makeConfig("T2T1");
+    const folder = makeWorkspaceFolder(tmpDir);
+    const originalShowQuickPick = vscode.window.showQuickPick;
+    const originalStartDebugging = vscode.debug.startDebugging;
+    let capturedItems: readonly vscode.QuickPickItem[] = [];
+
+    try {
+      (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = ((
+        async (items: readonly vscode.QuickPickItem[]) => {
+          capturedItems = items;
+          return items[0];
+        }
+      ) as unknown) as typeof vscode.window.showQuickPick;
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = async () => true;
+
+      await executeDebugLaunch(folder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+
+      assert.strictEqual(capturedItems.length, 2);
+      assert.ok(capturedItems.every((item) => item.description === undefined));
+      assert.ok(capturedItems.every((item) => item.detail === undefined));
+    } finally {
+      (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = originalShowQuickPick;
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = originalStartDebugging;
+    }
+  });
+
+  test("cancelling the picker does not start debugging", async () => {
+    const manifest = makeMultiProfileManifest(2, ["gdb-remote.json", "gdb-remote.json"]);
+    const config = makeConfig("T2T1");
+    const folder = makeWorkspaceFolder(tmpDir);
+    const originalShowQuickPick = vscode.window.showQuickPick;
+    const originalStartDebugging = vscode.debug.startDebugging;
+    let launchCount = 0;
+
+    try {
+      (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = async () => undefined;
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = async () => {
+        launchCount += 1;
+        return true;
+      };
+
+      await executeDebugLaunch(folder, manifest, config, tmpDir, debugLaunchValidTemplatesRoot());
+
+      assert.strictEqual(launchCount, 0);
+    } finally {
+      (vscode.window as { showQuickPick: typeof vscode.window.showQuickPick }).showQuickPick = originalShowQuickPick;
+      (vscode.debug as { startDebugging: typeof vscode.debug.startDebugging }).startDebugging = originalStartDebugging;
+    }
   });
 });

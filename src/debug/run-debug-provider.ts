@@ -36,27 +36,40 @@ export const TFTOOLS_DEBUG_TYPE = "tftools";
 
 /**
  * Builds a display label for the default tf-tools Run and Debug entry.
- * Format: "Trezor: {model-name} | {target-display} | {component-name}"
+ * Format: "Trezor"
  */
-export function labelForDefaultEntry(
-  modelName: string,
-  targetDisplay: string,
-  componentName: string
-): string {
-  return `Trezor: ${modelName} | ${targetDisplay} | ${componentName}`;
+export function labelForDefaultEntry(): string {
+  return "Trezor";
 }
 
 /**
  * Builds a display label for a profile-specific Run and Debug entry.
- * Format: "Trezor: {profile-name} | {model-name} | {target-display} | {component-name}"
+ * Format: "Trezor: {profile-name}"
  */
-export function labelForProfileEntry(
-  profileName: string,
-  modelName: string,
-  targetDisplay: string,
-  componentName: string
-): string {
-  return `Trezor: ${profileName} | ${modelName} | ${targetDisplay} | ${componentName}`;
+export function labelForProfileEntry(profileName: string): string {
+  return `Trezor: ${profileName}`;
+}
+
+function dedupeDebugConfigurations(
+  configs: ReadonlyArray<vscode.DebugConfiguration>
+): vscode.DebugConfiguration[] {
+  const unique = new Map<string, vscode.DebugConfiguration>();
+
+  for (const config of configs) {
+    const key = [
+      config.type,
+      config.request,
+      config.name,
+      String(config["tfToolsMode"] ?? ""),
+      String(config["tfToolsProfileId"] ?? ""),
+      String(config["tfToolsContextKey"] ?? ""),
+    ].join("::");
+    if (!unique.has(key)) {
+      unique.set(key, config);
+    }
+  }
+
+  return [...unique.values()];
 }
 
 // ---------------------------------------------------------------------------
@@ -110,15 +123,13 @@ export function generateDebugConfigurations(
   }
 
   const contextKey = makeContextKey(config);
-  const targetDisplay = target.shortName ?? target.name;
-
   const configs: vscode.DebugConfiguration[] = [];
 
   // Default entry (always when any matching profiles and valid executable)
   const defaultConfig: vscode.DebugConfiguration = {
     type: TFTOOLS_DEBUG_TYPE,
     request: "launch",
-    name: labelForDefaultEntry(model.name, targetDisplay, component.name),
+    name: labelForDefaultEntry(),
     tfToolsMode: "default",
     tfToolsProfileId: matchingSet.defaultProfile.id,
     tfToolsContextKey: contextKey,
@@ -131,7 +142,7 @@ export function generateDebugConfigurations(
       const profileConfig: vscode.DebugConfiguration = {
         type: TFTOOLS_DEBUG_TYPE,
         request: "launch",
-        name: labelForProfileEntry(profile.name, model.name, targetDisplay, component.name),
+        name: labelForProfileEntry(profile.name),
         tfToolsMode: "profile",
         tfToolsProfileId: profile.id,
         tfToolsContextKey: contextKey,
@@ -140,7 +151,7 @@ export function generateDebugConfigurations(
     }
   }
 
-  return configs;
+  return dedupeDebugConfigurations(configs);
 }
 
 // ---------------------------------------------------------------------------
@@ -220,7 +231,7 @@ export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurat
       return undefined;
     }
 
-    // Stale-context check
+    // Stale-context check for generated dynamic entries.
     const expectedContextKey = debugConfiguration["tfToolsContextKey"] as string | undefined;
     const currentContextKey = makeContextKey(config);
     if (expectedContextKey !== currentContextKey) {
@@ -238,7 +249,6 @@ export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurat
       return undefined;
     }
 
-    // Resolve the profile id to a profile object
     const profileId = debugConfiguration["tfToolsProfileId"] as string | undefined;
     const component = manifest.components.find((c) => c.id === config.componentId);
     const profile = component?.debug?.find((p) => p.id === profileId);
@@ -278,7 +288,17 @@ export class TfToolsDebugConfigurationProvider implements vscode.DebugConfigurat
       return undefined;
     }
 
-    // Return real config; VS Code applies its variable substitution next
-    return result.configuration as vscode.DebugConfiguration;
+    const canonicalName =
+      debugConfiguration["tfToolsMode"] === "profile"
+        ? labelForProfileEntry(profile.name)
+        : labelForDefaultEntry();
+
+    const resolvedConfiguration: vscode.DebugConfiguration = {
+      ...(result.configuration as vscode.DebugConfiguration),
+      name: canonicalName,
+    };
+
+    // Return real config; VS Code applies its variable substitution next.
+    return resolvedConfiguration;
   }
 }

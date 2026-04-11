@@ -518,24 +518,19 @@ suite("resolveMatchingDebugProfiles", () => {
 // ---------------------------------------------------------------------------
 
 suite("labelForDefaultEntry and labelForProfileEntry", () => {
-  test("labelForDefaultEntry format: Trezor: {model} | {target} | {component}", () => {
-    const label = labelForDefaultEntry("Trezor Model T (v1)", "HW", "Core");
-    assert.strictEqual(label, "Trezor: Trezor Model T (v1) | HW | Core");
+  test("labelForDefaultEntry format: Trezor", () => {
+    const label = labelForDefaultEntry();
+    assert.strictEqual(label, "Trezor");
   });
 
-  test("labelForProfileEntry format: Trezor: {profile} | {model} | {target} | {component}", () => {
-    const label = labelForProfileEntry("GDB Remote", "Trezor Model T (v1)", "HW", "Core");
-    assert.strictEqual(label, "Trezor: GDB Remote | Trezor Model T (v1) | HW | Core");
-  });
-
-  test("labelForDefaultEntry uses target shortName proxy", () => {
-    const label = labelForDefaultEntry("Model T", "Hardware", "Core");
-    assert.ok(label.includes("Hardware"));
+  test("labelForProfileEntry format: Trezor: {profile}", () => {
+    const label = labelForProfileEntry("GDB Remote");
+    assert.strictEqual(label, "Trezor: GDB Remote");
   });
 
   test("different profiles produce distinct labels", () => {
-    const l1 = labelForProfileEntry("GDB Remote", "M", "T", "C");
-    const l2 = labelForProfileEntry("OpenOCD", "M", "T", "C");
+    const l1 = labelForProfileEntry("GDB Remote");
+    const l2 = labelForProfileEntry("OpenOCD");
     assert.notStrictEqual(l1, l2);
     assert.ok(l1.includes("GDB Remote"));
     assert.ok(l2.includes("OpenOCD"));
@@ -646,7 +641,7 @@ suite("generateDebugConfigurations – entry set rules", () => {
     assert.ok(typeof profileEntry["tfToolsContextKey"] === "string");
   });
 
-  test("profile-specific entry label includes profile name and context", () => {
+  test("profile-specific entry label includes profile name", () => {
     const p1 = makeComponentDebugProfile({ name: "GDB Remote", template: "gdb.json", declarationIndex: 0 });
     const p2 = makeComponentDebugProfile({ name: "OpenOCD", template: "ocd.json", declarationIndex: 1 });
     fs.writeFileSync(path.join(tmpDir, "model-t", "firmware.elf"), "");
