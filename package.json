@@ -333,7 +333,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run bundle",
-    "compile": "tsc -p ./",
+    "compile": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && tsc -p ./",
     "bundle": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --main-fields=module,main --sourcemap",
     "watch": "npm run bundle -- --watch",
     "watch:tsc": "tsc -watch -p ./",

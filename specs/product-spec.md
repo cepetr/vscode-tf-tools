@@ -186,6 +186,8 @@ Each artifact row uses its row description to show the current availability stat
 
 Each artifact row also shows a tooltip containing the resolved artifact path for the active build context. When the artifact is missing, the tooltip must make clear that the artifact is missing and still show the resolved path that was checked.
 
+Build-artifact state is refreshed when the active build context changes, when relevant workspace settings change, and when the expected artifact files for the active build context are created, updated, or deleted on disk. This keeps the `Build Artifacts` section aligned even when artifact-producing tools are run outside extension-managed tasks.
+
 ### Artifact Row Actions
 
 Some artifact rows expose actions directly in the tree view rather than acting as general command surfaces.
@@ -328,7 +330,7 @@ Excluded-file visibility is therefore part of the IntelliSense capability, but i
 
 ### Refresh And Warning Behavior
 
-IntelliSense state refreshes automatically as described in `Startup And Refresh Behavior`, including activation, manifest changes, active build-context changes, successful builds, artifact-path changes, workspace changes, and relevant setting changes.
+IntelliSense state refreshes automatically as described in `Startup And Refresh Behavior`, including activation, manifest changes, active build-context changes, relevant artifact-file changes for the active build context, artifact-path changes, workspace changes, and relevant setting changes.
 
 The extension also provides `Refresh IntelliSense` as a manual way to re-run IntelliSense evaluation for the active build context without changing the current selection.
 
@@ -430,7 +432,7 @@ When the user changes the active model, target, or component from the tree view,
 
 ### Other Refresh Triggers
 
-- A successful build refreshes build-artifact state and IntelliSense so newly produced artifacts become available in the tree view and related actions.
+- Relevant artifact-file changes for the active build context refresh build-artifact state and IntelliSense so newly produced, updated, or removed artifacts become visible in the tree view and related actions without requiring the build to be launched by the extension.
 - A manual IntelliSense refresh command re-runs IntelliSense evaluation without changing the active build context.
 - Workspace-folder changes trigger IntelliSense refresh so excluded-file evaluation stays aligned with the current workspace shape.
 
@@ -596,9 +598,9 @@ When `Build` starts successfully, the extension launches the corresponding build
 
 Starting the command alone does not refresh artifact or IntelliSense state.
 
-Only when the `Build` task itself completes successfully does the extension refresh build-artifact state and IntelliSense-related state so the `Build Artifacts` section, artifact-dependent actions, compile-commands resolution, and excluded-file evaluation reflect the newly produced outputs.
+When the expected artifact files for the active build context are then created, updated, or deleted on disk, the extension refreshes build-artifact state and IntelliSense-related state so the `Build Artifacts` section, artifact-dependent actions, compile-commands resolution, and excluded-file evaluation reflect the resulting outputs.
 
-This means a successful build can make artifact rows become available or change status without requiring the user to reload the window or manually refresh the extension state.
+This means artifact-producing tools can make artifact rows become available or change status without requiring the user to reload the window or manually refresh the extension state, even when those tools are run outside extension-managed tasks.
 
 ### Clippy And Check
 

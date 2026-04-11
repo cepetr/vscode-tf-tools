@@ -93,7 +93,7 @@ export interface IntelliSenseRuntimeState {
 export type RefreshTrigger =
   | "activation"
   | "active-config-change"
-  | "successful-build"
+  | "artifact-file-change"
   | "manual-refresh"
   | "provider-change"
   | "manifest-change"

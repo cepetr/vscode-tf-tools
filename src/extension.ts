@@ -35,6 +35,7 @@ import {
 import { IntelliSenseService } from "./intellisense/intellisense-service";
 import { RefreshTrigger } from "./intellisense/intellisense-types";
 import { applyProviderSettingFix } from "./intellisense/cpptools-provider";
+import { ActiveArtifactFileWatcher } from "./intellisense/artifact-file-watcher";
 import { ExcludedFilesService } from "./intellisense/excluded-files-service";
 import { ExcludedFilesRefreshCoordinator } from "./intellisense/excluded-files-refresh";
 import { ExcludedFileDecorationsProvider } from "./ui/excluded-file-decorations";
@@ -76,6 +77,7 @@ let _manifestState: ManifestState | undefined;
 let _activeConfig: ActiveConfig | undefined;
 let _resolvedOptions: ReadonlyArray<ResolvedOption> = [];
 let _intelliSenseService: IntelliSenseService | undefined;
+let _artifactFileWatcher: ActiveArtifactFileWatcher | undefined;
 let _excludedFilesService: ExcludedFilesService | undefined;
 let _excludedFilesRefreshCoordinator: ExcludedFilesRefreshCoordinator | undefined;
 let _excludedFileDecorations: ExcludedFileDecorationsProvider | undefined;
@@ -87,16 +89,6 @@ let _lastShownProviderFixState: string = "none";
 /** Binary and Map artifact state for Flash/Upload/openMapFile context keys. */
 let _binaryArtifact: ActiveBinaryArtifact | undefined;
 let _mapArtifact: ActiveMapArtifact | undefined;
-
-export interface TaskProcessEndLike {
-  readonly exitCode?: number;
-  readonly execution: {
-    readonly task: {
-      readonly definition: { readonly type?: string };
-      readonly name: string;
-    };
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Scope guard for the supported command surface, now expanded for
@@ -338,14 +330,6 @@ function registerUnsupportedWorkspaceCommands(
   );
 }
 
-export function isSuccessfulBuildTaskProcess(event: TaskProcessEndLike): boolean {
-  return (
-    event.exitCode === 0 &&
-    event.execution.task.definition.type === TASK_TYPE &&
-    event.execution.task.name.startsWith("Build ")
-  );
-}
-
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // --- Scope guard: verify no unrelated commands are registered. ---
   assertNoUnauthorizedContributions(context);
@@ -410,6 +394,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const workspaceFolder = requireWorkspaceFolder();
   const manifestUri = resolveManifestUri(workspaceFolder);
+  const refreshArtifactFileWatcher = (): void => {
+    const loadedState =
+      _manifestState?.status === "loaded"
+        ? (_manifestState as ManifestStateLoaded)
+        : undefined;
+
+    _artifactFileWatcher?.update(
+      loadedState,
+      _activeConfig,
+      resolveArtifactsPath(workspaceFolder)
+    );
+  };
   const refreshArtifactActionState = (): void => {
     if (!_manifestState) {
       return;
@@ -456,10 +452,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- IntelliSense service ---
   _intelliSenseService = new IntelliSenseService();
+  _artifactFileWatcher = new ActiveArtifactFileWatcher(() => {
+    refreshBuildArtifacts("artifact-file-change");
+  });
   context.subscriptions.push({
     dispose: () => {
       _intelliSenseService?.dispose();
       _intelliSenseService = undefined;
+    },
+  });
+  context.subscriptions.push({
+    dispose: () => {
+      _artifactFileWatcher?.dispose();
+      _artifactFileWatcher = undefined;
     },
   });
 
@@ -537,6 +542,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("tfTools.artifactsPath", workspaceFolder.uri)) {
         _intelliSenseService?.setArtifactsRoot(resolveArtifactsPath(workspaceFolder));
+        refreshArtifactFileWatcher();
         refreshBuildArtifacts("artifacts-path-change");
       }
       if (e.affectsConfiguration("tfTools.debug.templatesPath", workspaceFolder.uri)) {
@@ -604,6 +610,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const loadedState = state.status === "loaded" ? (state as ManifestStateLoaded) : undefined;
     _intelliSenseService?.setManifest(loadedState);
     _intelliSenseService?.setActiveConfig(activeConfig);
+    refreshArtifactFileWatcher();
     refreshBuildArtifacts("manifest-change");
   };
 
@@ -756,6 +763,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _treeProvider?.update(state, config, _resolvedOptions);
       refreshStatusBar();
       _intelliSenseService?.setActiveConfig(config);
+      refreshArtifactFileWatcher();
       refreshBuildArtifacts("active-config-change");
     })
   );
@@ -770,6 +778,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _treeProvider?.update(state, config, _resolvedOptions);
       refreshStatusBar();
       _intelliSenseService?.setActiveConfig(config);
+      refreshArtifactFileWatcher();
       refreshBuildArtifacts("active-config-change");
     })
   );
@@ -784,6 +793,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       _treeProvider?.update(state, config, _resolvedOptions);
       refreshStatusBar();
       _intelliSenseService?.setActiveConfig(config);
+      refreshArtifactFileWatcher();
       refreshBuildArtifacts("active-config-change");
     })
   );
@@ -873,15 +883,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
   context.subscriptions.push(vscode.tasks.registerTaskProvider(TASK_TYPE, taskProvider));
 
-  // Trigger IntelliSense refresh after a successful Build task completion.
-  context.subscriptions.push(
-    vscode.tasks.onDidEndTaskProcess((e) => {
-      if (isSuccessfulBuildTaskProcess(e)) {
-        refreshBuildArtifacts("successful-build");
-      }
-    })
-  );
-
   // Trigger IntelliSense refresh when workspace folders change so excluded-file
   // candidate paths are re-evaluated against the updated workspace root.
   context.subscriptions.push(
@@ -894,6 +895,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   await _manifestService.start();
 
   // Schedule IntelliSense refresh on activation.
+  refreshArtifactFileWatcher();
   _intelliSenseService?.scheduleRefresh("activation");
 }
 
@@ -912,6 +914,8 @@ export function deactivate(): void {
   _statusBar = undefined;
   _intelliSenseService?.dispose();
   _intelliSenseService = undefined;
+  _artifactFileWatcher?.dispose();
+  _artifactFileWatcher = undefined;
   _excludedFilesService?.dispose();
   _excludedFilesService = undefined;
   _excludedFilesRefreshCoordinator?.dispose();
