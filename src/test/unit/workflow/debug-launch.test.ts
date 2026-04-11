@@ -710,7 +710,7 @@ suite("materializeDebugConfiguration – failure paths", () => {
 
   const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
 
-  function makeManifestForMat(targets = [{}]) {
+  function makeManifestForMat() {
     return makeIntelliSenseLoadedState({
       targets: [{
         kind: "target",

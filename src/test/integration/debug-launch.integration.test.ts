@@ -33,6 +33,7 @@ import {
   debugLaunchValidTemplatesRoot,
 } from "../unit/workflow-test-helpers";
 import { ManifestStateLoaded, ManifestComponentDebugProfile } from "../../manifest/manifest-types";
+import { TFTOOLS_DEBUG_TYPE } from "../../debug/run-debug-provider";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -528,8 +529,6 @@ suite("Run and Debug provider – package contribution regressions", () => {
     // The tftools type is a proxy type and must not collide with real debugger types
     // like 'cppdbg', 'cortex-debug', 'gdb', etc.
     const RESERVED_TYPES = ["cppdbg", "cortex-debug", "gdb", "lldb", "node", "python", "go"];
-    const { TFTOOLS_DEBUG_TYPE } =
-      require("../../debug/run-debug-provider") as typeof import("../../debug/run-debug-provider");
     assert.ok(
       !RESERVED_TYPES.includes(TFTOOLS_DEBUG_TYPE),
       `TFTOOLS_DEBUG_TYPE '${TFTOOLS_DEBUG_TYPE}' must not collide with a standard debugger type`

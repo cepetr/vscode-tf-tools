@@ -111,7 +111,7 @@
 - [x] T024 [P] Expand no-`launch.json` persistence regression coverage in `src/test/integration/configuration-scope.integration.test.ts`
 - [x] T025 [P] Expand package contribution and command-surface regression coverage in `src/test/integration/debug-launch.integration.test.ts`
 - [x] T026 Run `specs/007-run-debug-integration/quickstart.md` validation scenarios
-- [ ] T027 Run repository validation commands declared in `package.json`
+- [x] T027 Run repository validation commands declared in `package.json`
 
 ---
 

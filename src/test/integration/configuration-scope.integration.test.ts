@@ -18,6 +18,8 @@ import {
 } from "../unit/workflow-test-helpers";
 import { executeDebugLaunch } from "../../commands/debug-launch";
 import { ManifestStateLoaded } from "../../manifest/manifest-types";
+import { TfToolsDebugConfigurationProvider, TFTOOLS_DEBUG_TYPE } from "../../debug/run-debug-provider";
+import { makeContextKey } from "../../intellisense/artifact-resolution";
 
 /** Commands that must never be registered in any current slice. */
 const BANNED_COMMAND_PATTERNS = [
@@ -267,11 +269,6 @@ suite("Debug Launch – no launch.json persistence", () => {
     const workspaceRoot = workspaceFolder.uri.fsPath;
     const launchJson = path.join(workspaceRoot, ".vscode", "launch.json");
     const existed = fs.existsSync(launchJson);
-
-    const { TfToolsDebugConfigurationProvider, TFTOOLS_DEBUG_TYPE } =
-      require("../../debug/run-debug-provider") as typeof import("../../debug/run-debug-provider");
-    const { makeContextKey } =
-      require("../../intellisense/artifact-resolution") as typeof import("../../intellisense/artifact-resolution");
 
     const manifest = makeExeManifest();
     const config = { modelId: "T2T1", targetId: "hw", componentId: "core", persistedAt: "" };
