@@ -63,6 +63,7 @@ import {
 import { executeDebugLaunch } from "./commands/debug-launch";
 import { logDebugLaunchFailure } from "./observability/log-channel";
 import { EvalContext } from "./manifest/when-expressions";
+import { TfToolsDebugConfigurationProvider, TFTOOLS_DEBUG_TYPE } from "./debug/run-debug-provider";
 
 let _manifestService: ManifestService | undefined;
 let _treeProvider: ConfigurationTreeProvider | undefined;
@@ -702,6 +703,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         resolveDebugTemplatesPath(workspaceFolder)
       );
     })
+  );
+
+  // --- Run and Debug provider (Run and Debug Integration slice) ---
+  const debugConfigProvider = new TfToolsDebugConfigurationProvider(
+    () => _manifestState?.status === "loaded" ? (_manifestState as ManifestStateLoaded) : undefined,
+    () => _activeConfig,
+    () => resolveArtifactsPath(workspaceFolder),
+    () => resolveDebugTemplatesPath(workspaceFolder),
+    workspaceFolder
+  );
+  context.subscriptions.push(
+    vscode.debug.registerDebugConfigurationProvider(
+      TFTOOLS_DEBUG_TYPE,
+      debugConfigProvider,
+      vscode.DebugConfigurationProviderTriggerKind.Dynamic
+    )
   );
 
   // --- openMapFile command, scoped to the artifact row. ---
