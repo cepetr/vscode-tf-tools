@@ -1,10 +1,52 @@
 # Trezor Firmware Tools
 
-> Warning: This extension is still experimental and intended for evaluation only. It currently targets the newer `trezor-firmware` build workflow that is still evolving, and it is not expected to work with older repository layouts or legacy build tooling.
+Trezor Firmware Tools helps you work with `trezor-firmware` more comfortably inside VS Code by adding a dedicated Configuration view where you can choose the active build context, adjust build options, run common firmware tasks, and work with the build artifacts used by IntelliSense and debugging.
 
-Trezor Firmware Tools helps you work with `trezor-firmware` more comfortably inside VS Code.
+![img](doc/tree-view.png)
 
-It adds a dedicated Configuration view where you can choose the active build context, adjust build options, run common firmware tasks, and work with the build artifacts used by IntelliSense and debugging.
+
+## How to Install
+
+The extension is not published in the VS Code Marketplace yet, so it must be installed manually as a `.vsix` package.
+
+Download the latest `.vsix` package from the [release page](https://github.com/cepetr/vscode-tf-tools/releases). Then, in VS Code, open the Command Palette, run `Extensions: Install from VSIX...`, and select the extension package file.
+
+Enable the extension only in the `trezor-firmware` repository. 
+
+## Configuration And Environment
+
+Before starting VS Code, enter the `trezor-firmware` development shell from the repository root:
+
+- run `nix-shell` for the standard development environment
+- run `nix-shell --arg devTools true` if you also want tools such as `openocd` for ST-Link debugging
+
+The repository does not include a shared `.vscode/settings.json`, so it is worth creating one locally and adapting it to your environment. The following example is a good starting point:
+
+```json
+{
+    "git.detectSubmodulesLimit": 20,
+    "git.detectSubmodules": true,
+    "python.useEnvironmentsExtension": false,
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "terminal.integrated.env.linux": {
+        "VIRTUAL_ENV": "${workspaceFolder}/.venv",
+        "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
+    },
+    "rust-analyzer.linkedProjects": [
+        "${workspaceFolder}/core/embed/Cargo.toml",
+    ],
+    "rust-analyzer.cargo.targetDir": true,
+    "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.cargo.extraEnv": {
+        "IS_RUST_ANALYZER": "true"
+    },
+    "cortex-debug.variableUseNaturalFormat": false,
+    "C_Cpp.default.configurationProvider": "cepetr.tf-tools"
+}
+```
+
+NOTE: `IS_RUST_ANALYZER` is used to minimize the work done by `build.rs` scripts so Rust Analyzer can run quickly and avoid failures when all features are enabled, without compiling the C code.
 
 ## What It Does
 
@@ -63,4 +105,5 @@ You can adjust optional UI behavior with:
 
 ## Notes
 
-The extension does not manage the firmware build system itself. It relies on repository-specific manifest data, paths, and generated artifacts that are already present in the workspace.
+The extension relies on repository-specific manifest data, paths, and generated artifacts that are already present in the workspace. For more information, see the [product specification](specs/product-spec.md).
+
