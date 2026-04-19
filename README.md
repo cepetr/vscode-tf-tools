@@ -2,8 +2,9 @@
 
 Trezor Firmware Tools helps you work with `trezor-firmware` more comfortably inside VS Code by adding a dedicated Configuration view where you can choose the active build context, adjust build options, run common firmware tasks, and work with the build artifacts used by IntelliSense and debugging.
 
-![img](doc/tree-view.png)
+The extension is intended for use with the new cargo-based build system. It does not support the legacy SCons-based firmware build scripts used in older repository layouts.
 
+![img](doc/tree-view.png)
 
 ## How to Install
 
@@ -11,16 +12,16 @@ The extension is not published in the VS Code Marketplace yet, so it must be ins
 
 Download the latest `.vsix` package from the [release page](https://github.com/cepetr/vscode-tf-tools/releases). Then, in VS Code, open the Command Palette, run `Extensions: Install from VSIX...`, and select the extension package file.
 
-Enable the extension only in the `trezor-firmware` repository. 
+**Enable this extension only in the `trezor-firmware` repository, and disable it in other workspaces.**
 
-## Configuration And Environment
+## How to Set Up and Configure
 
-Before starting VS Code, enter the `trezor-firmware` development shell from the repository root:
+Before starting VS Code, enter the `trezor-firmware` development shell from the repository root and launch VS Code from that shell so it inherits the environment:
 
 - run `nix-shell` for the standard development environment
 - run `nix-shell --arg devTools true` if you also want tools such as `openocd` for ST-Link debugging
 
-The repository does not include a shared `.vscode/settings.json`, so it is worth creating one locally and adapting it to your environment. The following example is a good starting point:
+The extension does not require these VS Code settings, but they are recommended for a smoother experience with the new build system. The repository does not include a shared `.vscode/settings.json`, so it is worth creating one locally and adapting it to your environment. The following example is a good starting point:
 
 ```json
 {
@@ -46,7 +47,7 @@ The repository does not include a shared `.vscode/settings.json`, so it is worth
 }
 ```
 
-NOTE: `IS_RUST_ANALYZER` is used to minimize the work done by `build.rs` scripts so Rust Analyzer can run quickly and avoid failures when all features are enabled, without compiling the C code.
+NOTE: `IS_RUST_ANALYZER` is not required by the extension. It is recommended because it minimizes the work done by `build.rs` scripts so Rust Analyzer can run quickly and avoid failures when all features are enabled, without compiling the C code.
 
 ## What It Does
 
@@ -84,11 +85,13 @@ It expects:
 - a build artifacts directory
 - optional debug templates for debug launch support
 
-It does not support the legacy SCons-based firmware build scripts used in older repository layouts.
+In the default `trezor-firmware` layout, the extension finds these automatically and usually does not need additional configuration.
+
+The extension relies on repository-specific manifest data, paths, and generated artifacts that are already present in the workspace. For more information, see the [product specification](specs/product-spec.md).
 
 ## Configuration
 
-These workspace settings tell the extension where to find its inputs:
+These workspace settings can be used when you need to override the automatically detected paths:
 
 - `tfTools.manifestPath`
 - `tfTools.cargoWorkspacePath`
@@ -102,8 +105,4 @@ You can adjust optional UI behavior with:
 - `tfTools.excludedFiles.showEditorOverlay`
 - `tfTools.excludedFiles.fileNamePatterns`
 - `tfTools.excludedFiles.folderGlobs`
-
-## Notes
-
-The extension relies on repository-specific manifest data, paths, and generated artifacts that are already present in the workspace. For more information, see the [product specification](specs/product-spec.md).
 
