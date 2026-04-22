@@ -117,7 +117,7 @@
   ACTION REQUIRED: Capture constitutional constraints that shape the feature.
 -->
 
-- Supported host/version: [e.g., VS Code 1.110+ only]
+- Supported host/version: [e.g., VS Code 1.105+ only]
 - Source of truth inputs: [e.g., settings keys, manifest files, workspace state]
 - Workspace assumptions: [e.g., single-root workspace only]
 - Compatibility exclusions: [e.g., older VS Code versions are out of scope]

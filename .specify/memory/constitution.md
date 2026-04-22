@@ -26,7 +26,7 @@ Follow-up TODOs:
 
 ### I. TypeScript Extension First
 All shipped code MUST be authored in TypeScript and MUST target the stable VS Code
-extension API available in VS Code 1.110 or newer. Work to preserve behavior on
+extension API available in VS Code 1.105 or newer. Work to preserve behavior on
 older VS Code releases is out of scope unless the constitution is amended first.
 Rationale: the project is a VS Code extension, and narrowing the support window keeps
 implementation and test effort focused on the supported host.
@@ -71,7 +71,7 @@ concise code and justified complexity keep it maintainable.
 
 - The product is a single-package VS Code extension for the `trezor-firmware`
 	workspace and is implemented in TypeScript.
-- The supported editor baseline is VS Code 1.110+.
+- The supported editor baseline is VS Code 1.105+.
 - The extension may assume a single-root workspace unless a future amendment
 	expands that scope.
 - Integration with external tools such as cpptools, Cargo tasks, YAML manifests,
