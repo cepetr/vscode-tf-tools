@@ -55,7 +55,8 @@ The extension does not require these VS Code settings, but they are recommended 
     "rust-analyzer.cargo.extraEnv": {
         "IS_RUST_ANALYZER": "true",
         "VIRTUAL_ENV": "${workspaceFolder}/.venv",
-        "PYTHONPATH": "${workspaceFolder}/.venv/lib/python3.13/site-packages"
+        "PYTHONPATH": "${workspaceFolder}/.venv/lib/python3.13/site-packages",
+        "SCM_REVISION": "0000000000000000000000000000000000000000",
     },
     "C_Cpp.default.configurationProvider": "cepetr.tbench",
     
